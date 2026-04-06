@@ -183,3 +183,4 @@ MIT — see [LICENSE](LICENSE) for details.
 ## Acknowledgements
 
 This project was developed as part of a systematic review on psychodynamic approaches to bulimia nervosa. The pipeline architecture is informed by principles of epistemic governance and non-erasure memory in institutional reasoning (Konstantinidis, 2026).
+
