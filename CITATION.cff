@@ -10,6 +10,10 @@ license: MIT
 authors:
   - family-names: Profatilova
     given-names: Evgeniya
+    orcid: "https://orcid.org/0009-0007-6618-3662"
+  - family-names: Konstantinidis
+    given-names: Ilias
+    orcid: "https://orcid.org/0009-0009-8628-641X"
 keywords:
   - systematic-review
   - evidence-synthesis
