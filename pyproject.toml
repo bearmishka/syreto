@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "syreto"
+version = "0.1.0"
+description = "SYstematic REview TOolkit packaging shim for analysis scripts"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "scipy>=1.10",
+    "rapidfuzz>=3.9",
+]
+
+
+[project.scripts]
+syreto = "syreto.cli:main"
+syreto-status = "syreto.cli:main_status"
+syreto-draft = "syreto.cli:main_draft"
+
+[tool.setuptools.packages.find]
+include = ["syreto", "syreto.*"]
+
+[tool.mypy]
+python_version = "3.11"
+files = [
+    "syreto",
+    "03_analysis/audit_log_integrity_guard.py",
+    "03_analysis/record_id_map_integrity_guard.py",
+    "03_analysis/template_term_guard.py",
+    "03_analysis/weekly_risk_digest.py",
+    "03_analysis/reviewer_workload_balancer.py",
+    "03_analysis/quality_appraisal_roundtrip.py",
+    "03_analysis/dedup_merge.py",
+    "03_analysis/dedup_stats.py",
+    "03_analysis/transparency_appendix_decision_trace.py",
+    "03_analysis/analysis_lineage.py",
+    "03_analysis/screening_metrics.py",
+    "03_analysis/prisma_adherence_checker.py",
+    "03_analysis/status_cli.py",
+    "03_analysis/prisma_tables.py",
+]
+warn_unused_configs = true
+pretty = true
+show_error_codes = true
+ignore_missing_imports = true
+check_untyped_defs = true
