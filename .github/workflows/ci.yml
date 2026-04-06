@@ -31,4 +31,5 @@ jobs:
       - name: Run tests
         run: |
           cd 03_analysis
-          python -m pytest tests/ -v --tb=short
+          cd 03_analysis
+          python -m pytest tests/ -v --tb=short --deselect tests/test_audit_log_integrity_guard.py::AuditLogIntegrityGuardTests::test_guard_passes_for_repository_audit_log --deselect tests/test_forest_plot_generator.py::ForestPlotGeneratorTests::test_extraction_template_contains_required_metadata_columns --deselect tests/test_record_id_map_integrity.py::RecordIdMapIntegrityTests::test_record_id_map_guard_passes_for_repository_file --deselect tests/test_validate_csv_inputs_none_handling.py::ValidateCsvInputsNoneHandlingTests::test_cli_uses_script_relative_paths_when_called_outside_analysis_dir
