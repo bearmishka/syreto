@@ -166,7 +166,7 @@ If you use SyReTo in your research, please cite:
 
 ```bibtex
 @software{profatilova2026syreto,
-  author       = {Profatilova, Evgeniya},
+  author       = {Profatilova, Evgeniya and Konstantinidis, Ilias},
   title        = {{SyReTo}: A Deterministic Toolkit for Reproducible Systematic Reviews},
   year         = {2026},
   url          = {https://github.com/bearmishka/syreto},
