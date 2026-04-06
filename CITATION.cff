@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "SyReTo: A Deterministic Toolkit for Reproducible Systematic Reviews"
+version: 0.1.0
+date-released: 2026-04-06
+url: "https://github.com/bearmishka/syreto"
+repository-code: "https://github.com/bearmishka/syreto"
+license: MIT
+authors:
+  - family-names: Profatilova
+    given-names: Evgeniya
+keywords:
+  - systematic-review
+  - evidence-synthesis
+  - prisma
+  - meta-analysis
+  - reproducible-research
+  - audit-trail
