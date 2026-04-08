@@ -1,0 +1,24 @@
+{
+  "fail_thresholds": {
+    "default": "major"
+  },
+  "health_level_severity": {
+    "warning": "major",
+    "error": "critical"
+  },
+  "checklist_priority": {
+    "search_totals": "major",
+    "master_records": "major",
+    "master_columns": "major",
+    "csv_input_validation": "major",
+    "extraction_validation": "major",
+    "quality_appraisal": "major",
+    "effect_size_conversion": "major",
+    "screening_log": "major",
+    "dual_reviewer": "major",
+    "cohen_kappa": "major",
+    "semantic_placeholders": "critical",
+    "prisma_sync": "critical",
+    "default": "major"
+  }
+}
