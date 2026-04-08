@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
 import sys
 import unittest
-
+from pathlib import Path
 
 ANALYSIS_ROOT = Path(__file__).resolve().parents[1]
 if str(ANALYSIS_ROOT) not in sys.path:
     sys.path.insert(0, str(ANALYSIS_ROOT))
 
 from prospero_submission_drafter_layers import rules
-from prospero_submission_drafter_layers.models import PrefillField
-from prospero_submission_drafter_layers.models import ProtocolData
+from prospero_submission_drafter_layers.models import PrefillField, ProtocolData
 
 
 def sample_protocol_data() -> ProtocolData:

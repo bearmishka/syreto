@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "status_report.py"
 spec = importlib.util.spec_from_file_location("status_report", MODULE_PATH)
@@ -116,7 +115,9 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
             artifacts = self._write_minimum_artifacts(base)
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
             search_df = pd.DataFrame(
                 [
@@ -156,12 +157,15 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
             )
             self.assertFalse(
                 any(
-                    check["level"] == "error" and "PRISMA counts are out of sync" in check["message"]
+                    check["level"] == "error"
+                    and "PRISMA counts are out of sync" in check["message"]
                     for check in summary["health_checks"]
                 )
             )
 
-            prisma_check = next(item for item in summary["input_checklist"] if item["id"] == "prisma_sync")
+            prisma_check = next(
+                item for item in summary["input_checklist"] if item["id"] == "prisma_sync"
+            )
             self.assertTrue(prisma_check["done"])
 
     def test_prisma_mismatch_remains_error_when_search_totals_present(self) -> None:
@@ -170,9 +174,13 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
             artifacts = self._write_minimum_artifacts(base)
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
-            search_df = pd.DataFrame([{"database": "PubMed", "date_searched": "2026-03-14", "results_total": "5"}])
+            search_df = pd.DataFrame(
+                [{"database": "PubMed", "date_searched": "2026-03-14", "results_total": "5"}]
+            )
             prisma_df = self._prisma_df(identified=2, duplicates=0, screened=2)
 
             _, summary = status_report.build_status_report(
@@ -195,12 +203,15 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
 
             self.assertTrue(
                 any(
-                    check["level"] == "error" and "PRISMA counts are out of sync" in check["message"]
+                    check["level"] == "error"
+                    and "PRISMA counts are out of sync" in check["message"]
                     for check in summary["health_checks"]
                 )
             )
 
-            prisma_check = next(item for item in summary["input_checklist"] if item["id"] == "prisma_sync")
+            prisma_check = next(
+                item for item in summary["input_checklist"] if item["id"] == "prisma_sync"
+            )
             self.assertFalse(prisma_check["done"])
 
     def test_prisma_partial_screening_is_not_flagged_as_mismatch(self) -> None:
@@ -209,9 +220,13 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
             artifacts = self._write_minimum_artifacts(base)
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
-            search_df = pd.DataFrame([{"database": "PubMed", "date_searched": "2026-03-14", "results_total": "2"}])
+            search_df = pd.DataFrame(
+                [{"database": "PubMed", "date_searched": "2026-03-14", "results_total": "2"}]
+            )
             prisma_df = self._prisma_df(identified=2, duplicates=0, screened=1)
 
             _, summary = status_report.build_status_report(
@@ -234,7 +249,8 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
 
             self.assertFalse(
                 any(
-                    check["level"] == "error" and "PRISMA counts are out of sync" in check["message"]
+                    check["level"] == "error"
+                    and "PRISMA counts are out of sync" in check["message"]
                     for check in summary["health_checks"]
                 )
             )
@@ -244,9 +260,13 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
                     for check in summary["health_checks"]
                 )
             )
-            self.assertFalse(any("computed unique records" in warning for warning in summary["warnings"]))
+            self.assertFalse(
+                any("computed unique records" in warning for warning in summary["warnings"])
+            )
 
-            prisma_check = next(item for item in summary["input_checklist"] if item["id"] == "prisma_sync")
+            prisma_check = next(
+                item for item in summary["input_checklist"] if item["id"] == "prisma_sync"
+            )
             self.assertTrue(prisma_check["done"])
 
     def test_reviewer_workload_metrics_are_exposed_in_status_summary(self) -> None:
@@ -282,9 +302,13 @@ class StatusReportStageAlignmentTests(unittest.TestCase):
             )
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
-            search_df = pd.DataFrame([{"database": "PubMed", "date_searched": "2026-03-14", "results_total": "5"}])
+            search_df = pd.DataFrame(
+                [{"database": "PubMed", "date_searched": "2026-03-14", "results_total": "5"}]
+            )
             prisma_df = self._prisma_df(identified=2, duplicates=0, screened=2)
 
             _, summary = status_report.build_status_report(

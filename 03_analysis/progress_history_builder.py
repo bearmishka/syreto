@@ -1,12 +1,11 @@
 import argparse
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 OUTPUT_COLUMNS = [
     "run_started_at_utc",
@@ -295,13 +294,19 @@ def upsert_history_row(history_df: pd.DataFrame, row: dict[str, str]) -> pd.Data
         if matches.any():
             working.loc[matches, list(row.keys())] = [row[key] for key in row.keys()]
         else:
-            working = pd.concat([working, pd.DataFrame([row], columns=OUTPUT_COLUMNS)], ignore_index=True)
+            working = pd.concat(
+                [working, pd.DataFrame([row], columns=OUTPUT_COLUMNS)], ignore_index=True
+            )
     else:
-        working = pd.concat([working, pd.DataFrame([row], columns=OUTPUT_COLUMNS)], ignore_index=True)
+        working = pd.concat(
+            [working, pd.DataFrame([row], columns=OUTPUT_COLUMNS)], ignore_index=True
+        )
 
     working["_sort_dt"] = pd.to_datetime(working["run_updated_at_utc"], errors="coerce", utc=True)
     working["_sort_seq"] = pd.Series(range(len(working)), dtype="int64")
-    working = working.sort_values(by=["_sort_dt", "_sort_seq"], na_position="last").drop(columns=["_sort_dt", "_sort_seq"])
+    working = working.sort_values(by=["_sort_dt", "_sort_seq"], na_position="last").drop(
+        columns=["_sort_dt", "_sort_seq"]
+    )
     return working.reset_index(drop=True)
 
 
@@ -358,18 +363,26 @@ def build_summary(history_df: pd.DataFrame) -> str:
     latest = history_df.iloc[-1]
     lines.append(f"- Latest run: `{normalize(latest.get('run_id', '')) or 'unknown'}`")
     lines.append(f"- Latest state: `{normalize(latest.get('state', '')) or 'unknown'}`")
-    lines.append(f"- Latest update: `{normalize(latest.get('run_updated_at_utc', '')) or 'unknown'}`")
+    lines.append(
+        f"- Latest update: `{normalize(latest.get('run_updated_at_utc', '')) or 'unknown'}`"
+    )
     lines.append("")
 
     lines.append("## Latest Snapshot")
     lines.append("")
     lines.append(f"- Stage: `{normalize(latest.get('stage_id', '')) or 'unknown'}`")
-    lines.append(f"- Search results total: {normalize(latest.get('search_results_total', '')) or '—'}")
-    lines.append(f"- Unique after dedup: {normalize(latest.get('unique_records_after_dedup', '')) or '—'}")
+    lines.append(
+        f"- Search results total: {normalize(latest.get('search_results_total', '')) or '—'}"
+    )
+    lines.append(
+        f"- Unique after dedup: {normalize(latest.get('unique_records_after_dedup', '')) or '—'}"
+    )
     lines.append(f"- Records screened: {normalize(latest.get('records_screened', '')) or '—'}")
     lines.append(f"- Includes: {normalize(latest.get('includes', '')) or '—'}")
     lines.append(f"- Excludes: {normalize(latest.get('excludes', '')) or '—'}")
-    lines.append(f"- Pending checklist items: {normalize(latest.get('todo_open_count', '')) or '—'}")
+    lines.append(
+        f"- Pending checklist items: {normalize(latest.get('todo_open_count', '')) or '—'}"
+    )
     lines.append("")
 
     lines.append("## Deltas vs Previous Run")
@@ -382,28 +395,16 @@ def build_summary(history_df: pd.DataFrame) -> str:
     previous = history_df.iloc[-2]
     lines.append(f"- Previous run: `{normalize(previous.get('run_id', '')) or 'unknown'}`")
     lines.append(
-        "- Search results total: "
-        f"{format_delta(latest.get('delta_search_results_total', ''))}"
+        f"- Search results total: {format_delta(latest.get('delta_search_results_total', ''))}"
     )
     lines.append(
-        "- Unique after dedup: "
-        f"{format_delta(latest.get('delta_unique_records_after_dedup', ''))}"
+        f"- Unique after dedup: {format_delta(latest.get('delta_unique_records_after_dedup', ''))}"
     )
+    lines.append(f"- Records screened: {format_delta(latest.get('delta_records_screened', ''))}")
+    lines.append(f"- Includes: {format_delta(latest.get('delta_includes', ''))}")
+    lines.append(f"- Excludes: {format_delta(latest.get('delta_excludes', ''))}")
     lines.append(
-        "- Records screened: "
-        f"{format_delta(latest.get('delta_records_screened', ''))}"
-    )
-    lines.append(
-        "- Includes: "
-        f"{format_delta(latest.get('delta_includes', ''))}"
-    )
-    lines.append(
-        "- Excludes: "
-        f"{format_delta(latest.get('delta_excludes', ''))}"
-    )
-    lines.append(
-        "- Pending checklist items: "
-        f"{format_delta(latest.get('delta_todo_open_count', ''))}"
+        f"- Pending checklist items: {format_delta(latest.get('delta_todo_open_count', ''))}"
     )
     lines.append("")
 
@@ -411,10 +412,24 @@ def build_summary(history_df: pd.DataFrame) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build run-progress history and latest deltas from status/manifest artifacts.")
-    parser.add_argument("--manifest", default="outputs/daily_run_manifest.json", help="Path to daily-run manifest JSON")
-    parser.add_argument("--status-summary", default="outputs/status_summary.json", help="Path to status summary JSON")
-    parser.add_argument("--history-output", default="outputs/progress_history.csv", help="Path to progress history CSV")
+    parser = argparse.ArgumentParser(
+        description="Build run-progress history and latest deltas from status/manifest artifacts."
+    )
+    parser.add_argument(
+        "--manifest",
+        default="outputs/daily_run_manifest.json",
+        help="Path to daily-run manifest JSON",
+    )
+    parser.add_argument(
+        "--status-summary",
+        default="outputs/status_summary.json",
+        help="Path to status summary JSON",
+    )
+    parser.add_argument(
+        "--history-output",
+        default="outputs/progress_history.csv",
+        help="Path to progress history CSV",
+    )
     parser.add_argument(
         "--summary-output",
         default="outputs/progress_history_summary.md",
@@ -430,7 +445,9 @@ def main() -> None:
     manifest = read_manifest(Path(args.manifest))
     status_summary = read_status_summary(Path(args.status_summary))
 
-    current_row = build_current_row(manifest=manifest, status_summary=status_summary, review_mode=args.review_mode)
+    current_row = build_current_row(
+        manifest=manifest, status_summary=status_summary, review_mode=args.review_mode
+    )
     history_df = load_history(Path(args.history_output))
     history_df = upsert_history_row(history_df, current_row)
     history_df = apply_deltas(history_df)

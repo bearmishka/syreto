@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -15,7 +14,7 @@ def make_fake_python(binary_path: Path) -> None:
     binary_path.write_text(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "fi\n"
         "exit 0\n",
@@ -106,7 +105,9 @@ class DailyRunManifestSingleObjectSmokeTests(unittest.TestCase):
             ]
             self.assertGreaterEqual(len(audit_lines), 2)
             self.assertEqual(audit_lines[0], "timestamp,action,file,description")
-            self.assertTrue(all(",run_success,03_analysis/daily_run.sh," in line for line in audit_lines[1:]))
+            self.assertTrue(
+                all(",run_success,03_analysis/daily_run.sh," in line for line in audit_lines[1:])
+            )
             self.assertEqual(len(audit_lines[1:]), len(set(audit_lines[1:])))
 
 

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 DECISION_NORMALIZATION = {
     "include": "include",
     "included": "include",
@@ -185,9 +184,7 @@ def prepare_dual_log(df: pd.DataFrame) -> pd.DataFrame:
         prepared = prepared.sort_values(["record_id", "reviewer"], kind="stable")
 
     prepared = prepared[
-        prepared["record_id"].ne("")
-        & prepared["reviewer"].ne("")
-        & prepared["decision"].ne("")
+        prepared["record_id"].ne("") & prepared["reviewer"].ne("") & prepared["decision"].ne("")
     ]
     if prepared.empty:
         return pd.DataFrame(columns=["record_id", "reviewer", "decision"])
@@ -233,7 +230,13 @@ def disagreement_analysis(
         "disagreements": 0,
         "decision_distribution": pd.DataFrame(columns=["decision_pair", "records", "share"]),
         "type_patterns": pd.DataFrame(
-            columns=["article_type", "paired_records", "disagreements", "disagreement_rate", "top_conflict"]
+            columns=[
+                "article_type",
+                "paired_records",
+                "disagreements",
+                "disagreement_rate",
+                "top_conflict",
+            ]
         ),
         "meeting_records": pd.DataFrame(),
     }
@@ -249,8 +252,11 @@ def disagreement_analysis(
         return analysis
 
     pivot = prepared.pivot(index="record_id", columns="reviewer", values="decision")
-    pair_df = pivot[[pair[0], pair[1]]].dropna().reset_index().rename(
-        columns={pair[0]: "decision_a", pair[1]: "decision_b"}
+    pair_df = (
+        pivot[[pair[0], pair[1]]]
+        .dropna()
+        .reset_index()
+        .rename(columns={pair[0]: "decision_a", pair[1]: "decision_b"})
     )
 
     if pair_df.empty:
@@ -308,7 +314,9 @@ def disagreement_analysis(
             paired_records=("record_id", "count"),
             disagreements=("agreement", lambda values: int((~values).sum())),
         )
-        .sort_values(["disagreements", "paired_records", "article_type"], ascending=[False, False, True])
+        .sort_values(
+            ["disagreements", "paired_records", "article_type"], ascending=[False, False, True]
+        )
     )
     per_type["disagreement_rate"] = per_type.apply(
         lambda row: pct(float(row["disagreements"]), float(row["paired_records"])),
@@ -327,7 +335,9 @@ def disagreement_analysis(
         )
         for article_type, group_df in conflict_counts.groupby("article_type"):
             top_row = group_df.iloc[0]
-            top_conflicts_by_type[article_type] = f"{top_row['decision_pair']} ({int(top_row['n'])})"
+            top_conflicts_by_type[article_type] = (
+                f"{top_row['decision_pair']} ({int(top_row['n'])})"
+            )
 
     per_type["top_conflict"] = per_type["article_type"].map(top_conflicts_by_type).fillna("—")
     analysis["type_patterns"] = per_type
@@ -426,7 +436,9 @@ def build_markdown_report(
     lines.append("")
     lines.append("## Calibration Table — Disagreement by Article Type")
     lines.append("")
-    lines.append("| Article type | Paired records | Disagreements | Disagreement rate | Most frequent conflict |")
+    lines.append(
+        "| Article type | Paired records | Disagreements | Disagreement rate | Most frequent conflict |"
+    )
     lines.append("|---|---:|---:|---:|---|")
     for _, row in analysis["type_patterns"].iterrows():
         lines.append(
@@ -455,7 +467,9 @@ def build_markdown_report(
     lines.append("## Notes")
     lines.append("")
     lines.append("- Article types are assigned heuristically from title/abstract/journal text.")
-    lines.append("- Use this output for calibration discussion, then record rule updates in protocol/screening docs.")
+    lines.append(
+        "- Use this output for calibration discussion, then record rule updates in protocol/screening docs."
+    )
     lines.append("")
 
     return "\n".join(lines)

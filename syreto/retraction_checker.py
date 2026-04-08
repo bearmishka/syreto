@@ -12,7 +12,6 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-
 MISSING_CODES = {
     "",
     "nan",

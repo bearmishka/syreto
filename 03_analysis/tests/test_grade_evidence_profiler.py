@@ -1,10 +1,9 @@
 import importlib.util
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "grade_evidence_profiler.py"
 spec = importlib.util.spec_from_file_location("grade_evidence_profiler", MODULE_PATH)
@@ -16,8 +15,12 @@ spec.loader.exec_module(grade_evidence_profiler)
 
 class GradeEvidenceProfilerTests(unittest.TestCase):
     def test_baseline_points_from_design(self) -> None:
-        self.assertEqual(grade_evidence_profiler.baseline_points_from_design("randomized clinical trial"), 4)
-        self.assertEqual(grade_evidence_profiler.baseline_points_from_design("prospective cohort"), 2)
+        self.assertEqual(
+            grade_evidence_profiler.baseline_points_from_design("randomized clinical trial"), 4
+        )
+        self.assertEqual(
+            grade_evidence_profiler.baseline_points_from_design("prospective cohort"), 2
+        )
         self.assertEqual(grade_evidence_profiler.baseline_points_from_design("case report"), 1)
 
     def test_inconsistency_downgrade_for_direction_divergence(self) -> None:

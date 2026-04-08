@@ -2,9 +2,8 @@ import importlib.util
 import re
 import sys
 import tempfile
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "template_term_guard.py"
 spec = importlib.util.spec_from_file_location("template_term_guard", MODULE_PATH)
@@ -40,7 +39,9 @@ class TemplateTermGuardTests(unittest.TestCase):
     def test_scan_file_ignores_hyphenated_bn_alias(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             sample_file = Path(tmp_dir) / "sample.md"
-            sample_file.write_text("Use --preset bn-pilot for profile autofill.\n", encoding="utf-8")
+            sample_file.write_text(
+                "Use --preset bn-pilot for profile autofill.\n", encoding="utf-8"
+            )
 
             patterns = [re.compile(r"\bbn\b(?!-)", flags=re.IGNORECASE)]
             matches = template_term_guard.scan_file(sample_file, patterns)
@@ -67,7 +68,9 @@ class TemplateTermGuardTests(unittest.TestCase):
             sample_file.write_text("Working title: [YOUR REVIEW TITLE]\n", encoding="utf-8")
 
             patterns = [re.compile(r"\[(?:YOUR REVIEW TITLE)\]", flags=re.IGNORECASE)]
-            matches = template_term_guard.scan_file(sample_file, patterns, match_group="placeholders")
+            matches = template_term_guard.scan_file(
+                sample_file, patterns, match_group="placeholders"
+            )
 
             self.assertEqual(len(matches), 1)
             self.assertEqual(matches[0].match_group, "placeholders")
@@ -96,7 +99,6 @@ class TemplateTermGuardTests(unittest.TestCase):
             summary_text = summary_file.read_text(encoding="utf-8")
             self.assertIn("Checks enabled: placeholders", summary_text)
             self.assertIn("placeholders matches: 1", summary_text)
-
 
     def test_main_placeholder_check_catches_single_token_placeholder(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -151,7 +153,9 @@ class TemplateTermGuardTests(unittest.TestCase):
             protocol_file.write_text("Concept: insecure attachment\n", encoding="utf-8")
 
             patterns = [re.compile(r"\battachment\b", flags=re.IGNORECASE)]
-            matches = template_term_guard.scan_file(protocol_file, patterns, match_group="banned_terms")
+            matches = template_term_guard.scan_file(
+                protocol_file, patterns, match_group="banned_terms"
+            )
             actionable, suppressed = template_term_guard.filter_allowlisted_matches(
                 matches,
                 template_term_guard.DEFAULT_ALLOWLIST_RULES,
@@ -166,7 +170,9 @@ class TemplateTermGuardTests(unittest.TestCase):
             sample_file.write_text("Concept: insecure attachment\n", encoding="utf-8")
 
             patterns = [re.compile(r"\battachment\b", flags=re.IGNORECASE)]
-            matches = template_term_guard.scan_file(sample_file, patterns, match_group="banned_terms")
+            matches = template_term_guard.scan_file(
+                sample_file, patterns, match_group="banned_terms"
+            )
             actionable, suppressed = template_term_guard.filter_allowlisted_matches(
                 matches,
                 template_term_guard.DEFAULT_ALLOWLIST_RULES,

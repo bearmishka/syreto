@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "dedup_merge.py"
 spec = importlib.util.spec_from_file_location("dedup_merge", MODULE_PATH)
@@ -39,8 +38,7 @@ class DedupMergeRecordIdStabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             map_path = Path(tmp_dir) / "record_id_map.csv"
             map_path.write_text(
-                "stable_key,record_id,first_seen_date\n"
-                "doi:10.1000/a,R00001,2026-03-14",
+                "stable_key,record_id,first_seen_date\ndoi:10.1000/a,R00001,2026-03-14",
                 encoding="utf-8",
             )
 
@@ -62,7 +60,9 @@ class DedupMergeRecordIdStabilityTests(unittest.TestCase):
             map_df = dedup_merge.read_record_id_map(map_path)
             self.assertEqual(int(map_df.shape[0]), 2)
 
-    def test_canonical_record_id_remains_stable_when_new_higher_priority_source_appears(self) -> None:
+    def test_canonical_record_id_remains_stable_when_new_higher_priority_source_appears(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
             raw_dir = tmp_path / "raw"
@@ -131,7 +131,9 @@ class DedupMergeRecordIdStabilityTests(unittest.TestCase):
             self.assertEqual(exit_code_first, 0)
 
             first_master_df = pd.read_csv(master_path, dtype=str)
-            first_canonical_id = first_master_df.loc[first_master_df["is_duplicate"] == "no", "record_id"].iloc[0]
+            first_canonical_id = first_master_df.loc[
+                first_master_df["is_duplicate"] == "no", "record_id"
+            ].iloc[0]
 
             pubmed_file = raw_dir / "pubmed_export.csv"
             self._write_raw_csv(
@@ -199,13 +201,16 @@ class DedupMergeRecordIdStabilityTests(unittest.TestCase):
 
             second_master_df = pd.read_csv(master_path, dtype=str)
             canonical_rows = second_master_df.loc[
-                (second_master_df["doi"] == "10.1234/example-001") & (second_master_df["is_duplicate"] == "no")
+                (second_master_df["doi"] == "10.1234/example-001")
+                & (second_master_df["is_duplicate"] == "no")
             ]
             self.assertEqual(int(canonical_rows.shape[0]), 1)
             self.assertEqual(canonical_rows.iloc[0]["record_id"], first_canonical_id)
 
             map_df = pd.read_csv(record_id_map_path, dtype=str)
-            self.assertTrue(map_df["stable_key"].astype(str).str.startswith("doi:10.1234/example-001").any())
+            self.assertTrue(
+                map_df["stable_key"].astype(str).str.startswith("doi:10.1234/example-001").any()
+            )
 
             triage_df = pd.read_csv(triage_path, dtype=str)
             self.assertEqual(int(triage_df.shape[0]), 0)

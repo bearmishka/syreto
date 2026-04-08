@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -136,7 +135,9 @@ def sort_extraction_rows(df: pd.DataFrame) -> pd.DataFrame:
     sorted_df["_sort_author"] = sorted_df["first_author"].fillna("").astype(str).str.lower()
     sorted_df["_sort_study_id"] = sorted_df["study_id"].fillna("").astype(str).str.lower()
 
-    sorted_df = sorted_df.sort_values(by=["_sort_year", "_sort_author", "_sort_study_id"], kind="stable")
+    sorted_df = sorted_df.sort_values(
+        by=["_sort_year", "_sort_author", "_sort_study_id"], kind="stable"
+    )
     return sorted_df.drop(columns=["_sort_year", "_sort_author", "_sort_study_id"])
 
 
@@ -279,7 +280,8 @@ def render_latex_table(table_rows: list[list[str]], input_path: Path) -> str:
             lines.append(" & ".join(escaped_row) + r" \\")
     else:
         lines.append(
-            r"\multicolumn{6}{p{0.95\textwidth}}{No included studies with non-empty study\_id are coded in extraction\_template.csv yet.} \\")
+            r"\multicolumn{6}{p{0.95\textwidth}}{No included studies with non-empty study\_id are coded in extraction\_template.csv yet.} \\"
+        )
 
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
@@ -317,7 +319,9 @@ def render_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Table is generated from extraction coding fields and formatted for direct `\\input{}` in manuscript.")
+    lines.append(
+        "- Table is generated from extraction coding fields and formatted for direct `\\input{}` in manuscript."
+    )
     lines.append("- Missing/empty values are rendered as `---` in table cells.")
     lines.append("")
     return "\n".join(lines)
@@ -384,7 +388,6 @@ def main() -> None:
         f"raw={total_rows}, non_empty={non_empty_rows_count}, "
         f"skipped_missing_study_id={skipped_missing_study_id}, exported={len(table_rows)}"
     )
-
 
 
 if __name__ == "__main__":

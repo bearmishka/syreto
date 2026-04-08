@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -15,11 +14,11 @@ def make_fake_python(binary_path: Path, log_path: Path) -> None:
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         f"printf '%s\\n' \"$*\" >> '{log_path.as_posix()}'\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "  exit 0\n"
         "fi\n"
-        "if [[ \"$*\" == *\"record_id_map_integrity_guard.py\"* ]]; then\n"
+        'if [[ "$*" == *"record_id_map_integrity_guard.py"* ]]; then\n'
         "  exit 77\n"
         "fi\n"
         "exit 0\n",
@@ -76,11 +75,27 @@ class DailyRunAuditLogGuardStepTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 77)
             self.assertTrue(calls_log.exists())
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
 
-            validate_idx = next((idx for idx, call in enumerate(calls) if "validate_csv_inputs.py" in call), None)
-            audit_guard_idx = next((idx for idx, call in enumerate(calls) if "audit_log_integrity_guard.py" in call), None)
-            record_map_idx = next((idx for idx, call in enumerate(calls) if "record_id_map_integrity_guard.py" in call), None)
+            validate_idx = next(
+                (idx for idx, call in enumerate(calls) if "validate_csv_inputs.py" in call), None
+            )
+            audit_guard_idx = next(
+                (idx for idx, call in enumerate(calls) if "audit_log_integrity_guard.py" in call),
+                None,
+            )
+            record_map_idx = next(
+                (
+                    idx
+                    for idx, call in enumerate(calls)
+                    if "record_id_map_integrity_guard.py" in call
+                ),
+                None,
+            )
 
             self.assertIsNotNone(validate_idx)
             self.assertIsNotNone(audit_guard_idx)

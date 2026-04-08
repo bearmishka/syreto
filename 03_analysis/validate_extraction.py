@@ -1,10 +1,9 @@
 import argparse
+import re
 from datetime import datetime
 from pathlib import Path
-import re
 
 import pandas as pd
-
 
 REQUIRED_COLUMNS = [
     "study_id",
@@ -192,7 +191,9 @@ def harmonize_columns(df: pd.DataFrame) -> pd.DataFrame:
             if lower_raw and upper_raw:
                 continue
 
-            parsed_lower, parsed_upper = parse_confidence_interval_bounds(row.get("confidence_interval", ""))
+            parsed_lower, parsed_upper = parse_confidence_interval_bounds(
+                row.get("confidence_interval", "")
+            )
             if parsed_lower is not None and not lower_raw:
                 working.at[index, "ci_lower"] = str(parsed_lower)
             if parsed_upper is not None and not upper_raw:
@@ -309,7 +310,9 @@ def metric_scale_error(metric_key: str, value: float) -> str | None:
     return None
 
 
-def add_issue(issues: list[dict], row_number: int, level: str, column: str, message: str, value: str = "") -> None:
+def add_issue(
+    issues: list[dict], row_number: int, level: str, column: str, message: str, value: str = ""
+) -> None:
     issues.append(
         {
             "row": row_number,
@@ -472,7 +475,10 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 exclusion_reason,
             )
 
-        if not has_exclusion and exclusion_reason_norm not in {"included_primary", "included_contextual"}:
+        if not has_exclusion and exclusion_reason_norm not in {
+            "included_primary",
+            "included_contextual",
+        }:
             add_issue(
                 issues,
                 row_number,
@@ -506,7 +512,10 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
             )
 
         instrument_norm = normalize_lower(instrument_type)
-        if not is_empty_or_missing(instrument_type) and instrument_norm not in ALLOWED_INSTRUMENT_TYPE:
+        if (
+            not is_empty_or_missing(instrument_type)
+            and instrument_norm not in ALLOWED_INSTRUMENT_TYPE
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -527,7 +536,9 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 dsm_icd_version,
             )
 
-        if not is_empty_or_missing(dsm_icd_version) and is_empty_or_missing(diagnostic_frame_detail):
+        if not is_empty_or_missing(dsm_icd_version) and is_empty_or_missing(
+            diagnostic_frame_detail
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -537,7 +548,9 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 diagnostic_frame_detail,
             )
 
-        if is_empty_or_missing(dsm_icd_version) and not is_empty_or_missing(diagnostic_frame_detail):
+        if is_empty_or_missing(dsm_icd_version) and not is_empty_or_missing(
+            diagnostic_frame_detail
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -571,7 +584,9 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 instrument_name,
             )
 
-        if not is_empty_or_missing(instrument_name) and is_empty_or_missing(instrument_respondent_type):
+        if not is_empty_or_missing(instrument_name) and is_empty_or_missing(
+            instrument_respondent_type
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -592,7 +607,10 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
             )
 
         effect_direction_norm = normalize_lower(effect_direction)
-        if not is_empty_or_missing(effect_direction) and effect_direction_norm not in ALLOWED_EFFECT_DIRECTION:
+        if (
+            not is_empty_or_missing(effect_direction)
+            and effect_direction_norm not in ALLOWED_EFFECT_DIRECTION
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -656,7 +674,10 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 )
 
         adjustment_norm = normalize_lower(adjusted_unadjusted)
-        if not is_empty_or_missing(adjusted_unadjusted) and adjustment_norm not in ALLOWED_ADJUSTMENT:
+        if (
+            not is_empty_or_missing(adjusted_unadjusted)
+            and adjustment_norm not in ALLOWED_ADJUSTMENT
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -745,7 +766,9 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                         ci_upper,
                     )
 
-        has_primary_effect = not is_empty_or_missing(effect_metric) or not is_empty_or_missing(effect_value)
+        has_primary_effect = not is_empty_or_missing(effect_metric) or not is_empty_or_missing(
+            effect_value
+        )
         if has_primary_effect and is_empty_or_missing(effect_direction):
             add_issue(
                 issues,
@@ -766,7 +789,9 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 adjusted_unadjusted,
             )
 
-        if (has_primary_effect or not is_empty_or_missing(adjusted_unadjusted)) and is_empty_or_missing(model_type):
+        if (
+            has_primary_effect or not is_empty_or_missing(adjusted_unadjusted)
+        ) and is_empty_or_missing(model_type):
             add_issue(
                 issues,
                 row_number,
@@ -816,7 +841,9 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
                 "Consensus status is missing.",
                 consensus_status,
             )
-        elif not is_missing_code(consensus_status) and consensus_norm not in ALLOWED_CONSENSUS_STATUS:
+        elif (
+            not is_missing_code(consensus_status) and consensus_norm not in ALLOWED_CONSENSUS_STATUS
+        ):
             add_issue(
                 issues,
                 row_number,
@@ -828,7 +855,11 @@ def validate_rows(df: pd.DataFrame) -> list[dict]:
 
         if consensus_norm == "single_extractor" and is_empty_or_missing(checked_by):
             pass
-        elif consensus_norm in {"double_extracted_agree", "double_extracted_disagree", "adjudicated"} and is_empty_or_missing(checked_by):
+        elif consensus_norm in {
+            "double_extracted_agree",
+            "double_extracted_disagree",
+            "adjudicated",
+        } and is_empty_or_missing(checked_by):
             add_issue(
                 issues,
                 row_number,
@@ -930,7 +961,9 @@ def build_summary(
     lines.append("## Notes")
     lines.append("")
     lines.append("- Rules follow `02_data/codebook/extraction_data_dictionary.md`.")
-    lines.append("- Effect-size checks enforce metric/CI scale consistency (`main_effect_metric`, `main_effect_value`, `ci_lower`, `ci_upper`).")
+    lines.append(
+        "- Effect-size checks enforce metric/CI scale consistency (`main_effect_metric`, `main_effect_value`, `ci_lower`, `ci_upper`)."
+    )
     lines.append("- Empty rows are ignored.")
 
     return "\n".join(lines) + "\n"

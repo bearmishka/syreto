@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-
 FIELD_TERM_RE = re.compile(
     r'(?P<term>"(?:[^"\\]|\\.)*"|[^\s()]+)\s*\[\s*(?P<tag>[^\]]+)\s*\]',
     re.IGNORECASE,
@@ -159,7 +158,9 @@ def parse_targets(raw_targets: str) -> list[str]:
         raise ValueError(f"Unsupported targets: {', '.join(unknown)}. Supported targets: {known}")
 
     if not parsed:
-        raise ValueError("No targets selected. Use --targets with at least one of: scopus,wos,psycinfo")
+        raise ValueError(
+            "No targets selected. Use --targets with at least one of: scopus,wos,psycinfo"
+        )
 
     return parsed
 
@@ -472,7 +473,9 @@ def build_summary_markdown(
     lines.append("## Inputs")
     lines.append("")
     lines.append(f"- Source PubMed query: `{source_label}`")
-    lines.append(f"- Targets generated: {', '.join(TARGETS[target].display_name for target in translated_queries)}")
+    lines.append(
+        f"- Targets generated: {', '.join(TARGETS[target].display_name for target in translated_queries)}"
+    )
 
     if target_file_paths:
         lines.append("- Target query files:")
@@ -482,8 +485,12 @@ def build_summary_markdown(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- This is a syntax translation helper; final search strings still require manual QA in each database UI.")
-    lines.append("- Controlled-vocabulary tags (e.g., MeSH) are approximated as free-text fields in non-PubMed targets.")
+    lines.append(
+        "- This is a syntax translation helper; final search strings still require manual QA in each database UI."
+    )
+    lines.append(
+        "- Controlled-vocabulary tags (e.g., MeSH) are approximated as free-text fields in non-PubMed targets."
+    )
 
     if warnings:
         lines.append("- Translation warnings:")

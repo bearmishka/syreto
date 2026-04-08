@@ -1,12 +1,11 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "dedup_stats.py"
 spec = importlib.util.spec_from_file_location("dedup_stats", MODULE_PATH)

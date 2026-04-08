@@ -1,14 +1,12 @@
 import argparse
 import math
-from datetime import datetime
-from pathlib import Path
 import os
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 import publication_bias_assessment as pba
-
 
 RESULT_COLUMNS = [
     "subgroup",
@@ -101,8 +99,12 @@ def pool_effect(data_df: pd.DataFrame, *, metric: str, model: str) -> dict[str, 
     if sum_w_fixed <= 0:
         return None
 
-    fixed_pooled = sum(weight * effect for weight, effect in zip(weights_fixed, effects)) / sum_w_fixed
-    q_stat = sum(weight * ((effect - fixed_pooled) ** 2) for weight, effect in zip(weights_fixed, effects))
+    fixed_pooled = (
+        sum(weight * effect for weight, effect in zip(weights_fixed, effects)) / sum_w_fixed
+    )
+    q_stat = sum(
+        weight * ((effect - fixed_pooled) ** 2) for weight, effect in zip(weights_fixed, effects)
+    )
     degrees_freedom = max(0, len(effects) - 1)
 
     tau2 = 0.0
@@ -149,7 +151,11 @@ def resolve_subgroup_column(extraction_df: pd.DataFrame, candidates: list[str]) 
 
 def build_study_to_group_map(extraction_df: pd.DataFrame, group_column: str) -> dict[str, str]:
     mapping: dict[str, str] = {}
-    if extraction_df.empty or "study_id" not in extraction_df.columns or group_column not in extraction_df.columns:
+    if (
+        extraction_df.empty
+        or "study_id" not in extraction_df.columns
+        or group_column not in extraction_df.columns
+    ):
         return mapping
 
     for _, row in extraction_df.iterrows():
@@ -295,7 +301,9 @@ def main() -> None:
     rows: list[dict[str, object]] = []
 
     if poolable_df.empty:
-        warnings.append("No poolable rows with estimable SE; subgroup analysis table contains only placeholders.")
+        warnings.append(
+            "No poolable rows with estimable SE; subgroup analysis table contains only placeholders."
+        )
 
     for subgroup_name, candidate_columns in SUBGROUP_SPECS:
         group_column = resolve_subgroup_column(extraction_df, candidate_columns)
@@ -327,7 +335,9 @@ def main() -> None:
                     "i2": "",
                 }
             )
-            warnings.append(f"{subgroup_name}: selected column `{group_column}` has no usable values.")
+            warnings.append(
+                f"{subgroup_name}: selected column `{group_column}` has no usable values."
+            )
             continue
 
         working = poolable_df.copy()
@@ -345,7 +355,9 @@ def main() -> None:
                     "i2": "",
                 }
             )
-            warnings.append(f"{subgroup_name}: no poolable studies matched `{group_column}` values.")
+            warnings.append(
+                f"{subgroup_name}: no poolable studies matched `{group_column}` values."
+            )
             continue
 
         for group_value, group_df in working.groupby("group_value", sort=True):

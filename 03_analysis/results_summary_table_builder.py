@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
-from pathlib import Path
 import os
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 RESULT_COLUMNS = [
     "outcome",
@@ -140,7 +139,9 @@ def extract_outcome_metadata(extraction_df: pd.DataFrame) -> tuple[dict[str, int
 
         participants_by_outcome[outcome] = participants_by_outcome.get(outcome, 0) + sample_size
 
-    study_count_by_outcome = {outcome: len(study_ids) for outcome, study_ids in studies_by_outcome.items()}
+    study_count_by_outcome = {
+        outcome: len(study_ids) for outcome, study_ids in studies_by_outcome.items()
+    }
     return participants_by_outcome, study_count_by_outcome
 
 
@@ -224,8 +225,12 @@ def build_results_table(
                 {
                     "outcome": outcome,
                     "studies": str(studies_value) if studies_value is not None else "NR",
-                    "participants": str(participants_value) if participants_value not in (None, 0) else "NR",
-                    "effect": format_effect(effect_value, effect_label=effect_label, decimals=decimals),
+                    "participants": str(participants_value)
+                    if participants_value not in (None, 0)
+                    else "NR",
+                    "effect": format_effect(
+                        effect_value, effect_label=effect_label, decimals=decimals
+                    ),
                     "ci": format_ci(ci_low, ci_high, decimals=decimals),
                     "certainty_grade": certainty_by_outcome.get(outcome, "NR"),
                 }
@@ -319,7 +324,8 @@ def render_latex_table(results_df: pd.DataFrame, *, source_csv_path: Path) -> st
 
     if results_df.empty:
         lines.append(
-            r"\multicolumn{6}{p{0.87\textwidth}}{No outcome rows are available yet. Run meta-analysis/evidence profiling steps and regenerate this table.} \\")
+            r"\multicolumn{6}{p{0.87\textwidth}}{No outcome rows are available yet. Run meta-analysis/evidence profiling steps and regenerate this table.} \\"
+        )
     else:
         for _, row in results_df.iterrows():
             lines.append(
@@ -333,7 +339,8 @@ def render_latex_table(results_df: pd.DataFrame, *, source_csv_path: Path) -> st
                         latex_escape(row.get("certainty_grade", "")),
                     ]
                 )
-                + r" \\")
+                + r" \\"
+            )
 
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
@@ -400,15 +407,21 @@ def main() -> None:
 
     meta_df = read_csv_or_empty(meta_input)
     if meta_df.empty:
-        warnings.append("Meta-analysis input is missing or empty; effect/CI values fall back to `NR`.")
+        warnings.append(
+            "Meta-analysis input is missing or empty; effect/CI values fall back to `NR`."
+        )
 
     extraction_df = read_csv_or_empty(extraction_input)
     if extraction_df.empty:
-        warnings.append("Extraction input is missing or empty; participant/study counts may be incomplete.")
+        warnings.append(
+            "Extraction input is missing or empty; participant/study counts may be incomplete."
+        )
 
     grade_df = read_csv_or_empty(grade_input)
     if grade_df.empty:
-        warnings.append("GRADE profile input is missing or empty; certainty grades fall back to `NR`.")
+        warnings.append(
+            "GRADE profile input is missing or empty; certainty grades fall back to `NR`."
+        )
 
     participants_by_outcome, study_count_by_outcome = extract_outcome_metadata(extraction_df)
     certainty_by_outcome = aggregate_certainty_by_outcome(grade_df)

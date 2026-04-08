@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 RECORD_ID_MAP_HEADER = "stable_key,record_id,first_seen_date"
 RECORD_ID_MAP_PATH = Path(__file__).resolve().parents[2] / "02_data/processed/record_id_map.csv"

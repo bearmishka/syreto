@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -61,7 +60,11 @@ def run_daily_run_with_review_mode(mode: str) -> tuple[subprocess.CompletedProce
 
         calls: list[str] = []
         if calls_log.exists():
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
 
         return result, calls
 

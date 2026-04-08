@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-
 DEFAULT_MANUSCRIPT_ROOT = Path("../04_manuscript")
 DEFAULT_OUTPUT_PATH = Path("outputs/prisma_adherence_report.md")
 DEFAULT_EXTENSIONS = [".tex"]
@@ -62,13 +61,17 @@ PRISMA_2020_ITEMS: list[PrismaChecklistItem] = [
         number=4,
         title="Objectives",
         expectation="State explicit review objectives and/or research questions.",
-        signal_groups=(("objective", "research question", "review question", "aim of this review"),),
+        signal_groups=(
+            ("objective", "research question", "review question", "aim of this review"),
+        ),
     ),
     PrismaChecklistItem(
         number=5,
         title="Eligibility Criteria",
         expectation="Specify inclusion and exclusion criteria for studies.",
-        signal_groups=(("eligibility criteria", "inclusion criteria", "excluded studies", "eligible studies"),),
+        signal_groups=(
+            ("eligibility criteria", "inclusion criteria", "excluded studies", "eligible studies"),
+        ),
     ),
     PrismaChecklistItem(
         number=6,
@@ -90,13 +93,22 @@ PRISMA_2020_ITEMS: list[PrismaChecklistItem] = [
         number=7,
         title="Search Strategy",
         expectation="Present full search strategies for each source.",
-        signal_groups=(("search strategy", "search strings", "boolean queries", "full search strategy"),),
+        signal_groups=(
+            ("search strategy", "search strings", "boolean queries", "full search strategy"),
+        ),
     ),
     PrismaChecklistItem(
         number=8,
         title="Selection Process",
         expectation="Describe how records/studies were selected and by whom.",
-        signal_groups=(("selection process", "screened in two stages", "dual independent", "title abstract screening"),),
+        signal_groups=(
+            (
+                "selection process",
+                "screened in two stages",
+                "dual independent",
+                "title abstract screening",
+            ),
+        ),
     ),
     PrismaChecklistItem(
         number=9,
@@ -120,13 +132,29 @@ PRISMA_2020_ITEMS: list[PrismaChecklistItem] = [
         number=12,
         title="Effect Measures",
         expectation="Specify effect measure(s) used for outcomes.",
-        signal_groups=(("effect measures", "effect size", "odds ratio", "risk ratio", "standardized mean difference"),),
+        signal_groups=(
+            (
+                "effect measures",
+                "effect size",
+                "odds ratio",
+                "risk ratio",
+                "standardized mean difference",
+            ),
+        ),
     ),
     PrismaChecklistItem(
         number=13,
         title="Synthesis Methods",
         expectation="Describe synthesis methods, including data preparation and heterogeneity/sensitivity handling.",
-        signal_groups=(("synthesis methods", "narrative synthesis", "meta-analysis", "heterogeneity", "sensitivity analysis"),),
+        signal_groups=(
+            (
+                "synthesis methods",
+                "narrative synthesis",
+                "meta-analysis",
+                "heterogeneity",
+                "sensitivity analysis",
+            ),
+        ),
     ),
     PrismaChecklistItem(
         number=14,
@@ -144,7 +172,9 @@ PRISMA_2020_ITEMS: list[PrismaChecklistItem] = [
         number=16,
         title="Study Selection",
         expectation="Report selection results from search to included studies (ideally with a flow diagram).",
-        signal_groups=(("study selection", "prisma flow", "records identified", "reports assessed full text"),),
+        signal_groups=(
+            ("study selection", "prisma flow", "records identified", "reports assessed full text"),
+        ),
     ),
     PrismaChecklistItem(
         number=17,
@@ -168,7 +198,14 @@ PRISMA_2020_ITEMS: list[PrismaChecklistItem] = [
         number=20,
         title="Results of Syntheses",
         expectation="Present results of each synthesis, including heterogeneity/sensitivity where relevant.",
-        signal_groups=(("results of syntheses", "pooled effect", "heterogeneity results", "sensitivity analysis results"),),
+        signal_groups=(
+            (
+                "results of syntheses",
+                "pooled effect",
+                "heterogeneity results",
+                "sensitivity analysis results",
+            ),
+        ),
     ),
     PrismaChecklistItem(
         number=21,
@@ -210,7 +247,9 @@ PRISMA_2020_ITEMS: list[PrismaChecklistItem] = [
         number=27,
         title="Availability of Data, Code, and Materials",
         expectation="Report where data, code, and other materials are available.",
-        signal_groups=(("data availability", "code availability", "materials availability", "data and code"),),
+        signal_groups=(
+            ("data availability", "code availability", "materials availability", "data and code"),
+        ),
     ),
 ]
 
@@ -364,7 +403,9 @@ def build_report(
                     missing_cues.append(group[0])
 
             cues_text = ", ".join(f"`{cue}`" for cue in missing_cues)
-            lines.append(f"- [ ] **{item.number}. {item.title}** — {item.expectation} (cue: {cues_text})")
+            lines.append(
+                f"- [ ] **{item.number}. {item.title}** — {item.expectation} (cue: {cues_text})"
+            )
     else:
         lines.append("- ✅ No checklist gaps detected (all 27 PRISMA items mentioned).")
     lines.append("")

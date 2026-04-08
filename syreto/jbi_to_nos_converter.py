@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 ITEM_COLUMNS = [f"item_{index:02d}" for index in range(1, 12)]
 NOS_COLUMNS = [
     "study_id",

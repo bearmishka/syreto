@@ -1,12 +1,11 @@
 import copy
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "multilang_abstract_screener.py"
 spec = importlib.util.spec_from_file_location("multilang_abstract_screener", MODULE_PATH)
@@ -18,16 +17,36 @@ spec.loader.exec_module(multilang_abstract_screener)
 
 class MultiLangAbstractScreenerTests(unittest.TestCase):
     def test_detect_language_heuristics(self) -> None:
-        ru = multilang_abstract_screener.detect_language("Это исследование пациентов с клиническим диагнозом.")
-        es = multilang_abstract_screener.detect_language("Este estudio en pacientes evaluó resultados clínicos.")
-        de = multilang_abstract_screener.detect_language("Diese Studie mit Patienten analysierte Korrelationen.")
-        fr = multilang_abstract_screener.detect_language("Cette étude avec des patients a évalué les résultats cliniques.")
-        it = multilang_abstract_screener.detect_language("Questo studio con pazienti ha valutato gli esiti clinici.")
-        pt = multilang_abstract_screener.detect_language("Este estudo com pacientes avaliou desfechos clínicos.")
-        pl = multilang_abstract_screener.detect_language("To badanie pacjentów oceniło wyniki kliniczne.")
-        tr = multilang_abstract_screener.detect_language("Bu çalışma hastalarda klinik sonuçları değerlendirdi.")
-        nl = multilang_abstract_screener.detect_language("Deze studie met patiënten beoordeelde klinische resultaten.")
-        en = multilang_abstract_screener.detect_language("This study analyzed patients in a clinical cohort.")
+        ru = multilang_abstract_screener.detect_language(
+            "Это исследование пациентов с клиническим диагнозом."
+        )
+        es = multilang_abstract_screener.detect_language(
+            "Este estudio en pacientes evaluó resultados clínicos."
+        )
+        de = multilang_abstract_screener.detect_language(
+            "Diese Studie mit Patienten analysierte Korrelationen."
+        )
+        fr = multilang_abstract_screener.detect_language(
+            "Cette étude avec des patients a évalué les résultats cliniques."
+        )
+        it = multilang_abstract_screener.detect_language(
+            "Questo studio con pazienti ha valutato gli esiti clinici."
+        )
+        pt = multilang_abstract_screener.detect_language(
+            "Este estudo com pacientes avaliou desfechos clínicos."
+        )
+        pl = multilang_abstract_screener.detect_language(
+            "To badanie pacjentów oceniło wyniki kliniczne."
+        )
+        tr = multilang_abstract_screener.detect_language(
+            "Bu çalışma hastalarda klinik sonuçları değerlendirdi."
+        )
+        nl = multilang_abstract_screener.detect_language(
+            "Deze studie met patiënten beoordeelde klinische resultaten."
+        )
+        en = multilang_abstract_screener.detect_language(
+            "This study analyzed patients in a clinical cohort."
+        )
 
         self.assertEqual(ru, "ru")
         self.assertEqual(es, "es")
@@ -110,7 +129,9 @@ class MultiLangAbstractScreenerTests(unittest.TestCase):
         self.assertIsNotNone(result)
         assert result is not None
         self.assertEqual(result["recommended_decision"], "exclude")
-        self.assertEqual(result["recommended_reason"], multilang_abstract_screener.REASON_ANIMAL_ONLY)
+        self.assertEqual(
+            result["recommended_reason"], multilang_abstract_screener.REASON_ANIMAL_ONLY
+        )
 
     def test_screen_record_conservative_maybe_when_core_group_missing(self) -> None:
         rules = copy.deepcopy(multilang_abstract_screener.DEFAULT_KEYWORD_RULES)
@@ -140,7 +161,9 @@ class MultiLangAbstractScreenerTests(unittest.TestCase):
         self.assertIsNotNone(result)
         assert result is not None
         self.assertEqual(result["recommended_decision"], "maybe")
-        self.assertEqual(result["recommended_reason"], multilang_abstract_screener.REASON_NO_OUTCOME)
+        self.assertEqual(
+            result["recommended_reason"], multilang_abstract_screener.REASON_NO_OUTCOME
+        )
 
     def test_load_keyword_rules_ignores_placeholder_tokens(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

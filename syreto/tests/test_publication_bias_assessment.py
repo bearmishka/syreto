@@ -1,12 +1,11 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "publication_bias_assessment.py"
 spec = importlib.util.spec_from_file_location("publication_bias_assessment", MODULE_PATH)

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "quality_appraisal.py"
 
@@ -67,7 +66,9 @@ class QualityAppraisalAtomicOutputsTests(unittest.TestCase):
             scored_df = pd.read_csv(scored_output_path, dtype=str)
             self.assertEqual(int(scored_df.shape[0]), 1)
             self.assertEqual(scored_df.iloc[0]["study_id"], "S1")
-            self.assertIn("study_id", scored_output_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertIn(
+                "study_id", scored_output_path.read_text(encoding="utf-8").splitlines()[0]
+            )
 
             summary_text = summary_output_path.read_text(encoding="utf-8")
             self.assertIn("Quality Appraisal Summary", summary_text)

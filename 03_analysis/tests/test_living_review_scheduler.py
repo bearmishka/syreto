@@ -1,12 +1,11 @@
 import importlib.util
-from datetime import date
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from datetime import date
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "living_review_scheduler.py"
 spec = importlib.util.spec_from_file_location("living_review_scheduler", MODULE_PATH)

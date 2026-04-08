@@ -1,13 +1,12 @@
 import importlib.util
-from datetime import datetime
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "validate_csv_inputs.py"
 spec = importlib.util.spec_from_file_location("validate_csv_inputs", MODULE_PATH)
@@ -224,9 +223,24 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
         fulltext_df = pd.DataFrame(
             [
-                {"record_id": "R1", "fulltext_available": "yes", "include": "include", "exclusion_reason": ""},
-                {"record_id": "R2", "fulltext_available": "yes", "include": "exclude", "exclusion_reason": "wrong outcome"},
-                {"record_id": "R3", "fulltext_available": "no", "include": "", "exclusion_reason": "full text unavailable"},
+                {
+                    "record_id": "R1",
+                    "fulltext_available": "yes",
+                    "include": "include",
+                    "exclusion_reason": "",
+                },
+                {
+                    "record_id": "R2",
+                    "fulltext_available": "yes",
+                    "include": "exclude",
+                    "exclusion_reason": "wrong outcome",
+                },
+                {
+                    "record_id": "R3",
+                    "fulltext_available": "no",
+                    "include": "",
+                    "exclusion_reason": "full text unavailable",
+                },
             ]
         )
         prisma_df = pd.DataFrame(
@@ -263,8 +277,18 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
         fulltext_df = pd.DataFrame(
             [
-                {"record_id": "R1", "fulltext_available": "yes", "include": "include", "exclusion_reason": ""},
-                {"record_id": "R2", "fulltext_available": "yes", "include": "exclude", "exclusion_reason": "wrong outcome"},
+                {
+                    "record_id": "R1",
+                    "fulltext_available": "yes",
+                    "include": "include",
+                    "exclusion_reason": "",
+                },
+                {
+                    "record_id": "R2",
+                    "fulltext_available": "yes",
+                    "include": "exclude",
+                    "exclusion_reason": "wrong outcome",
+                },
             ]
         )
         prisma_df = pd.DataFrame(
@@ -370,10 +394,14 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
 
         missing_resolver = [
-            issue for issue in issues if issue["column"] == "conflict_resolver" and issue["level"] == "error"
+            issue
+            for issue in issues
+            if issue["column"] == "conflict_resolver" and issue["level"] == "error"
         ]
         missing_resolution = [
-            issue for issue in issues if issue["column"] == "resolution_decision" and issue["level"] == "error"
+            issue
+            for issue in issues
+            if issue["column"] == "resolution_decision" and issue["level"] == "error"
         ]
         self.assertEqual(len(missing_resolver), 1)
         self.assertEqual(len(missing_resolution), 1)
@@ -431,7 +459,9 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
 
         reason_issues = [
-            issue for issue in issues if issue["column"] == "exclusion_reason" and issue["level"] == "warning"
+            issue
+            for issue in issues
+            if issue["column"] == "exclusion_reason" and issue["level"] == "warning"
         ]
         self.assertEqual(len(reason_issues), 1)
 
@@ -478,7 +508,9 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
 
         past_issues = [issue for issue in issues if issue["level"] == "error" and issue["row"] == 2]
-        future_issues = [issue for issue in issues if issue["level"] == "warning" and issue["row"] == 3]
+        future_issues = [
+            issue for issue in issues if issue["level"] == "warning" and issue["row"] == 3
+        ]
         self.assertEqual(len(past_issues), 1)
         self.assertEqual(len(future_issues), 1)
 
@@ -503,9 +535,18 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
             issues=issues,
         )
 
-        self.assertTrue(any(issue["column"] == "start_year" and issue["level"] == "error" for issue in issues))
-        self.assertTrue(any(issue["column"] == "end_date" and issue["level"] == "error" for issue in issues))
-        self.assertTrue(any(issue["column"] == "results_exported" and issue["level"] == "error" for issue in issues))
+        self.assertTrue(
+            any(issue["column"] == "start_year" and issue["level"] == "error" for issue in issues)
+        )
+        self.assertTrue(
+            any(issue["column"] == "end_date" and issue["level"] == "error" for issue in issues)
+        )
+        self.assertTrue(
+            any(
+                issue["column"] == "results_exported" and issue["level"] == "error"
+                for issue in issues
+            )
+        )
 
     def test_screening_daily_ranges_flag_decision_math_mismatch(self) -> None:
         dataframe = pd.DataFrame(
@@ -528,9 +569,17 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
             issues=issues,
         )
 
-        self.assertTrue(any(issue["column"] == "records_screened" and issue["level"] == "error" for issue in issues))
         self.assertTrue(
-            any(issue["column"] == "time_spent_minutes" and issue["level"] == "warning" for issue in issues)
+            any(
+                issue["column"] == "records_screened" and issue["level"] == "error"
+                for issue in issues
+            )
+        )
+        self.assertTrue(
+            any(
+                issue["column"] == "time_spent_minutes" and issue["level"] == "warning"
+                for issue in issues
+            )
         )
 
     def test_master_records_rules_flag_duplicate_reference_errors(self) -> None:
@@ -592,7 +641,9 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
             issues=issues,
         )
 
-        duplicate_ref_issues = [issue for issue in issues if issue["column"] == "duplicate_of_record_id"]
+        duplicate_ref_issues = [
+            issue for issue in issues if issue["column"] == "duplicate_of_record_id"
+        ]
         self.assertEqual(duplicate_ref_issues, [])
 
     def test_decision_log_rules_require_reason_for_exclusions(self) -> None:
@@ -616,10 +667,7 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
 
         self.assertTrue(
-            any(
-                issue["column"] == "reason" and issue["level"] == "error"
-                for issue in issues
-            )
+            any(issue["column"] == "reason" and issue["level"] == "error" for issue in issues)
         )
 
     def test_decision_log_rules_warn_on_fulltext_maybe(self) -> None:
@@ -643,10 +691,7 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
 
         self.assertTrue(
-            any(
-                issue["column"] == "decision" and issue["level"] == "warning"
-                for issue in issues
-            )
+            any(issue["column"] == "decision" and issue["level"] == "warning" for issue in issues)
         )
 
     def test_decision_log_master_alignment_flags_unknown_record_ids(self) -> None:
@@ -686,10 +731,12 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
 
     def test_prisma_cross_file_consistency_flags_title_abstract_and_reason_mismatches(self) -> None:
         search_df = pd.DataFrame([{"results_total": "5"}])
-        screening_df = pd.DataFrame([
-            {"stage": "title_abstract", "records_screened": "5", "include_n": "2"},
-            {"stage": "full_text", "records_screened": "2", "include_n": "1"},
-        ])
+        screening_df = pd.DataFrame(
+            [
+                {"stage": "title_abstract", "records_screened": "5", "include_n": "2"},
+                {"stage": "full_text", "records_screened": "2", "include_n": "1"},
+            ]
+        )
         title_abstract_results_df = pd.DataFrame(
             [
                 {"record_id": "R1", "final_decision": "include"},
@@ -701,8 +748,18 @@ class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
         )
         fulltext_df = pd.DataFrame(
             [
-                {"record_id": "R1", "fulltext_available": "yes", "include": "include", "exclusion_reason": ""},
-                {"record_id": "R4", "fulltext_available": "yes", "include": "exclude", "exclusion_reason": "wrong outcome"},
+                {
+                    "record_id": "R1",
+                    "fulltext_available": "yes",
+                    "include": "include",
+                    "exclusion_reason": "",
+                },
+                {
+                    "record_id": "R4",
+                    "fulltext_available": "yes",
+                    "include": "exclude",
+                    "exclusion_reason": "wrong outcome",
+                },
             ]
         )
         fulltext_reasons_df = pd.DataFrame(

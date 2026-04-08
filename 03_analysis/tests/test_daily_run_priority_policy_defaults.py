@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -16,11 +15,11 @@ def make_fake_python(binary_path: Path, log_path: Path) -> None:
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         f"printf '%s\\n' \"$*\" >> '{log_path.as_posix()}'\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "  exit 0\n"
         "fi\n"
-        "if [[ \"$*\" == *\"validate_csv_inputs.py\"* ]]; then\n"
+        'if [[ "$*" == *"validate_csv_inputs.py"* ]]; then\n'
         "  exit 42\n"
         "fi\n"
         "exit 0\n",
@@ -82,7 +81,11 @@ class DailyRunPriorityPolicyDefaultTests(unittest.TestCase):
             self.assertIn("STATUS_FAIL_ON not set; using policy default 'critical'", result.stdout)
             self.assertTrue(calls_log.exists())
 
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
             status_cli_calls = [call for call in calls if "status_cli.py" in call]
             self.assertGreaterEqual(len(status_cli_calls), 2)
 

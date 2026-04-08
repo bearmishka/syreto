@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import re
 from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
-import re
 
 import pandas as pd
-
 
 MISSING_CODES = {
     "",

@@ -1,10 +1,9 @@
 import argparse
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import tempfile
-
+from datetime import datetime
+from pathlib import Path
 
 QUICK_FIX_COMMANDS = {
     "search_totals": "python validate_csv_inputs.py",
@@ -152,7 +151,9 @@ def build_markdown(*, status_summary_path: Path, pending_items: list[dict[str, s
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build grouped TODO action plan from status_summary.json")
+    parser = argparse.ArgumentParser(
+        description="Build grouped TODO action plan from status_summary.json"
+    )
     parser.add_argument(
         "--input",
         default="outputs/status_summary.json",

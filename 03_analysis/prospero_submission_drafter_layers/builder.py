@@ -5,23 +5,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from .models import ManuscriptMetadata
-from .models import PrefillField
-from .models import ProsperoFieldTemplate
-from .models import ProtocolData
-from .rules import auto_complete_missing_required_fields
-from .rules import completion_counts
-from .rules import default_placeholder_replacements
-from .rules import evaluate_exit_conditions
-from .rules import finalize_fields
-from .rules import infer_default_completion_date
-from .rules import infer_default_start_date
-from .rules import merge_placeholder_replacements
-from .rules import normalize_placeholder_token
-from .rules import parse_date_label_to_iso
-from .rules import placeholder_token_variants
-from .rules import replace_placeholders
-from .rules import unresolved_placeholders_in_fields
+from .models import ManuscriptMetadata, PrefillField, ProsperoFieldTemplate, ProtocolData
+from .rules import (
+    auto_complete_missing_required_fields,
+    finalize_fields,
+)
 
 
 @dataclass
@@ -41,7 +29,6 @@ class DraftArtifacts:
     summary_text: str
 
 
-
 def build_prefill_fields(
     protocol_data: ProtocolData,
     *,
@@ -52,7 +39,9 @@ def build_prefill_fields(
     field_templates_fn: Callable[[], list[ProsperoFieldTemplate]],
     field_value_map_fn: Callable[..., dict[str, str]],
     is_required_in_mode_fn: Callable[[str, str], bool],
-    auto_complete_missing_required_fields_fn: Callable[..., list[PrefillField]] = auto_complete_missing_required_fields,
+    auto_complete_missing_required_fields_fn: Callable[
+        ..., list[PrefillField]
+    ] = auto_complete_missing_required_fields,
     finalize_fields_fn: Callable[[list[PrefillField]], list[PrefillField]] = finalize_fields,
 ) -> list[PrefillField]:
     normalized_profile_values = profile_values or {}

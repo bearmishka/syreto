@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 EMPTY_VALUES = {"", "nan", "none"}
 RESULT_COLUMNS = [
     "record_id",

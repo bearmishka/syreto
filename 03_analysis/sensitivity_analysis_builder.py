@@ -1,14 +1,12 @@
 import argparse
 import math
-from datetime import datetime
-from pathlib import Path
 import os
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 import publication_bias_assessment as pba
-
 
 RESULT_COLUMNS = [
     "analysis",
@@ -65,7 +63,9 @@ def prepare_poolable_data(data_df: pd.DataFrame) -> pd.DataFrame:
     working = data_df.copy()
     working["effect_analysis"] = pd.to_numeric(working["effect_analysis"], errors="coerce")
     working["se"] = pd.to_numeric(working["se"], errors="coerce")
-    working = working[(working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)].copy()
+    working = working[
+        (working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)
+    ].copy()
 
     if "study_id" not in working.columns:
         working["study_id"] = ""
@@ -88,9 +88,13 @@ def pool_effect(data_df: pd.DataFrame, *, metric: str, model: str) -> dict[str, 
     if sum_w_fixed <= 0:
         return None
 
-    fixed_pooled = sum(weight * effect for weight, effect in zip(weights_fixed, effects)) / sum_w_fixed
+    fixed_pooled = (
+        sum(weight * effect for weight, effect in zip(weights_fixed, effects)) / sum_w_fixed
+    )
 
-    q_stat = sum(weight * ((effect - fixed_pooled) ** 2) for weight, effect in zip(weights_fixed, effects))
+    q_stat = sum(
+        weight * ((effect - fixed_pooled) ** 2) for weight, effect in zip(weights_fixed, effects)
+    )
     degrees_freedom = max(0, len(effects) - 1)
 
     tau2 = 0.0
@@ -325,11 +329,19 @@ def main() -> None:
         high_labels = {"high"}
 
     high_quality_ids: set[str] = set()
-    if quality_df.empty or "study_id" not in quality_df.columns or "quality_band" not in quality_df.columns:
-        warnings.append("high_quality_only: quality file missing or schema incomplete; analysis could not be filtered.")
+    if (
+        quality_df.empty
+        or "study_id" not in quality_df.columns
+        or "quality_band" not in quality_df.columns
+    ):
+        warnings.append(
+            "high_quality_only: quality file missing or schema incomplete; analysis could not be filtered."
+        )
     else:
         quality_working = quality_df.copy()
-        quality_working["quality_band"] = quality_working["quality_band"].fillna("").astype(str).str.strip().str.lower()
+        quality_working["quality_band"] = (
+            quality_working["quality_band"].fillna("").astype(str).str.strip().str.lower()
+        )
         for _, row in quality_working.iterrows():
             study_id = pba.normalize(row.get("study_id", ""))
             quality_band = pba.normalize_lower(row.get("quality_band", ""))

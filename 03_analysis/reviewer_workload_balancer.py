@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 EMPTY_VALUES = {"", "nan", "none"}
 PLAN_COLUMNS = [
     "reviewer",
@@ -64,7 +63,9 @@ def build_workload_plan(screening_df: pd.DataFrame, *, stage: str) -> pd.DataFra
         return pd.DataFrame(columns=PLAN_COLUMNS)
 
     if "stage" in working.columns and stage:
-        stage_mask = working["stage"].fillna("").astype(str).str.strip().str.lower().eq(stage.lower())
+        stage_mask = (
+            working["stage"].fillna("").astype(str).str.strip().str.lower().eq(stage.lower())
+        )
         filtered = working.loc[stage_mask].copy()
     else:
         filtered = working.copy()
@@ -84,12 +85,16 @@ def build_workload_plan(screening_df: pd.DataFrame, *, stage: str) -> pd.DataFra
         return pd.DataFrame(columns=PLAN_COLUMNS)
 
     grouped = (
-        filtered.groupby("reviewer", as_index=False)["current_records"].sum().sort_values("reviewer", kind="stable")
+        filtered.groupby("reviewer", as_index=False)["current_records"]
+        .sum()
+        .sort_values("reviewer", kind="stable")
     )
 
     total_records = int(grouped["current_records"].sum())
     reviewer_count = int(grouped.shape[0])
-    equal_share_target = int((total_records + reviewer_count - 1) / reviewer_count) if reviewer_count > 0 else 0
+    equal_share_target = (
+        int((total_records + reviewer_count - 1) / reviewer_count) if reviewer_count > 0 else 0
+    )
 
     grouped["equal_share_target"] = equal_share_target
     grouped["delta_to_equal_share"] = grouped["equal_share_target"] - grouped["current_records"]
@@ -100,7 +105,9 @@ def build_workload_plan(screening_df: pd.DataFrame, *, stage: str) -> pd.DataFra
     else:
         grouped["load_share_percent"] = 0.0
 
-    grouped["load_share_percent"] = grouped["load_share_percent"].map(lambda value: f"{float(value):.1f}")
+    grouped["load_share_percent"] = grouped["load_share_percent"].map(
+        lambda value: f"{float(value):.1f}"
+    )
     grouped["current_records"] = grouped["current_records"].astype(int)
     grouped["equal_share_target"] = grouped["equal_share_target"].astype(int)
     grouped["delta_to_equal_share"] = grouped["delta_to_equal_share"].astype(int)
@@ -132,7 +139,9 @@ def build_summary(
     lines.append("")
     lines.append(f"- Reviewers observed: {reviewer_count}")
     lines.append(f"- Total screened records in scope: {total_records}")
-    lines.append(f"- Non-blocking fallback active: {'yes' if not fail_on_single_reviewer else 'no'}")
+    lines.append(
+        f"- Non-blocking fallback active: {'yes' if not fail_on_single_reviewer else 'no'}"
+    )
     lines.append("")
     lines.append("## Status")
     lines.append("")
@@ -142,7 +151,9 @@ def build_summary(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Build non-blocking reviewer workload balancing suggestions.")
+    parser = argparse.ArgumentParser(
+        description="Build non-blocking reviewer workload balancing suggestions."
+    )
     parser.add_argument(
         "--screening-log",
         default="../02_data/processed/screening_daily_log.csv",
@@ -183,12 +194,12 @@ def main(argv: list[str] | None = None) -> int:
     if screening_df.empty:
         status_message = "Input log missing or empty; generated empty non-blocking plan."
     elif reviewer_count == 0:
-        status_message = "No reviewer rows found for selected stage; generated empty non-blocking plan."
+        status_message = (
+            "No reviewer rows found for selected stage; generated empty non-blocking plan."
+        )
     elif reviewer_count == 1:
         reviewer_name = str(plan_df.iloc[0]["reviewer"])
-        status_message = (
-            f"Single reviewer detected ({reviewer_name}); balancer remains advisory and non-blocking by default."
-        )
+        status_message = f"Single reviewer detected ({reviewer_name}); balancer remains advisory and non-blocking by default."
     else:
         status_message = f"Balanced plan generated for {reviewer_count} reviewers."
 

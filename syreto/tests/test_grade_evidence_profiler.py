@@ -1,10 +1,9 @@
 import importlib.util
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "grade_evidence_profiler.py"
 spec = importlib.util.spec_from_file_location("grade_evidence_profiler", MODULE_PATH)

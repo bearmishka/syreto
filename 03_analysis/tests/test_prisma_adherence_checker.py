@@ -1,9 +1,8 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "prisma_adherence_checker.py"
 spec = importlib.util.spec_from_file_location("prisma_adherence_checker", MODULE_PATH)
@@ -33,8 +32,12 @@ class PrismaAdherenceCheckerTests(unittest.TestCase):
                 allowed_extensions={".tex"},
             )
 
-        covered_numbers = {assessment.item.number for assessment in assessments if assessment.covered}
-        missing_numbers = {assessment.item.number for assessment in assessments if not assessment.covered}
+        covered_numbers = {
+            assessment.item.number for assessment in assessments if assessment.covered
+        }
+        missing_numbers = {
+            assessment.item.number for assessment in assessments if not assessment.covered
+        }
 
         self.assertIn(1, covered_numbers)
         self.assertIn(2, covered_numbers)

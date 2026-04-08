@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 AUDIT_LOG_PATH = Path(__file__).resolve().parents[2] / "02_data/processed/audit_log.csv"
 MODULE_PATH = Path(__file__).resolve().parents[1] / "audit_log_integrity_guard.py"

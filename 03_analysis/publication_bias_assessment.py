@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -191,7 +190,9 @@ def convert_source_value(
     return converted.get(target_metric)
 
 
-def approximate_ci(metric: str, effect_value: float, sample_size: int | None) -> tuple[float, float] | None:
+def approximate_ci(
+    metric: str, effect_value: float, sample_size: int | None
+) -> tuple[float, float] | None:
     if sample_size is None or sample_size <= 0:
         return None
 
@@ -282,7 +283,9 @@ def infer_outcome_label(metadata: dict[str, object]) -> str:
     return "overall"
 
 
-def transform_for_analysis(metric: str, effect: float, ci_lower: float | None, ci_upper: float | None) -> tuple[float | None, float | None, float | None]:
+def transform_for_analysis(
+    metric: str, effect: float, ci_lower: float | None, ci_upper: float | None
+) -> tuple[float | None, float | None, float | None]:
     if metric != "converted_or":
         return effect, ci_lower, ci_upper
 
@@ -332,7 +335,9 @@ def prepare_bias_data(
     stats_dict["input_rows"] = int(converted_df.shape[0])
 
     working = converted_df.copy()
-    working["conversion_status"] = working["conversion_status"].fillna("").astype(str).str.strip().str.lower()
+    working["conversion_status"] = (
+        working["conversion_status"].fillna("").astype(str).str.strip().str.lower()
+    )
     working = working[working["conversion_status"].isin({"converted", "partial"})].copy()
 
     working["effect_value"] = pd.to_numeric(working[metric], errors="coerce")
@@ -492,7 +497,9 @@ def egger_regression(data_df: pd.DataFrame, *, min_studies: int) -> dict[str, ob
     working = data_df.copy()
     working["effect_analysis"] = pd.to_numeric(working["effect_analysis"], errors="coerce")
     working["se"] = pd.to_numeric(working["se"], errors="coerce")
-    working = working[(working["se"].notna()) & (working["se"] > 0) & (working["effect_analysis"].notna())].copy()
+    working = working[
+        (working["se"].notna()) & (working["se"] > 0) & (working["effect_analysis"].notna())
+    ].copy()
 
     n = int(working.shape[0])
     if n < 3:
@@ -624,7 +631,9 @@ def pooled_effect_fixed(data_df: pd.DataFrame) -> float | None:
     working = data_df.copy()
     working["effect_analysis"] = pd.to_numeric(working["effect_analysis"], errors="coerce")
     working["se"] = pd.to_numeric(working["se"], errors="coerce")
-    working = working[(working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)].copy()
+    working = working[
+        (working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)
+    ].copy()
     if working.empty:
         return None
 
@@ -642,7 +651,9 @@ def x_limits(data_df: pd.DataFrame, pooled: float | None) -> tuple[float, float]
     if data_df.empty:
         return -1.0, 1.0
 
-    effects = pd.to_numeric(data_df["effect_analysis"], errors="coerce").dropna().astype(float).tolist()
+    effects = (
+        pd.to_numeric(data_df["effect_analysis"], errors="coerce").dropna().astype(float).tolist()
+    )
     se_values = pd.to_numeric(data_df["se"], errors="coerce").dropna().astype(float).tolist()
 
     if not effects:
@@ -675,11 +686,19 @@ def render_png(
     working = data_df.copy()
     working["effect_analysis"] = pd.to_numeric(working["effect_analysis"], errors="coerce")
     working["se"] = pd.to_numeric(working["se"], errors="coerce")
-    working = working[(working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)].copy()
+    working = working[
+        (working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)
+    ].copy()
 
     if working.empty:
         fig, ax = plt.subplots(figsize=(8, 3.5))
-        ax.text(0.5, 0.5, "No studies with estimable standard errors for funnel plot", ha="center", va="center")
+        ax.text(
+            0.5,
+            0.5,
+            "No studies with estimable standard errors for funnel plot",
+            ha="center",
+            va="center",
+        )
         ax.axis("off")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(output_path, dpi=300, bbox_inches="tight")
@@ -715,7 +734,9 @@ def render_png(
         )
 
     for index, label in enumerate(labels):
-        ax.annotate(label, (x[index], se[index]), textcoords="offset points", xytext=(4, 3), fontsize=7)
+        ax.annotate(
+            label, (x[index], se[index]), textcoords="offset points", xytext=(4, 3), fontsize=7
+        )
 
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_max, 0.0)
@@ -774,11 +795,15 @@ def render_tikz(
     working = data_df.copy()
     working["effect_analysis"] = pd.to_numeric(working["effect_analysis"], errors="coerce")
     working["se"] = pd.to_numeric(working["se"], errors="coerce")
-    working = working[(working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)].copy()
+    working = working[
+        (working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)
+    ].copy()
 
     if working.empty:
         lines.append(r"\begin{tikzpicture}")
-        lines.append(r"\node[anchor=west] at (0,0) {No studies with estimable standard errors for funnel plot.};")
+        lines.append(
+            r"\node[anchor=west] at (0,0) {No studies with estimable standard errors for funnel plot.};"
+        )
         lines.append(r"\end{tikzpicture}")
         lines.append("")
         output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -800,45 +825,73 @@ def render_tikz(
     plot_height = plot_top - plot_bottom
 
     lines.append(r"\begin{tikzpicture}[x=13cm,y=8cm]")
-    lines.append(r"\node[anchor=west, font=\small\bfseries] at (0.0,0.98) {Funnel plot (auto-generated)};")
-    lines.append(rf"\draw[->] ({plot_left:.6f},{plot_bottom:.6f}) -- ({plot_right + 0.03:.6f},{plot_bottom:.6f});")
-    lines.append(rf"\draw[->] ({plot_left:.6f},{plot_bottom:.6f}) -- ({plot_left:.6f},{plot_top + 0.03:.6f});")
+    lines.append(
+        r"\node[anchor=west, font=\small\bfseries] at (0.0,0.98) {Funnel plot (auto-generated)};"
+    )
+    lines.append(
+        rf"\draw[->] ({plot_left:.6f},{plot_bottom:.6f}) -- ({plot_right + 0.03:.6f},{plot_bottom:.6f});"
+    )
+    lines.append(
+        rf"\draw[->] ({plot_left:.6f},{plot_bottom:.6f}) -- ({plot_left:.6f},{plot_top + 0.03:.6f});"
+    )
 
     for tick in [0.0, 0.25, 0.5, 0.75, 1.0]:
         tick_value = x_min + tick * (x_max - x_min)
         x_tick = plot_left + tick * plot_width
-        lines.append(rf"\draw ({x_tick:.6f},{plot_bottom - 0.01:.6f}) -- ({x_tick:.6f},{plot_bottom + 0.01:.6f});")
-        lines.append(rf"\node[anchor=north, font=\scriptsize] at ({x_tick:.6f},{plot_bottom - 0.014:.6f}) {{{latex_escape(f'{tick_value:.2f}')}}};")
+        lines.append(
+            rf"\draw ({x_tick:.6f},{plot_bottom - 0.01:.6f}) -- ({x_tick:.6f},{plot_bottom + 0.01:.6f});"
+        )
+        lines.append(
+            rf"\node[anchor=north, font=\scriptsize] at ({x_tick:.6f},{plot_bottom - 0.014:.6f}) {{{latex_escape(f'{tick_value:.2f}')}}};"
+        )
 
     for tick in [0.0, 0.25, 0.5, 0.75, 1.0]:
         se_tick = tick * y_max
         y_norm = normalized_y(se_tick, y_max)
         y_tick = plot_bottom + y_norm * plot_height
-        lines.append(rf"\draw ({plot_left - 0.008:.6f},{y_tick:.6f}) -- ({plot_left + 0.008:.6f},{y_tick:.6f});")
-        lines.append(rf"\node[anchor=east, font=\scriptsize] at ({plot_left - 0.012:.6f},{y_tick:.6f}) {{{latex_escape(f'{se_tick:.2f}')}}};")
+        lines.append(
+            rf"\draw ({plot_left - 0.008:.6f},{y_tick:.6f}) -- ({plot_left + 0.008:.6f},{y_tick:.6f});"
+        )
+        lines.append(
+            rf"\node[anchor=east, font=\scriptsize] at ({plot_left - 0.012:.6f},{y_tick:.6f}) {{{latex_escape(f'{se_tick:.2f}')}}};"
+        )
 
-    lines.append(rf"\node[anchor=north, font=\scriptsize] at ({(plot_left + plot_right) / 2:.6f},{plot_bottom - 0.05:.6f}) {{{latex_escape(analysis_metric_label(metric))}}};")
-    lines.append(rf"\node[anchor=south, rotate=90, font=\scriptsize] at ({plot_left - 0.06:.6f},{(plot_bottom + plot_top) / 2:.6f}) {{Standard error}};")
+    lines.append(
+        rf"\node[anchor=north, font=\scriptsize] at ({(plot_left + plot_right) / 2:.6f},{plot_bottom - 0.05:.6f}) {{{latex_escape(analysis_metric_label(metric))}}};"
+    )
+    lines.append(
+        rf"\node[anchor=south, rotate=90, font=\scriptsize] at ({plot_left - 0.06:.6f},{(plot_bottom + plot_top) / 2:.6f}) {{Standard error}};"
+    )
 
     if pooled_effect is not None and math.isfinite(pooled_effect):
         x_pool = plot_left + normalized_x(pooled_effect, x_min, x_max) * plot_width
         y_top_line = plot_bottom + normalized_y(0.0, y_max) * plot_height
         y_bottom_line = plot_bottom + normalized_y(y_max, y_max) * plot_height
-        lines.append(rf"\draw[dashed, gray!70] ({x_pool:.6f},{y_bottom_line:.6f}) -- ({x_pool:.6f},{y_top_line:.6f});")
+        lines.append(
+            rf"\draw[dashed, gray!70] ({x_pool:.6f},{y_bottom_line:.6f}) -- ({x_pool:.6f},{y_top_line:.6f});"
+        )
 
         left_boundary_bottom = pooled_effect - (1.96 * y_max)
         right_boundary_bottom = pooled_effect + (1.96 * y_max)
         x_left_bottom = plot_left + normalized_x(left_boundary_bottom, x_min, x_max) * plot_width
         x_right_bottom = plot_left + normalized_x(right_boundary_bottom, x_min, x_max) * plot_width
-        lines.append(rf"\draw[dashed, gray!60] ({x_pool:.6f},{y_top_line:.6f}) -- ({x_left_bottom:.6f},{y_bottom_line:.6f});")
-        lines.append(rf"\draw[dashed, gray!60] ({x_pool:.6f},{y_top_line:.6f}) -- ({x_right_bottom:.6f},{y_bottom_line:.6f});")
+        lines.append(
+            rf"\draw[dashed, gray!60] ({x_pool:.6f},{y_top_line:.6f}) -- ({x_left_bottom:.6f},{y_bottom_line:.6f});"
+        )
+        lines.append(
+            rf"\draw[dashed, gray!60] ({x_pool:.6f},{y_top_line:.6f}) -- ({x_right_bottom:.6f},{y_bottom_line:.6f});"
+        )
 
     for idx, (effect, se_val, label) in enumerate(zip(x_values, se_values, labels), start=1):
         x_point = plot_left + normalized_x(float(effect), x_min, x_max) * plot_width
         y_point = plot_bottom + normalized_y(float(se_val), y_max) * plot_height
-        lines.append(rf"\filldraw[fill=blue!65, draw=blue!80!black] ({x_point:.6f},{y_point:.6f}) circle (0.0065);")
+        lines.append(
+            rf"\filldraw[fill=blue!65, draw=blue!80!black] ({x_point:.6f},{y_point:.6f}) circle (0.0065);"
+        )
         if idx <= 12:
-            lines.append(rf"\node[anchor=west, font=\tiny] at ({x_point + 0.010:.6f},{y_point + 0.005:.6f}) {{{latex_escape(label)}}};")
+            lines.append(
+                rf"\node[anchor=west, font=\tiny] at ({x_point + 0.010:.6f},{y_point + 0.005:.6f}) {{{latex_escape(label)}}};"
+            )
 
     lines.append(r"\end{tikzpicture}")
     lines.append("")
@@ -879,12 +932,16 @@ def egger_interpretation(result: dict[str, object], *, min_studies: int) -> str:
     p_value = float(result.get("p_value", float("nan")))
     n_studies = int(result.get("n_studies", 0))
     if p_value < 0.05:
-        message = "Egger intercept differs from zero (possible small-study effects/publication bias)."
+        message = (
+            "Egger intercept differs from zero (possible small-study effects/publication bias)."
+        )
     else:
         message = "No statistically significant funnel asymmetry detected by Egger test."
 
     if n_studies < min_studies:
-        message += f" Interpret cautiously: only {n_studies} studies with estimable SE (<{min_studies})."
+        message += (
+            f" Interpret cautiously: only {n_studies} studies with estimable SE (<{min_studies})."
+        )
 
     return message
 
@@ -901,7 +958,9 @@ def begg_test(data_df: pd.DataFrame, *, min_studies: int) -> dict[str, object]:
     working = data_df.copy()
     working["effect_analysis"] = pd.to_numeric(working["effect_analysis"], errors="coerce")
     working["se"] = pd.to_numeric(working["se"], errors="coerce")
-    working = working[(working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)].copy()
+    working = working[
+        (working["effect_analysis"].notna()) & (working["se"].notna()) & (working["se"] > 0)
+    ].copy()
 
     n = int(working.shape[0])
     if n < 3:
@@ -998,10 +1057,7 @@ def publication_bias_results_by_outcome(
     for outcome, group in working.groupby("outcome", sort=True):
         outcome_df = group.reset_index(drop=True)
         n_with_se = int(
-            (
-                pd.to_numeric(outcome_df.get("se", pd.Series(dtype=float)), errors="coerce")
-                > 0
-            ).sum()
+            (pd.to_numeric(outcome_df.get("se", pd.Series(dtype=float)), errors="coerce") > 0).sum()
         )
 
         egger_result = egger_regression(outcome_df, min_studies=min_studies_egger)
@@ -1044,7 +1100,9 @@ def render_latex_table(
     output_path: Path,
 ) -> None:
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
-    interpretation = egger_interpretation(egger_result, min_studies=int(egger_result.get("min_studies", 10)))
+    interpretation = egger_interpretation(
+        egger_result, min_studies=int(egger_result.get("min_studies", 10))
+    )
 
     lines: list[str] = []
     lines.append("% Auto-generated by 03_analysis/publication_bias_assessment.py")
@@ -1062,19 +1120,28 @@ def render_latex_table(
     lines.append(r"\midrule")
 
     status = str(egger_result.get("status", ""))
-    lines.append(rf"Metric for asymmetry assessment & {latex_escape(analysis_metric_label(metric))} \\")
+    lines.append(
+        rf"Metric for asymmetry assessment & {latex_escape(analysis_metric_label(metric))} \\"
+    )
 
     if status == "computed":
         lines.append(rf"Studies with estimable SE & {int(egger_result.get('n_studies', 0))} \\")
-        lines.append(rf"Egger intercept & {float(egger_result.get('intercept', float('nan'))):.3f} \\")
         lines.append(
-            rf"95\% CI (intercept) & [{float(egger_result.get('ci_lower', float('nan'))):.3f}, {float(egger_result.get('ci_upper', float('nan'))):.3f}] \\")
+            rf"Egger intercept & {float(egger_result.get('intercept', float('nan'))):.3f} \\"
+        )
         lines.append(
-            rf"Test statistic & $t({int(egger_result.get('df', 0))})={float(egger_result.get('t_stat', float('nan'))):.3f}$ \\")
-        lines.append(rf"p-value & {latex_escape(format_p_value(float(egger_result.get('p_value', float('nan')))))} \\")
+            rf"95\% CI (intercept) & [{float(egger_result.get('ci_lower', float('nan'))):.3f}, {float(egger_result.get('ci_upper', float('nan'))):.3f}] \\"
+        )
+        lines.append(
+            rf"Test statistic & $t({int(egger_result.get('df', 0))})={float(egger_result.get('t_stat', float('nan'))):.3f}$ \\"
+        )
+        lines.append(
+            rf"p-value & {latex_escape(format_p_value(float(egger_result.get('p_value', float('nan')))))} \\"
+        )
     else:
         lines.append(
-            rf"Egger test status & {latex_escape(humanize_reason(str(egger_result.get('reason', 'not_computed'))))} \\")
+            rf"Egger test status & {latex_escape(humanize_reason(str(egger_result.get('reason', 'not_computed'))))} \\"
+        )
         lines.append(rf"Studies with estimable SE & {int(egger_result.get('n_studies', 0))} \\")
 
     lines.append(rf"Interpretation & {latex_escape(interpretation)} \\")
@@ -1105,7 +1172,9 @@ def build_summary(
     summary_output_path: Path,
 ) -> str:
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
-    interpretation = egger_interpretation(egger_result, min_studies=int(egger_result.get("min_studies", 10)))
+    interpretation = egger_interpretation(
+        egger_result, min_studies=int(egger_result.get("min_studies", 10))
+    )
 
     lines: list[str] = []
     lines.append("# Publication Bias Assessment Summary")
@@ -1149,9 +1218,15 @@ def build_summary(
         lines.append(
             f"- 95% CI: [{float(egger_result.get('ci_lower', float('nan'))):.4f}, {float(egger_result.get('ci_upper', float('nan'))):.4f}]"
         )
-        lines.append(f"- t-statistic: {float(egger_result.get('t_stat', float('nan'))):.4f} (df={int(egger_result.get('df', 0))})")
-        lines.append(f"- p-value: {format_p_value(float(egger_result.get('p_value', float('nan'))))}")
-        lines.append(f"- Low-power flag (<{int(egger_result.get('min_studies', 10))} studies): {'yes' if bool(egger_result.get('low_power_flag', False)) else 'no'}")
+        lines.append(
+            f"- t-statistic: {float(egger_result.get('t_stat', float('nan'))):.4f} (df={int(egger_result.get('df', 0))})"
+        )
+        lines.append(
+            f"- p-value: {format_p_value(float(egger_result.get('p_value', float('nan'))))}"
+        )
+        lines.append(
+            f"- Low-power flag (<{int(egger_result.get('min_studies', 10))} studies): {'yes' if bool(egger_result.get('low_power_flag', False)) else 'no'}"
+        )
     else:
         lines.append("- Status: not computed")
         lines.append(
@@ -1169,13 +1244,15 @@ def build_summary(
         lines.append("- Status: computed")
         lines.append(f"- Studies in test: {int(begg_result.get('n_studies', 0))}")
         lines.append(f"- Kendall tau: {float(begg_result.get('tau', float('nan'))):.4f}")
-        lines.append(f"- p-value: {format_p_value(float(begg_result.get('p_value', float('nan'))))}")
-        lines.append(f"- Low-power flag (<{int(begg_result.get('min_studies', 10))} studies): {'yes' if bool(begg_result.get('low_power_flag', False)) else 'no'}")
+        lines.append(
+            f"- p-value: {format_p_value(float(begg_result.get('p_value', float('nan'))))}"
+        )
+        lines.append(
+            f"- Low-power flag (<{int(begg_result.get('min_studies', 10))} studies): {'yes' if bool(begg_result.get('low_power_flag', False)) else 'no'}"
+        )
     else:
         lines.append("- Status: not computed")
-        lines.append(
-            f"- Reason: {humanize_reason(str(begg_result.get('reason', 'not_computed')))}"
-        )
+        lines.append(f"- Reason: {humanize_reason(str(begg_result.get('reason', 'not_computed')))}")
         lines.append(f"- Studies with estimable SE: {int(begg_result.get('n_studies', 0))}")
 
     lines.append("")
@@ -1184,27 +1261,35 @@ def build_summary(
     if publication_bias_results_df.empty:
         lines.append("- No outcome-level publication bias results were generated.")
     else:
-        lines.append("| outcome | k_studies | n_with_se | egger_test_p | begg_test_p | funnel_asymmetry |")
+        lines.append(
+            "| outcome | k_studies | n_with_se | egger_test_p | begg_test_p | funnel_asymmetry |"
+        )
         lines.append("|---|---:|---:|---:|---:|---|")
         for _, row in publication_bias_results_df.iterrows():
             egger_p = numeric_or_none(row.get("egger_test_p", ""))
             begg_p = numeric_or_none(row.get("begg_test_p", ""))
+            escaped_outcome = normalize(row.get("outcome", "")).replace("|", "\\|")
+            escaped_asymmetry = normalize(row.get("funnel_asymmetry", "")).replace("|", "\\|")
             lines.append(
                 "| "
-                + f"{normalize(row.get('outcome', '')).replace('|', '\\|')} | "
+                + f"{escaped_outcome} | "
                 + f"{int(numeric_or_none(row.get('k_studies', '')) or 0)} | "
                 + f"{int(numeric_or_none(row.get('n_with_se', '')) or 0)} | "
                 + f"{format_p_value(egger_p)} | "
                 + f"{format_p_value(begg_p)} | "
-                + f"{normalize(row.get('funnel_asymmetry', '')).replace('|', '\\|')} |"
+                + f"{escaped_asymmetry} |"
             )
 
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Funnel asymmetry is visualized on effect-size scale with standard error on y-axis (inverted).")
+    lines.append(
+        "- Funnel asymmetry is visualized on effect-size scale with standard error on y-axis (inverted)."
+    )
     lines.append("- Egger regression uses SND = effect/SE regressed on precision = 1/SE.")
-    lines.append("- This is a screening tool for small-study effects, not definitive proof of publication bias.")
+    lines.append(
+        "- This is a screening tool for small-study effects, not definitive proof of publication bias."
+    )
     lines.append("")
 
     return "\n".join(lines)

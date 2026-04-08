@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 EMPTY_VALUES = {"", "nan", "none"}
 RESULT_COLUMNS = [
     "record_id",
@@ -70,7 +69,9 @@ def prepare_dual_log(dual_df: pd.DataFrame) -> pd.DataFrame:
     prepared["_row_order"] = range(len(prepared))
 
     if "decision_date" in prepared.columns:
-        prepared["decision_date_parsed"] = pd.to_datetime(prepared["decision_date"], errors="coerce")
+        prepared["decision_date_parsed"] = pd.to_datetime(
+            prepared["decision_date"], errors="coerce"
+        )
         prepared = prepared.sort_values(
             ["record_id", "reviewer", "decision_date_parsed", "_row_order"],
             kind="stable",
@@ -81,9 +82,7 @@ def prepare_dual_log(dual_df: pd.DataFrame) -> pd.DataFrame:
         prepared = prepared.sort_values(["record_id", "reviewer", "_row_order"], kind="stable")
 
     prepared = prepared[
-        prepared["record_id"].ne("")
-        & prepared["reviewer"].ne("")
-        & prepared["decision"].ne("")
+        prepared["record_id"].ne("") & prepared["reviewer"].ne("") & prepared["decision"].ne("")
     ]
     if prepared.empty:
         return pd.DataFrame(columns=["record_id", "reviewer", "decision", "decision_date_parsed"])
@@ -98,7 +97,9 @@ def choose_two_reviewer_decisions(record_df: pd.DataFrame) -> tuple[str, str]:
 
     ordered = record_df.copy()
     if "decision_date_parsed" in ordered.columns and ordered["decision_date_parsed"].notna().any():
-        ordered = ordered.sort_values(["decision_date_parsed", "reviewer"], kind="stable", na_position="last")
+        ordered = ordered.sort_values(
+            ["decision_date_parsed", "reviewer"], kind="stable", na_position="last"
+        )
     else:
         ordered = ordered.sort_values(["reviewer"], kind="stable")
 
@@ -122,7 +123,12 @@ def clean_existing_results(existing_df: pd.DataFrame) -> pd.DataFrame:
     if existing.empty:
         return pd.DataFrame(columns=RESULT_COLUMNS)
 
-    for decision_column in ["reviewer1_decision", "reviewer2_decision", "resolution_decision", "final_decision"]:
+    for decision_column in [
+        "reviewer1_decision",
+        "reviewer2_decision",
+        "resolution_decision",
+        "final_decision",
+    ]:
         existing[decision_column] = existing[decision_column].apply(normalize_decision)
 
     for text_column in ["conflict", "conflict_resolver", "exclusion_reason"]:
@@ -153,10 +159,20 @@ def build_consensus_results(
         has_conflict = has_two_reviewers and reviewer1_decision != reviewer2_decision
         conflict_flag = "yes" if has_conflict else ("no" if has_two_reviewers else "")
 
-        previous = existing_by_record.loc[record_id] if (not existing_by_record.empty and record_id in existing_by_record.index) else None
-        previous_resolution = normalize_decision(previous["resolution_decision"]) if previous is not None else ""
-        previous_resolver = clean_text(previous["conflict_resolver"]) if previous is not None else ""
-        previous_exclusion_reason = clean_text(previous["exclusion_reason"]) if previous is not None else ""
+        previous = (
+            existing_by_record.loc[record_id]
+            if (not existing_by_record.empty and record_id in existing_by_record.index)
+            else None
+        )
+        previous_resolution = (
+            normalize_decision(previous["resolution_decision"]) if previous is not None else ""
+        )
+        previous_resolver = (
+            clean_text(previous["conflict_resolver"]) if previous is not None else ""
+        )
+        previous_exclusion_reason = (
+            clean_text(previous["exclusion_reason"]) if previous is not None else ""
+        )
 
         if has_conflict:
             resolution_decision = previous_resolution or default_resolution_decision
@@ -165,7 +181,11 @@ def build_consensus_results(
         else:
             resolution_decision = ""
             conflict_resolver = ""
-            if reviewer1_decision and reviewer2_decision and reviewer1_decision == reviewer2_decision:
+            if (
+                reviewer1_decision
+                and reviewer2_decision
+                and reviewer1_decision == reviewer2_decision
+            ):
                 final_decision = reviewer1_decision
             elif reviewer1_decision and not reviewer2_decision:
                 final_decision = reviewer1_decision
@@ -201,7 +221,11 @@ def build_summary(
     default_resolution_decision: str,
 ) -> str:
     total_records = int(results_df.shape[0])
-    conflict_mask = results_df["conflict"].fillna("").astype(str).str.lower().eq("yes") if not results_df.empty else pd.Series(dtype=bool)
+    conflict_mask = (
+        results_df["conflict"].fillna("").astype(str).str.lower().eq("yes")
+        if not results_df.empty
+        else pd.Series(dtype=bool)
+    )
     conflict_records = int(conflict_mask.sum()) if not results_df.empty else 0
 
     pending_conflicts = 0
@@ -236,14 +260,20 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- For unresolved disagreements, replace placeholder resolver IDs after adjudication.")
-    lines.append("- `final_decision` is always synchronized to `resolution_decision` for conflict rows.")
+    lines.append(
+        "- For unresolved disagreements, replace placeholder resolver IDs after adjudication."
+    )
+    lines.append(
+        "- `final_decision` is always synchronized to `resolution_decision` for conflict rows."
+    )
     lines.append("")
     return "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Consolidate dual title/abstract screening into consensus results CSV.")
+    parser = argparse.ArgumentParser(
+        description="Consolidate dual title/abstract screening into consensus results CSV."
+    )
     parser.add_argument(
         "--dual-log",
         default="../02_data/processed/screening_title_abstract_dual_log.csv",
@@ -289,7 +319,9 @@ def main(argv: list[str] | None = None) -> int:
         existing_results_path = Path(args.results_output)
 
     dual_df = read_csv_or_empty(dual_log_path)
-    missing_required = sorted(DUAL_REQUIRED_COLUMNS - set(dual_df.columns)) if not dual_df.empty else []
+    missing_required = (
+        sorted(DUAL_REQUIRED_COLUMNS - set(dual_df.columns)) if not dual_df.empty else []
+    )
     if dual_df.empty:
         if not dual_log_path.exists():
             raise FileNotFoundError(f"Dual log not found: {dual_log_path}")

@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 PLACEHOLDER_PATTERN = re.compile(r"\[[^\]]+\]")
 WORD_PATTERN = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿĀ-žЀ-ӿ0-9]+")
 CYRILLIC_PATTERN = re.compile(r"[А-Яа-яЁё]")
@@ -609,11 +608,7 @@ def small_case_report_detected(text_lower: str) -> bool:
 
 
 def language_specific_keywords(rules: dict, section: str, group: str, language: str) -> list[str]:
-    return (
-        rules.get(section, {})
-        .get(group, {})
-        .get(language, [])
-    )
+    return rules.get(section, {}).get(group, {}).get(language, [])
 
 
 def first_non_empty_value(row: pd.Series, columns: list[str]) -> str:
@@ -692,7 +687,9 @@ def screen_record(
 
     animal_hits = find_matches(
         combined_text,
-        language_specific_keywords(keyword_rules, "exclusion_signals", "animal_only", detected_language),
+        language_specific_keywords(
+            keyword_rules, "exclusion_signals", "animal_only", detected_language
+        ),
     )
     human_hits = find_matches(
         combined_text,
@@ -700,15 +697,21 @@ def screen_record(
     )
     non_empirical_hits = find_matches(
         combined_text,
-        language_specific_keywords(keyword_rules, "exclusion_signals", "non_empirical", detected_language),
+        language_specific_keywords(
+            keyword_rules, "exclusion_signals", "non_empirical", detected_language
+        ),
     )
     empirical_hits = find_matches(
         combined_text,
-        language_specific_keywords(keyword_rules, "support_signals", "empirical", detected_language),
+        language_specific_keywords(
+            keyword_rules, "support_signals", "empirical", detected_language
+        ),
     )
     case_report_hits = find_matches(
         combined_text,
-        language_specific_keywords(keyword_rules, "exclusion_signals", "case_report", detected_language),
+        language_specific_keywords(
+            keyword_rules, "exclusion_signals", "case_report", detected_language
+        ),
     )
 
     if animal_hits and not human_hits:
@@ -770,7 +773,9 @@ def screen_record(
     configured_core_groups = 0
 
     for group_name in ("population", "concept_exposure", "outcome"):
-        keywords = language_specific_keywords(keyword_rules, "core_signals", group_name, detected_language)
+        keywords = language_specific_keywords(
+            keyword_rules, "core_signals", group_name, detected_language
+        )
         if not keywords:
             continue
         configured_core_groups += 1
@@ -876,15 +881,25 @@ def render_summary(
     lines.append("")
     lines.append("## Policy")
     lines.append("")
-    lines.append(f"- Eligible non-English languages: {', '.join(eligible_languages) if eligible_languages else 'none'}")
-    lines.append(f"- Conservative missing-core policy: {'on' if conservative_missing_core else 'off'}")
-    lines.append(f"- Keyword rules loaded from file: {'yes' if rules_metadata.get('loaded_from_file') else 'no (defaults used)'}")
-    lines.append(f"- Placeholder keyword tokens ignored: {int(rules_metadata.get('ignored_placeholders', 0))}")
+    lines.append(
+        f"- Eligible non-English languages: {', '.join(eligible_languages) if eligible_languages else 'none'}"
+    )
+    lines.append(
+        f"- Conservative missing-core policy: {'on' if conservative_missing_core else 'off'}"
+    )
+    lines.append(
+        f"- Keyword rules loaded from file: {'yes' if rules_metadata.get('loaded_from_file') else 'no (defaults used)'}"
+    )
+    lines.append(
+        f"- Placeholder keyword tokens ignored: {int(rules_metadata.get('ignored_placeholders', 0))}"
+    )
     lines.append("")
     lines.append("## Config Coverage")
     lines.append("")
     for group_name in ("population", "concept_exposure", "outcome"):
-        lines.append(f"- `{group_name}` keyword entries across target languages: {configured_core_counts.get(group_name, 0)}")
+        lines.append(
+            f"- `{group_name}` keyword entries across target languages: {configured_core_counts.get(group_name, 0)}"
+        )
     lines.append("")
     lines.append("## Recommendation Counts")
     lines.append("")
@@ -902,13 +917,17 @@ def render_summary(
     lines.append("")
     lines.append("## By Language")
     lines.append("")
-    for language, count in recommendations_df["detected_language"].value_counts(dropna=False).items():
+    for language, count in (
+        recommendations_df["detected_language"].value_counts(dropna=False).items()
+    ):
         lines.append(f"- `{language}`: {int(count)}")
 
     lines.append("")
     lines.append("## By Reason")
     lines.append("")
-    for reason, count in recommendations_df["recommended_reason"].value_counts(dropna=False).items():
+    for reason, count in (
+        recommendations_df["recommended_reason"].value_counts(dropna=False).items()
+    ):
         lines.append(f"- {reason}: {int(count)}")
 
     lines.append("")
@@ -916,7 +935,9 @@ def render_summary(
     lines.append("")
     lines.append("- This screener is deterministic keyword logic (no ML).")
     lines.append("- Use outputs for triage/calibration; final decisions stay reviewer-led.")
-    lines.append("- Recommended reasons are aligned to `screening_rules.md` title/abstract reason labels.")
+    lines.append(
+        "- Recommended reasons are aligned to `screening_rules.md` title/abstract reason labels."
+    )
     lines.append("")
     return "\n".join(lines)
 
@@ -991,18 +1012,24 @@ def main(argv: list[str] | None = None) -> int:
     screening_reasons = parse_title_abstract_reasons(screening_rules_path)
 
     cli_languages = normalize_and_dedupe_languages(args.eligible_languages.split(","))
-    eligible_languages = set(cli_languages) if cli_languages else set(keyword_rules.get("eligible_languages", []))
+    eligible_languages = (
+        set(cli_languages) if cli_languages else set(keyword_rules.get("eligible_languages", []))
+    )
     if not eligible_languages:
         eligible_languages = set(TARGET_LANGUAGES_DEFAULT)
 
-    policy_default = bool(keyword_rules.get("decision_policy", {}).get("conservative_missing_core", True))
+    policy_default = bool(
+        keyword_rules.get("decision_policy", {}).get("conservative_missing_core", True)
+    )
     conservative_missing_core = args.conservative_missing_core or policy_default
 
     configured_core_counts: dict[str, int] = {}
     for group_name in ("population", "concept_exposure", "outcome"):
         count = 0
         for language in eligible_languages:
-            count += len(language_specific_keywords(keyword_rules, "core_signals", group_name, language))
+            count += len(
+                language_specific_keywords(keyword_rules, "core_signals", group_name, language)
+            )
         configured_core_counts[group_name] = count
 
     recommendations: list[dict] = []

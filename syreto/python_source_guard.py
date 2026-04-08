@@ -1,11 +1,10 @@
 import argparse
 import ast
-from dataclasses import dataclass, field
 import io
 import json
-from pathlib import Path
 import tokenize
-
+from dataclasses import dataclass, field
+from pathlib import Path
 
 MAIN_GUARD_NAME = "__name__"
 MAIN_MODULE_NAME = "__main__"

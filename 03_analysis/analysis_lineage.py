@@ -1,12 +1,11 @@
 import argparse
-from datetime import datetime, timezone
 import json
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
-
 
 MISSING_CODES = {
     "",
@@ -75,7 +74,9 @@ def append_mapping(mapping: dict[str, set[str]], outcome: str, study_id: str) ->
     mapping[outcome].add(study_id)
 
 
-def extraction_outcome_maps(extraction_df: pd.DataFrame) -> tuple[dict[str, list[str]], dict[str, set[str]]]:
+def extraction_outcome_maps(
+    extraction_df: pd.DataFrame,
+) -> tuple[dict[str, list[str]], dict[str, set[str]]]:
     study_to_outcomes: dict[str, set[str]] = {}
     outcome_to_studies: dict[str, set[str]] = {}
 
@@ -102,8 +103,7 @@ def extraction_outcome_maps(extraction_df: pd.DataFrame) -> tuple[dict[str, list
         append_mapping(outcome_to_studies, outcome, study_id)
 
     sorted_study_map = {
-        study_id: sorted(outcomes)
-        for study_id, outcomes in sorted(study_to_outcomes.items())
+        study_id: sorted(outcomes) for study_id, outcomes in sorted(study_to_outcomes.items())
     }
     return sorted_study_map, outcome_to_studies
 
@@ -147,7 +147,10 @@ def forest_outcome_to_studies(
     if "study_id" not in working.columns:
         return mapping
 
-    has_outcome_column = "outcome" in working.columns and working["outcome"].fillna("").astype(str).str.strip().ne("").any()
+    has_outcome_column = (
+        "outcome" in working.columns
+        and working["outcome"].fillna("").astype(str).str.strip().ne("").any()
+    )
 
     for _, row in working.iterrows():
         study_id = normalize(row.get("study_id", ""))
@@ -192,10 +195,7 @@ def meta_records(
     if meta_df.empty or "outcome" not in meta_df.columns:
         return []
 
-    outcomes = [
-        normalized_outcome(value)
-        for value in meta_df["outcome"].tolist()
-    ]
+    outcomes = [normalized_outcome(value) for value in meta_df["outcome"].tolist()]
     unique_outcomes = sorted(set(outcomes))
     records: list[dict[str, object]] = []
 
@@ -242,7 +242,9 @@ def build_lineage_payload(
     extraction_df = read_csv_or_empty(extraction_path)
 
     extraction_study_map, extraction_outcome_map = extraction_outcome_maps(extraction_df)
-    forest_map = forest_outcome_to_studies(forest_df, extraction_study_to_outcomes=extraction_study_map)
+    forest_map = forest_outcome_to_studies(
+        forest_df, extraction_study_to_outcomes=extraction_study_map
+    )
     publication_bias_map = grouped_outcome_to_studies(publication_bias_df, outcome_column="outcome")
     grade_map = grouped_outcome_to_studies(grade_df, outcome_column="outcome_construct")
 

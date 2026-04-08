@@ -1,10 +1,9 @@
 import importlib.util
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "weekly_risk_digest.py"
 spec = importlib.util.spec_from_file_location("weekly_risk_digest", MODULE_PATH)
@@ -41,7 +40,10 @@ class WeeklyRiskDigestTests(unittest.TestCase):
                 "registration": {"registered": False},
                 "reviewer_agreement": {"cohen_kappa": {"available": False}},
                 "health_checks": [
-                    {"level": "error", "message": "PRISMA counts are out of sync with source data."},
+                    {
+                        "level": "error",
+                        "message": "PRISMA counts are out of sync with source data.",
+                    },
                     {"level": "warning", "message": "Only one title/abstract reviewer logged."},
                 ],
                 "warnings": ["Fill PRISMA counts for required core keys."],

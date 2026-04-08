@@ -263,7 +263,9 @@ def normalize_query_text(text: str) -> str:
     return normalized
 
 
-def extract_block_query_text(search_strings_path: Path, fallback_query_path: Path) -> tuple[str, str]:
+def extract_block_query_text(
+    search_strings_path: Path, fallback_query_path: Path
+) -> tuple[str, str]:
     block_queries: list[str] = []
     if search_strings_path.exists():
         text = search_strings_path.read_text(encoding="utf-8")
@@ -276,7 +278,9 @@ def extract_block_query_text(search_strings_path: Path, fallback_query_path: Pat
         return " ".join(block_queries), f"{search_strings_path.as_posix()} (Block B/C)"
 
     if fallback_query_path.exists():
-        return clean_text(fallback_query_path.read_text(encoding="utf-8")), fallback_query_path.as_posix()
+        return clean_text(
+            fallback_query_path.read_text(encoding="utf-8")
+        ), fallback_query_path.as_posix()
 
     return "", "missing"
 
@@ -299,7 +303,9 @@ class TextProcessor:
     def __init__(self) -> None:
         self.stopwords = BASE_STOPWORDS_EN | BASE_STOPWORDS_RU | DOMAIN_STOPWORDS
         self.token_pattern = re.compile(r"[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\-]{1,}")
-        self.tokenizer = RegexpTokenizer(r"[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\-]{1,}") if NLTK_AVAILABLE else None
+        self.tokenizer = (
+            RegexpTokenizer(r"[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\-]{1,}") if NLTK_AVAILABLE else None
+        )
         self.stemmer = PorterStemmer() if NLTK_AVAILABLE else None
 
     def tokenize(self, text: str) -> list[str]:
@@ -328,7 +334,9 @@ class TextProcessor:
         return normalized_tokens
 
 
-def build_document_texts(df: pd.DataFrame, text_columns: list[str], include_duplicates: bool) -> list[str]:
+def build_document_texts(
+    df: pd.DataFrame, text_columns: list[str], include_duplicates: bool
+) -> list[str]:
     documents: list[str] = []
     if not text_columns:
         return documents
@@ -365,7 +373,9 @@ def split_sentences(text: str) -> list[str]:
     return [part.strip() for part in parts if clean_text(part)]
 
 
-def build_term_sets(documents: list[str], processor: TextProcessor) -> tuple[list[set[str]], list[set[str]]]:
+def build_term_sets(
+    documents: list[str], processor: TextProcessor
+) -> tuple[list[set[str]], list[set[str]]]:
     doc_term_sets: list[set[str]] = []
     context_term_sets: list[set[str]] = []
 
@@ -451,12 +461,23 @@ def build_cooccurrence_graph(
 def node_metrics_df(graph: nx.Graph, node_doc_counts: Counter[str]) -> pd.DataFrame:
     if graph.number_of_nodes() == 0:
         return pd.DataFrame(
-            columns=["term", "ngram_size", "n_docs", "weighted_degree", "degree_centrality", "betweenness"]
+            columns=[
+                "term",
+                "ngram_size",
+                "n_docs",
+                "weighted_degree",
+                "degree_centrality",
+                "betweenness",
+            ]
         )
 
     weighted_degree = dict(graph.degree(weight="weight"))
     degree_centrality = nx.degree_centrality(graph)
-    betweenness = nx.betweenness_centrality(graph, weight="weight", normalized=True) if graph.number_of_nodes() > 2 else {}
+    betweenness = (
+        nx.betweenness_centrality(graph, weight="weight", normalized=True)
+        if graph.number_of_nodes() > 2
+        else {}
+    )
 
     rows: list[dict[str, object]] = []
     for term in graph.nodes:
@@ -475,7 +496,9 @@ def node_metrics_df(graph: nx.Graph, node_doc_counts: Counter[str]) -> pd.DataFr
     if df.empty:
         return df
 
-    return df.sort_values(["weighted_degree", "n_docs", "term"], ascending=[False, False, True]).reset_index(drop=True)
+    return df.sort_values(
+        ["weighted_degree", "n_docs", "term"], ascending=[False, False, True]
+    ).reset_index(drop=True)
 
 
 def edge_metrics_df(graph: nx.Graph, min_edge_weight: int) -> pd.DataFrame:
@@ -490,7 +513,9 @@ def edge_metrics_df(graph: nx.Graph, min_edge_weight: int) -> pd.DataFrame:
         return pd.DataFrame(columns=["source", "target", "weight"])
 
     df = pd.DataFrame(rows)
-    return df.sort_values(["weight", "source", "target"], ascending=[False, True, True]).reset_index(drop=True)
+    return df.sort_values(
+        ["weight", "source", "target"], ascending=[False, True, True]
+    ).reset_index(drop=True)
 
 
 def term_in_query(term: str, normalized_query_text: str) -> bool:
@@ -523,10 +548,16 @@ def candidate_df(
         )
 
     working = nodes_df.copy()
-    working["in_query"] = working["term"].apply(lambda term: term_in_query(str(term), normalized_query_text))
+    working["in_query"] = working["term"].apply(
+        lambda term: term_in_query(str(term), normalized_query_text)
+    )
     working["priority_score"] = (working["weighted_degree"] * 0.7) + (working["n_docs"] * 0.3)
 
-    mask = (~working["in_query"]) & (working["n_docs"] >= min_term_doc_freq) & (working["weighted_degree"] >= min_weighted_degree)
+    mask = (
+        (~working["in_query"])
+        & (working["n_docs"] >= min_term_doc_freq)
+        & (working["weighted_degree"] >= min_weighted_degree)
+    )
     filtered = working.loc[mask].copy()
 
     if filtered.empty:
@@ -601,7 +632,9 @@ def build_block_suggestions(
 
     working = candidates.copy()
     if "suggested_block" not in working.columns:
-        working["suggested_block"] = working["term"].apply(lambda value: classify_candidate_block(str(value)))
+        working["suggested_block"] = working["term"].apply(
+            lambda value: classify_candidate_block(str(value))
+        )
 
     block_b_df = working.loc[working["suggested_block"].isin(["B", "both"])]
     block_c_df = working.loc[working["suggested_block"].isin(["C", "both"])]
@@ -640,7 +673,9 @@ def build_block_suggestions(
         lines.append("- None.")
     else:
         for _, row in unsorted_df.head(top_per_block).iterrows():
-            lines.append(f"- `{row['term']}` (docs={int(row['n_docs'])}, weighted_degree={row['weighted_degree']:.1f})")
+            lines.append(
+                f"- `{row['term']}` (docs={int(row['n_docs'])}, weighted_degree={row['weighted_degree']:.1f})"
+            )
     lines.append("")
 
     return "\n".join(lines) + "\n"
@@ -669,7 +704,9 @@ def build_summary(
     lines.append(f"- Master records: `{master_path.as_posix()}`")
     lines.append(f"- Query source for Block B/C comparison: `{search_source}`")
     lines.append(f"- Text columns used: {', '.join(text_columns) if text_columns else 'none'}")
-    lines.append(f"- NLP backend: {'nltk+networkx' if NLTK_AVAILABLE else 'regex-fallback+networkx (nltk unavailable)'}")
+    lines.append(
+        f"- NLP backend: {'nltk+networkx' if NLTK_AVAILABLE else 'regex-fallback+networkx (nltk unavailable)'}"
+    )
     lines.append("")
     lines.append("## Corpus Stats")
     lines.append("")
@@ -694,8 +731,12 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Candidates indicate frequently co-occurring terms absent from current Block B/C query text.")
-    lines.append("- Review candidates manually before adding to search strings (precision/recall trade-off).")
+    lines.append(
+        "- Candidates indicate frequently co-occurring terms absent from current Block B/C query text."
+    )
+    lines.append(
+        "- Review candidates manually before adding to search strings (precision/recall trade-off)."
+    )
     lines.append(f"- Ready-to-paste query suggestions: `{suggestions_output.as_posix()}`")
 
     return "\n".join(lines) + "\n"
@@ -705,26 +746,79 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Build a litsearchr-style keyword co-occurrence network from master_records and suggest missing Block B/C terms."
     )
-    parser.add_argument("--master", default="../02_data/processed/master_records.csv", help="Path to master records CSV")
-    parser.add_argument("--search-strings", default="../01_protocol/search_strings.md", help="Path to search strategy markdown")
-    parser.add_argument("--pubmed-query", default="../01_protocol/pubmed_query_v0.2.txt", help="Fallback path to PubMed query text")
-    parser.add_argument("--text-columns", default="auto", help="Comma-separated text columns or 'auto'")
-    parser.add_argument("--include-duplicates", action="store_true", help="Include duplicate rows from master records")
-    parser.add_argument("--min-term-doc-freq", type=int, default=2, help="Minimum document frequency for terms")
-    parser.add_argument("--min-weighted-degree", type=float, default=2.0, help="Minimum weighted degree for candidates")
-    parser.add_argument("--min-edge-weight", type=int, default=2, help="Minimum edge weight in exported network")
-    parser.add_argument("--max-terms-per-doc", type=int, default=60, help="Cap on filtered terms retained per document")
-    parser.add_argument("--top-candidates", type=int, default=40, help="Maximum candidate terms to output")
-    parser.add_argument("--nodes-output", default="outputs/keyword_network_nodes.csv", help="Output CSV for node metrics")
-    parser.add_argument("--edges-output", default="outputs/keyword_network_edges.csv", help="Output CSV for edge metrics")
-    parser.add_argument("--candidates-output", default="outputs/keyword_candidates.csv", help="Output CSV for missing-query candidates")
+    parser.add_argument(
+        "--master",
+        default="../02_data/processed/master_records.csv",
+        help="Path to master records CSV",
+    )
+    parser.add_argument(
+        "--search-strings",
+        default="../01_protocol/search_strings.md",
+        help="Path to search strategy markdown",
+    )
+    parser.add_argument(
+        "--pubmed-query",
+        default="../01_protocol/pubmed_query_v0.2.txt",
+        help="Fallback path to PubMed query text",
+    )
+    parser.add_argument(
+        "--text-columns", default="auto", help="Comma-separated text columns or 'auto'"
+    )
+    parser.add_argument(
+        "--include-duplicates",
+        action="store_true",
+        help="Include duplicate rows from master records",
+    )
+    parser.add_argument(
+        "--min-term-doc-freq", type=int, default=2, help="Minimum document frequency for terms"
+    )
+    parser.add_argument(
+        "--min-weighted-degree",
+        type=float,
+        default=2.0,
+        help="Minimum weighted degree for candidates",
+    )
+    parser.add_argument(
+        "--min-edge-weight", type=int, default=2, help="Minimum edge weight in exported network"
+    )
+    parser.add_argument(
+        "--max-terms-per-doc",
+        type=int,
+        default=60,
+        help="Cap on filtered terms retained per document",
+    )
+    parser.add_argument(
+        "--top-candidates", type=int, default=40, help="Maximum candidate terms to output"
+    )
+    parser.add_argument(
+        "--nodes-output",
+        default="outputs/keyword_network_nodes.csv",
+        help="Output CSV for node metrics",
+    )
+    parser.add_argument(
+        "--edges-output",
+        default="outputs/keyword_network_edges.csv",
+        help="Output CSV for edge metrics",
+    )
+    parser.add_argument(
+        "--candidates-output",
+        default="outputs/keyword_candidates.csv",
+        help="Output CSV for missing-query candidates",
+    )
     parser.add_argument(
         "--suggestions-output",
         default="outputs/keyword_block_bc_suggestions.md",
         help="Output markdown with ready-to-paste Block B/C snippets",
     )
-    parser.add_argument("--suggestions-top-per-block", type=int, default=12, help="Maximum suggestions per block section")
-    parser.add_argument("--summary", default="outputs/keyword_analysis_summary.md", help="Output markdown summary")
+    parser.add_argument(
+        "--suggestions-top-per-block",
+        type=int,
+        default=12,
+        help="Maximum suggestions per block section",
+    )
+    parser.add_argument(
+        "--summary", default="outputs/keyword_analysis_summary.md", help="Output markdown summary"
+    )
     args = parser.parse_args()
 
     if args.min_term_doc_freq < 1:
@@ -753,7 +847,9 @@ def main() -> None:
 
     master_df = pd.read_csv(master_path)
     text_columns = resolve_text_columns(master_df, args.text_columns)
-    documents = build_document_texts(master_df, text_columns, include_duplicates=args.include_duplicates)
+    documents = build_document_texts(
+        master_df, text_columns, include_duplicates=args.include_duplicates
+    )
 
     processor = TextProcessor()
     doc_term_sets, context_term_sets = build_term_sets(documents, processor)
@@ -781,7 +877,9 @@ def main() -> None:
     )
     if not candidates.empty:
         candidates = candidates.copy()
-        candidates["suggested_block"] = candidates["term"].apply(lambda value: classify_candidate_block(str(value)))
+        candidates["suggested_block"] = candidates["term"].apply(
+            lambda value: classify_candidate_block(str(value))
+        )
 
     nodes_output.parent.mkdir(parents=True, exist_ok=True)
     edges_output.parent.mkdir(parents=True, exist_ok=True)
@@ -823,7 +921,9 @@ def main() -> None:
     print(f"Documents processed: {len(documents)}")
     print(f"Candidate terms: {len(candidates)}")
     if not NLTK_AVAILABLE:
-        print("Note: nltk is not installed in this environment; regex fallback tokenization was used.")
+        print(
+            "Note: nltk is not installed in this environment; regex fallback tokenization was used."
+        )
 
 
 if __name__ == "__main__":

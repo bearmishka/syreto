@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -60,7 +59,11 @@ def run_daily_run_with_mode(
 
         calls: list[str] = []
         if calls_log.exists():
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
 
         return result, calls
 
@@ -104,7 +107,9 @@ class DailyRunPreflightModesTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 99)
         self.assertGreaterEqual(len(calls), 1)
-        self.assertIn("Compatibility alias detected: RUN_PREFLIGHT_PLACEHOLDER_GUARD=1 -> fail", result.stdout)
+        self.assertIn(
+            "Compatibility alias detected: RUN_PREFLIGHT_PLACEHOLDER_GUARD=1 -> fail", result.stdout
+        )
         self.assertIn("template_term_guard.py", calls[0])
         self.assertIn("--fail-on-match", calls[0])
 
@@ -113,7 +118,9 @@ class DailyRunPreflightModesTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 99)
         self.assertGreaterEqual(len(calls), 1)
-        self.assertIn("Compatibility alias detected: RUN_PREFLIGHT_PLACEHOLDER_GUARD=0 -> skip", result.stdout)
+        self.assertIn(
+            "Compatibility alias detected: RUN_PREFLIGHT_PLACEHOLDER_GUARD=0 -> skip", result.stdout
+        )
         self.assertIn("consolidate_title_abstract_consensus.py", calls[0])
 
     def test_invalid_mode_exits_with_code_2_before_python_calls(self) -> None:

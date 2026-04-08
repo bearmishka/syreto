@@ -1,14 +1,12 @@
 import argparse
 import math
-from datetime import datetime
-from pathlib import Path
 import os
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 import publication_bias_assessment as pba
-
 
 RESULT_COLUMNS = [
     "subgroup",

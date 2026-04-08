@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -14,7 +13,7 @@ def make_fake_python(binary_path: Path) -> None:
     binary_path.write_text(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "fi\n"
         "exit 0\n",
@@ -72,7 +71,9 @@ class DailyRunAuditLogNewlineTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0)
 
-            lines = [line for line in audit_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            lines = [
+                line for line in audit_log.read_text(encoding="utf-8").splitlines() if line.strip()
+            ]
             self.assertIn(
                 "2026-03-17,update,README.md,documented audit-log deduplication behavior in daily_run section",
                 lines,

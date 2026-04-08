@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import re
 from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
-import re
 
 import pandas as pd
-
 
 MISSING_CODES = {
     "",
@@ -196,7 +195,11 @@ def classify_drift_severity(
     if delta_total_abs >= HIGH_DELTA_ABSOLUTE_FALLBACK:
         return "high"
 
-    if ratio_total is not None and ratio_total >= HIGH_DELTA_RATIO_THRESHOLD and delta_total_abs >= HIGH_DELTA_ABSOLUTE_THRESHOLD:
+    if (
+        ratio_total is not None
+        and ratio_total >= HIGH_DELTA_RATIO_THRESHOLD
+        and delta_total_abs >= HIGH_DELTA_ABSOLUTE_THRESHOLD
+    ):
         return "high"
 
     if (
@@ -218,7 +221,10 @@ def classify_drift_severity(
     if ratio_exported is not None and ratio_exported >= MEDIUM_DELTA_RATIO_THRESHOLD:
         return "medium"
 
-    if delta_total_abs >= MEDIUM_DELTA_ABSOLUTE_THRESHOLD or delta_exported_abs >= MEDIUM_DELTA_ABSOLUTE_THRESHOLD:
+    if (
+        delta_total_abs >= MEDIUM_DELTA_ABSOLUTE_THRESHOLD
+        or delta_exported_abs >= MEDIUM_DELTA_ABSOLUTE_THRESHOLD
+    ):
         return "medium"
 
     return "low"
@@ -279,10 +285,12 @@ def latest_session_by_database(sessions_df: pd.DataFrame) -> dict[str, pd.Series
         return latest_by_database
 
     for _, group_df in sessions_df.groupby("database_key", sort=False):
-        ordered_group = group_df.sort_values(["search_date", "search_date_iso"], kind="stable").reset_index(drop=True)
-        latest_by_database[str(ordered_group.loc[ordered_group.shape[0] - 1, "database_key"])] = ordered_group.loc[
-            ordered_group.shape[0] - 1
-        ]
+        ordered_group = group_df.sort_values(
+            ["search_date", "search_date_iso"], kind="stable"
+        ).reset_index(drop=True)
+        latest_by_database[str(ordered_group.loc[ordered_group.shape[0] - 1, "database_key"])] = (
+            ordered_group.loc[ordered_group.shape[0] - 1]
+        )
 
     return latest_by_database
 
@@ -332,7 +340,9 @@ def prepare_search_sessions(search_log_df: pd.DataFrame) -> pd.DataFrame:
     if sessions_df.empty:
         return sessions_df
 
-    sessions_df = sessions_df.sort_values(["database_key", "search_date", "search_date_iso"], kind="stable").reset_index(drop=True)
+    sessions_df = sessions_df.sort_values(
+        ["database_key", "search_date", "search_date_iso"], kind="stable"
+    ).reset_index(drop=True)
     return sessions_df
 
 
@@ -343,7 +353,9 @@ def build_search_diffs(sessions_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=DIFF_COLUMNS)
 
     for _, group_df in sessions_df.groupby("database_key", sort=False):
-        ordered_group = group_df.sort_values(["search_date", "search_date_iso"], kind="stable").reset_index(drop=True)
+        ordered_group = group_df.sort_values(
+            ["search_date", "search_date_iso"], kind="stable"
+        ).reset_index(drop=True)
         if ordered_group.shape[0] < 2:
             continue
 
@@ -604,9 +616,13 @@ def render_summary(
             lines.append(f"- `{database}`")
 
     if not diffs_df.empty:
-        query_changed = int(diffs_df["query_version_changed"].astype(str).str.lower().eq("yes").sum())
+        query_changed = int(
+            diffs_df["query_version_changed"].astype(str).str.lower().eq("yes").sum()
+        )
         filters_changed = int(diffs_df["filters_changed"].astype(str).str.lower().eq("yes").sum())
-        severity_counts: Counter[str] = Counter(diffs_df.get("drift_severity", pd.Series(dtype=str)).fillna("").astype(str).str.strip())
+        severity_counts: Counter[str] = Counter(
+            diffs_df.get("drift_severity", pd.Series(dtype=str)).fillna("").astype(str).str.strip()
+        )
         lines.append("")
         lines.append("## Session Diffs")
         lines.append("")
@@ -630,7 +646,9 @@ def render_summary(
             lines.append("")
             lines.append("## Next Due Search")
             lines.append("")
-            ordered_cycle_df = initial_cycle_df.sort_values(["database", "scheduled_search_date"], kind="stable")
+            ordered_cycle_df = initial_cycle_df.sort_values(
+                ["database", "scheduled_search_date"], kind="stable"
+            )
             for _, row in ordered_cycle_df.iterrows():
                 lines.append(
                     f"- `{normalize(row.get('database', ''))}`: "
@@ -650,7 +668,9 @@ def render_summary(
             cadence_status_counts: Counter[str] = Counter(
                 cadence_check_df["cadence_status"].fillna("").astype(str).str.strip().tolist()
             )
-            for status, count in sorted(cadence_status_counts.items(), key=lambda item: (-item[1], item[0])):
+            for status, count in sorted(
+                cadence_status_counts.items(), key=lambda item: (-item[1], item[0])
+            ):
                 lines.append(f"- `{status}`: {count}")
 
             overdue_df = cadence_check_df.loc[
@@ -674,11 +694,19 @@ def render_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Session diffs are computed per database from consecutive dated rows in `search_log.csv`.")
-    lines.append("- Drift severity is deterministic (`high`/`medium`/`low`) and uses both strategy flags and result deltas (including absolute `delta_results_total >= 200` fallback).")
+    lines.append(
+        "- Session diffs are computed per database from consecutive dated rows in `search_log.csv`."
+    )
+    lines.append(
+        "- Drift severity is deterministic (`high`/`medium`/`low`) and uses both strategy flags and result deltas (including absolute `delta_results_total >= 200` fallback)."
+    )
     lines.append("- Living schedule rows are generated only when resolved review mode is `living`.")
-    lines.append("- Cadence check uses the latest dated search per database against `--cadence-days`.")
-    lines.append("- Use this output for planning repeat searches; final search strategy decisions remain reviewer-led.")
+    lines.append(
+        "- Cadence check uses the latest dated search per database against `--cadence-days`."
+    )
+    lines.append(
+        "- Use this output for planning repeat searches; final search strategy decisions remain reviewer-led."
+    )
     lines.append("")
     return "\n".join(lines)
 
@@ -774,7 +802,9 @@ def main(argv: list[str] | None = None) -> int:
     diffs_output_path = Path(args.diffs_output)
     summary_output_path = Path(args.summary_output)
 
-    resolved_review_mode, review_mode_source, review_mode_signal = resolve_review_mode(args.review_mode, protocol_path)
+    resolved_review_mode, review_mode_source, review_mode_signal = resolve_review_mode(
+        args.review_mode, protocol_path
+    )
 
     reference_today = parse_date(args.today) if normalize(args.today) else date.today()
     if reference_today is None:
@@ -784,7 +814,11 @@ def main(argv: list[str] | None = None) -> int:
     total_search_log_rows = int(search_log_df.shape[0])
 
     databases = unique_preserve_order(
-        [normalize(value) for value in search_log_df.get("database", pd.Series(dtype=str)).tolist() if normalize(value)]
+        [
+            normalize(value)
+            for value in search_log_df.get("database", pd.Series(dtype=str)).tolist()
+            if normalize(value)
+        ]
     )
 
     sessions_df = prepare_search_sessions(search_log_df)
@@ -842,7 +876,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote: {summary_output_path}")
     overdue_count = 0
     if not cadence_check_df.empty and "cadence_status" in cadence_check_df.columns:
-        overdue_count = int(cadence_check_df["cadence_status"].astype(str).str.lower().eq("overdue").sum())
+        overdue_count = int(
+            cadence_check_df["cadence_status"].astype(str).str.lower().eq("overdue").sum()
+        )
     print(
         "Living scheduler stats: "
         f"requested_mode={args.review_mode}, "

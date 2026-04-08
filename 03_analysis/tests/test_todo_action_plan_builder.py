@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "todo_action_plan_builder.py"
 
@@ -88,7 +87,10 @@ class TodoActionPlanBuilderTests(unittest.TestCase):
             output_path = tmp_path / "todo_action_plan.md"
 
             status_summary_path.write_text(
-                json.dumps({"input_checklist": [{"id": "x", "done": True}]}, ensure_ascii=False, indent=2) + "\n",
+                json.dumps(
+                    {"input_checklist": [{"id": "x", "done": True}]}, ensure_ascii=False, indent=2
+                )
+                + "\n",
                 encoding="utf-8",
             )
 

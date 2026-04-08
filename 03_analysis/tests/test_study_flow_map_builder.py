@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "study_flow_map_builder.py"
 
@@ -52,7 +51,9 @@ class StudyFlowMapBuilderTests(unittest.TestCase):
                 ]
             ).to_csv(master_records_path, index=False)
 
-            pd.DataFrame(columns=["stable_key", "record_id", "first_seen_date"]).to_csv(record_id_map_path, index=False)
+            pd.DataFrame(columns=["stable_key", "record_id", "first_seen_date"]).to_csv(
+                record_id_map_path, index=False
+            )
 
             pd.DataFrame(
                 [
@@ -136,8 +137,12 @@ class StudyFlowMapBuilderTests(unittest.TestCase):
                 ]
             ).to_csv(extraction_path, index=False)
 
-            pd.DataFrame(columns=["record_id", "source_record_id", "source_database"]).to_csv(master_records_path, index=False)
-            pd.DataFrame(columns=["stable_key", "record_id", "first_seen_date"]).to_csv(record_id_map_path, index=False)
+            pd.DataFrame(columns=["record_id", "source_record_id", "source_database"]).to_csv(
+                master_records_path, index=False
+            )
+            pd.DataFrame(columns=["stable_key", "record_id", "first_seen_date"]).to_csv(
+                record_id_map_path, index=False
+            )
 
             pd.DataFrame(
                 [

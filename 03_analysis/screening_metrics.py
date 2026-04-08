@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
-import pandas as pd
 
+import pandas as pd
 
 DECISION_NORMALIZATION = {
     "include": "include",
@@ -64,7 +64,9 @@ def consensus_stats_from_results(df: pd.DataFrame) -> dict:
         return result
 
     if "record_id" not in df.columns:
-        result["reason"] = "Missing required `record_id` column in title/abstract consensus results."
+        result["reason"] = (
+            "Missing required `record_id` column in title/abstract consensus results."
+        )
         return result
 
     prepared = df.copy()
@@ -121,9 +123,7 @@ def cohen_kappa_from_dual_log(df: pd.DataFrame) -> dict:
     )
 
     log = log[
-        log["record_id"].ne("")
-        & log["reviewer"].ne("")
-        & log["title_abstract_decision"].ne("")
+        log["record_id"].ne("") & log["reviewer"].ne("") & log["title_abstract_decision"].ne("")
     ]
     if log.empty:
         result["reason"] = "No non-empty title/abstract decisions in dual-screening log."
@@ -272,7 +272,9 @@ def build_summary(
             lines.append("")
             lines.append("## Reviewer Breakdown")
             lines.append("")
-            lines.append("| Reviewer | Sessions | Records | Minutes | Records/hour | Include rate |")
+            lines.append(
+                "| Reviewer | Sessions | Records | Minutes | Records/hour | Include rate |"
+            )
             lines.append("|---|---:|---:|---:|---:|---:|")
             for _, row in grouped.iterrows():
                 rec = float(row["records_screened"])
@@ -321,7 +323,9 @@ def inter_rater_block(kappa_stats: dict, agreement_input_path: Path) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate screening metrics summary from daily screening log.")
+    parser = argparse.ArgumentParser(
+        description="Generate screening metrics summary from daily screening log."
+    )
     parser.add_argument(
         "--input",
         default="../02_data/processed/screening_daily_log.csv",
@@ -390,7 +394,9 @@ def main() -> None:
         for col in key_cols:
             raw[col] = raw[col].fillna("").astype(str).str.strip()
 
-        non_empty = raw.apply(lambda row: any(cell != "" and cell.lower() != "nan" for cell in row), axis=1)
+        non_empty = raw.apply(
+            lambda row: any(cell != "" and cell.lower() != "nan" for cell in row), axis=1
+        )
         df = df[non_empty].copy()
 
         if df.empty:
@@ -399,7 +405,14 @@ def main() -> None:
             summary += "\n"
             summary += inter_rater_block(kappa_stats, agreement_input_path)
         else:
-            for col in ["records_screened", "include_n", "exclude_n", "maybe_n", "pending_n", "time_spent_minutes"]:
+            for col in [
+                "records_screened",
+                "include_n",
+                "exclude_n",
+                "maybe_n",
+                "pending_n",
+                "time_spent_minutes",
+            ]:
                 df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
             df["date"] = df["date"].fillna("").astype(str).str.strip()

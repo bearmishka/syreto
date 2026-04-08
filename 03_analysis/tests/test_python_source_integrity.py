@@ -2,11 +2,10 @@ import contextlib
 import importlib.util
 import io
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "python_source_guard.py"
 spec = importlib.util.spec_from_file_location("python_source_guard", MODULE_PATH)
@@ -78,11 +77,7 @@ class PythonSourceIntegrityTests(unittest.TestCase):
             root = Path(tmp_dir)
             sample = root / "sample_module.py"
             sample.write_text(
-                "value = 1\n"
-                "value = 2\n"
-                "\n"
-                "def main() -> int:\n"
-                "    return 0\n",
+                "value = 1\nvalue = 2\n\ndef main() -> int:\n    return 0\n",
                 encoding="utf-8",
             )
 
@@ -114,10 +109,14 @@ class PythonSourceIntegrityTests(unittest.TestCase):
             any("duplicate_main_guard_module.py" in item for item in report.multiple_main_guards)
         )
         self.assertTrue(
-            any("run_on_after_main_exit_module.py" in item for item in report.run_on_after_main_exit)
+            any(
+                "run_on_after_main_exit_module.py" in item for item in report.run_on_after_main_exit
+            )
         )
         self.assertTrue(
-            any("duplicate_header_lines_module.py" in item for item in report.duplicate_header_lines)
+            any(
+                "duplicate_header_lines_module.py" in item for item in report.duplicate_header_lines
+            )
         )
         self.assertTrue(
             any(

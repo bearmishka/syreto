@@ -1,10 +1,9 @@
 import argparse
+import re
 from datetime import datetime
 from pathlib import Path
-import re
 
 import pandas as pd
-
 
 REQUIRED_COLUMNS = [
     "study_id",

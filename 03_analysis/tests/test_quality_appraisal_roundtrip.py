@@ -1,11 +1,10 @@
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "quality_appraisal_roundtrip.py"
 

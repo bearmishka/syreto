@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "results_interpretation_layer.py"
 
@@ -135,7 +134,9 @@ class ResultsInterpretationLayerTests(unittest.TestCase):
             markdown_output = tmp_path / "results_interpretation_layer.md"
             tex_output = tmp_path / "03c_interpretation_auto.tex"
 
-            pd.DataFrame(columns=["outcome", "k_studies", "pooled_effect", "ci_low", "ci_high", "i2"]).to_csv(
+            pd.DataFrame(
+                columns=["outcome", "k_studies", "pooled_effect", "ci_low", "ci_high", "i2"]
+            ).to_csv(
                 meta_path,
                 index=False,
             )
@@ -151,7 +152,9 @@ class ResultsInterpretationLayerTests(unittest.TestCase):
                     }
                 ]
             ).to_csv(results_path, index=False)
-            pd.DataFrame(columns=["outcome", "funnel_asymmetry"]).to_csv(publication_bias_path, index=False)
+            pd.DataFrame(columns=["outcome", "funnel_asymmetry"]).to_csv(
+                publication_bias_path, index=False
+            )
 
             result = subprocess.run(
                 [

@@ -207,7 +207,10 @@ def resolve_text_columns(df: pd.DataFrame, requested: str) -> tuple[list[str], s
 
     fallback = [column for column in ["title", "keywords", "notes"] if column in df.columns]
     if fallback:
-        return fallback, "Auto mode fallback: abstract column missing, using available title/keywords/notes fields."
+        return (
+            fallback,
+            "Auto mode fallback: abstract column missing, using available title/keywords/notes fields.",
+        )
 
     return [], "Auto mode failed: no abstract/title/keywords/notes columns found."
 
@@ -311,9 +314,7 @@ def build_vocabulary(
 
     max_doc_freq = int(max(1, np.floor(len(documents) * max_doc_freq_ratio)))
     filtered_terms = [
-        term
-        for term, freq in doc_freq.items()
-        if freq >= min_doc_freq and freq <= max_doc_freq
+        term for term, freq in doc_freq.items() if freq >= min_doc_freq and freq <= max_doc_freq
     ]
 
     filtered_terms.sort(key=lambda term: (-doc_freq[term], term))
@@ -429,7 +430,9 @@ def topic_top_terms_df(
     theta: np.ndarray,
 ) -> pd.DataFrame:
     if phi.size == 0:
-        return pd.DataFrame(columns=["topic_id", "rank", "term", "term_probability", "topic_prevalence"])
+        return pd.DataFrame(
+            columns=["topic_id", "rank", "term", "term_probability", "topic_prevalence"]
+        )
 
     rows: list[dict[str, object]] = []
     prevalence = theta.mean(axis=0) if theta.size > 0 else np.zeros(phi.shape[0], dtype=float)
@@ -540,7 +543,14 @@ def render_cluster_plot(
     plt.figure(figsize=(10.5, 7.2))
 
     if doc_topics_df.empty:
-        plt.text(0.5, 0.5, "No documents available for topic clustering.", ha="center", va="center", fontsize=12)
+        plt.text(
+            0.5,
+            0.5,
+            "No documents available for topic clustering.",
+            ha="center",
+            va="center",
+            fontsize=12,
+        )
         plt.axis("off")
         plt.tight_layout()
         plt.savefig(output_path, dpi=180)
@@ -558,7 +568,9 @@ def render_cluster_plot(
 
     for topic in unique_topics:
         mask = topics == topic
-        plt.scatter(x[mask], y[mask], s=26, alpha=0.82, color=color_map[topic], label=f"Topic {topic}")
+        plt.scatter(
+            x[mask], y[mask], s=26, alpha=0.82, color=color_map[topic], label=f"Topic {topic}"
+        )
 
     labels = topic_labels(top_terms_df)
     legend_labels = []
@@ -569,7 +581,14 @@ def render_cluster_plot(
             legend_labels.append(f"T{topic}")
 
     handles, _ = plt.gca().get_legend_handles_labels()
-    plt.legend(handles, legend_labels, loc="upper left", bbox_to_anchor=(1.02, 1.00), fontsize=8, frameon=True)
+    plt.legend(
+        handles,
+        legend_labels,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.00),
+        fontsize=8,
+        frameon=True,
+    )
 
     plt.title("LDA Topic Clusters (documents by dominant topic)")
     plt.xlabel("PC1 (document-topic space)")
@@ -611,7 +630,9 @@ def build_summary(
     lines.append(f"- Master records: `{master_path.as_posix()}`")
     lines.append(f"- Text columns used: {', '.join(text_columns) if text_columns else 'none'}")
     lines.append(f"- Column selection mode: {column_selection_note}")
-    lines.append(f"- NLP backend: {'nltk + regex tokenizer' if NLTK_AVAILABLE else 'regex fallback tokenizer'}")
+    lines.append(
+        f"- NLP backend: {'nltk + regex tokenizer' if NLTK_AVAILABLE else 'regex fallback tokenizer'}"
+    )
     lines.append("")
     lines.append("## LDA Settings")
     lines.append("")
@@ -641,8 +662,12 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Use this map for rapid corpus orientation before/around title-abstract screening.")
-    lines.append("- Topic labels are heuristic (top terms); always manually inspect representative records.")
+    lines.append(
+        "- Use this map for rapid corpus orientation before/around title-abstract screening."
+    )
+    lines.append(
+        "- Topic labels are heuristic (top terms); always manually inspect representative records."
+    )
     lines.append("")
     return "\n".join(lines)
 
@@ -651,30 +676,77 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Build an LDA topic model on abstract text from master_records and visualize document clusters."
     )
-    parser.add_argument("--master", default="../02_data/processed/master_records.csv", help="Path to master records CSV")
+    parser.add_argument(
+        "--master",
+        default="../02_data/processed/master_records.csv",
+        help="Path to master records CSV",
+    )
     parser.add_argument(
         "--text-columns",
         default="auto",
         help="Comma-separated text columns or 'auto' (auto = abstract-only if present; else fallback to title/keywords/notes)",
     )
-    parser.add_argument("--include-duplicates", action="store_true", help="Include duplicate rows from master records")
+    parser.add_argument(
+        "--include-duplicates",
+        action="store_true",
+        help="Include duplicate rows from master records",
+    )
     parser.add_argument("--min-token-length", type=int, default=3, help="Minimum token length")
-    parser.add_argument("--min-tokens-per-doc", type=int, default=15, help="Minimum tokens required per document")
-    parser.add_argument("--max-tokens-per-doc", type=int, default=300, help="Maximum tokens retained per document")
-    parser.add_argument("--max-documents", type=int, default=3000, help="Maximum documents used in LDA (0 = no cap)")
-    parser.add_argument("--min-doc-freq", type=int, default=3, help="Minimum document frequency for vocabulary terms")
-    parser.add_argument("--max-doc-freq-ratio", type=float, default=0.85, help="Maximum document-frequency ratio for terms")
-    parser.add_argument("--max-vocab-size", type=int, default=4000, help="Maximum vocabulary size after DF filtering")
+    parser.add_argument(
+        "--min-tokens-per-doc", type=int, default=15, help="Minimum tokens required per document"
+    )
+    parser.add_argument(
+        "--max-tokens-per-doc", type=int, default=300, help="Maximum tokens retained per document"
+    )
+    parser.add_argument(
+        "--max-documents", type=int, default=3000, help="Maximum documents used in LDA (0 = no cap)"
+    )
+    parser.add_argument(
+        "--min-doc-freq",
+        type=int,
+        default=3,
+        help="Minimum document frequency for vocabulary terms",
+    )
+    parser.add_argument(
+        "--max-doc-freq-ratio",
+        type=float,
+        default=0.85,
+        help="Maximum document-frequency ratio for terms",
+    )
+    parser.add_argument(
+        "--max-vocab-size",
+        type=int,
+        default=4000,
+        help="Maximum vocabulary size after DF filtering",
+    )
     parser.add_argument("--topics", type=int, default=8, help="Number of LDA topics")
     parser.add_argument("--iterations", type=int, default=250, help="Gibbs sampling iterations")
-    parser.add_argument("--alpha", type=float, default=0.1, help="Dirichlet alpha for document-topic distribution")
-    parser.add_argument("--beta", type=float, default=0.01, help="Dirichlet beta for topic-word distribution")
+    parser.add_argument(
+        "--alpha", type=float, default=0.1, help="Dirichlet alpha for document-topic distribution"
+    )
+    parser.add_argument(
+        "--beta", type=float, default=0.01, help="Dirichlet beta for topic-word distribution"
+    )
     parser.add_argument("--top-terms", type=int, default=12, help="Number of top terms per topic")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--doc-topics-output", default="outputs/topic_model_doc_topics.csv", help="Output CSV for doc-topic assignments")
-    parser.add_argument("--topic-terms-output", default="outputs/topic_model_top_terms.csv", help="Output CSV for top terms by topic")
-    parser.add_argument("--plot-output", default="outputs/topic_model_clusters.png", help="Output PNG for topic cluster visualization")
-    parser.add_argument("--summary", default="outputs/topic_model_summary.md", help="Output markdown summary")
+    parser.add_argument(
+        "--doc-topics-output",
+        default="outputs/topic_model_doc_topics.csv",
+        help="Output CSV for doc-topic assignments",
+    )
+    parser.add_argument(
+        "--topic-terms-output",
+        default="outputs/topic_model_top_terms.csv",
+        help="Output CSV for top terms by topic",
+    )
+    parser.add_argument(
+        "--plot-output",
+        default="outputs/topic_model_clusters.png",
+        help="Output PNG for topic cluster visualization",
+    )
+    parser.add_argument(
+        "--summary", default="outputs/topic_model_summary.md", help="Output markdown summary"
+    )
     args = parser.parse_args()
 
     if args.topics < 2:
@@ -760,7 +832,9 @@ def main() -> None:
         )
     else:
         theta = np.zeros((0, args.topics), dtype=float)
-        topic_terms_df = pd.DataFrame(columns=["topic_id", "rank", "term", "term_probability", "topic_prevalence"])
+        topic_terms_df = pd.DataFrame(
+            columns=["topic_id", "rank", "term", "term_probability", "topic_prevalence"]
+        )
         doc_topics_df = pd.DataFrame(
             columns=[
                 "source_row",
@@ -819,7 +893,9 @@ def main() -> None:
     print(f"Vocabulary size: {len(term_to_id)}")
     print(f"Column mode: {column_selection_note}")
     if not NLTK_AVAILABLE:
-        print("Note: nltk is not installed in this environment; regex fallback tokenization was used.")
+        print(
+            "Note: nltk is not installed in this environment; regex fallback tokenization was used."
+        )
 
 
 if __name__ == "__main__":

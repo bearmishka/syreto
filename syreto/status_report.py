@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 EMPTY_VALUES = {"", "nan", "none"}
 YES_VALUES = {"yes", "y", "1", "true"}
 VALID_DUPLICATE_VALUES = YES_VALUES | {"no", "n", "0", "false"}

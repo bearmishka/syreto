@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 MISSING_VALUES = {
     "",
     "nan",
@@ -238,7 +237,12 @@ def get_included_studies(extraction_df: pd.DataFrame) -> pd.DataFrame:
     if not non_empty_consensus.empty:
         if non_empty_consensus.isin(INCLUDE_CODES).any():
             dataframe = dataframe[
-                dataframe["consensus_status"].fillna("").astype(str).str.strip().str.lower().isin(INCLUDE_CODES)
+                dataframe["consensus_status"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+                .str.lower()
+                .isin(INCLUDE_CODES)
             ].copy()
 
     if dataframe.empty:
@@ -292,7 +296,9 @@ def detect_quality_band_from_text(value: object) -> str:
     return ""
 
 
-def risk_of_bias_downgrade(study_row: pd.Series, quality_info: dict[str, dict[str, str]]) -> tuple[int, str, str, str]:
+def risk_of_bias_downgrade(
+    study_row: pd.Series, quality_info: dict[str, dict[str, str]]
+) -> tuple[int, str, str, str]:
     study_id = normalize(study_row.get("study_id", ""))
     from_lookup = quality_info.get(study_id, {})
 
@@ -358,13 +364,21 @@ def build_direction_group_stats(df: pd.DataFrame) -> dict[str, dict[str, object]
     return stats
 
 
-def inconsistency_downgrade(study_row: pd.Series, group_stats: dict[str, dict[str, object]]) -> tuple[int, str, str]:
-    predictor_group = normalize_group_value(study_row.get("predictor_construct", ""), "unspecified_predictor")
-    outcome_group = normalize_group_value(study_row.get("outcome_construct", ""), "unspecified_outcome")
+def inconsistency_downgrade(
+    study_row: pd.Series, group_stats: dict[str, dict[str, object]]
+) -> tuple[int, str, str]:
+    predictor_group = normalize_group_value(
+        study_row.get("predictor_construct", ""), "unspecified_predictor"
+    )
+    outcome_group = normalize_group_value(
+        study_row.get("outcome_construct", ""), "unspecified_outcome"
+    )
     group_key = f"{predictor_group}||{outcome_group}"
 
     direction = normalize_effect_direction(study_row.get("effect_direction", ""))
-    stats = group_stats.get(group_key, {"n_valid": 0, "dominant_direction": "", "dominant_share": 0.0})
+    stats = group_stats.get(
+        group_key, {"n_valid": 0, "dominant_direction": "", "dominant_share": 0.0}
+    )
 
     n_valid = int(stats.get("n_valid", 0))
     dominant_direction = str(stats.get("dominant_direction", ""))
@@ -402,16 +416,20 @@ def indirectness_downgrade(study_row: pd.Series) -> tuple[int, str, str]:
 
     diagnostics_missing = all(
         is_missing(study_row.get(column, ""))
-        for column in ["condition_diagnostic_method", "condition_diagnostic_system", "condition_definition"]
+        for column in [
+            "condition_diagnostic_method",
+            "condition_diagnostic_system",
+            "condition_definition",
+        ]
     )
     if diagnostics_missing:
         downgrade += 1
         reasons.append("Condition diagnostic framing is not clearly specified.")
 
     outcome_missing = is_missing(study_row.get("outcome_measure", ""))
-    predictor_measure_missing = is_missing(study_row.get("predictor_instrument_name", "")) and is_missing(
-        study_row.get("predictor_instrument_type", "")
-    )
+    predictor_measure_missing = is_missing(
+        study_row.get("predictor_instrument_name", "")
+    ) and is_missing(study_row.get("predictor_instrument_type", ""))
     if outcome_missing or predictor_measure_missing:
         downgrade += 1
         reasons.append("Measurement details are incomplete for predictor/outcome.")
@@ -448,7 +466,10 @@ def imprecision_downgrade(study_row: pd.Series) -> tuple[int, str, str]:
     effect_available = not is_missing(study_row.get("main_effect_value", "")) or not is_missing(
         study_row.get("main_effect_metric", "")
     )
-    if not effect_available and normalize_effect_direction(study_row.get("effect_direction", "")) == "":
+    if (
+        not effect_available
+        and normalize_effect_direction(study_row.get("effect_direction", "")) == ""
+    ):
         downgrade += 1
         reasons.append("Effect estimate and direction are both missing.")
 
@@ -557,12 +578,15 @@ def render_latex_table(profile_df: pd.DataFrame, extraction_path: Path) -> str:
         r"\begin{tabular}{p{0.11\textwidth}p{0.14\textwidth}p{0.11\textwidth}p{0.11\textwidth}p{0.11\textwidth}p{0.11\textwidth}p{0.15\textwidth}}"
     )
     lines.append(r"\toprule")
-    lines.append(r"Study & Design & Risk of bias & Inconsistency & Indirectness & Imprecision & Overall certainty \\")
+    lines.append(
+        r"Study & Design & Risk of bias & Inconsistency & Indirectness & Imprecision & Overall certainty \\"
+    )
     lines.append(r"\midrule")
 
     if profile_df.empty:
         lines.append(
-            r"\multicolumn{7}{p{0.93\textwidth}}{No included studies with non-empty study\_id are available for GRADE profiling yet.} \\")
+            r"\multicolumn{7}{p{0.93\textwidth}}{No included studies with non-empty study\_id are available for GRADE profiling yet.} \\"
+        )
     else:
         for _, row in profile_df.iterrows():
             lines.append(
@@ -577,7 +601,8 @@ def render_latex_table(profile_df: pd.DataFrame, extraction_path: Path) -> str:
                         latex_escape(row.get("overall_certainty", "")),
                     ]
                 )
-                + r" \\")
+                + r" \\"
+            )
 
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
@@ -615,12 +640,17 @@ def build_summary(
         lines.append("")
         lines.append("## Notes")
         lines.append("")
-        lines.append("- Populate extraction rows and rerun profiler to generate per-study GRADE entries.")
+        lines.append(
+            "- Populate extraction rows and rerun profiler to generate per-study GRADE entries."
+        )
         lines.append("")
         return "\n".join(lines)
 
     certainty_counts = (
-        profile_df["overall_certainty"].value_counts().rename_axis("overall_certainty").reset_index(name="studies")
+        profile_df["overall_certainty"]
+        .value_counts()
+        .rename_axis("overall_certainty")
+        .reset_index(name="studies")
     )
     certainty_counts["share"] = certainty_counts["studies"].apply(
         lambda value: f"{(100.0 * float(value) / float(profile_df.shape[0])):.1f}%"
@@ -638,10 +668,18 @@ def build_summary(
     lines.append("")
     lines.append("## Downgrade Burden by Domain")
     lines.append("")
-    lines.append(f"- Risk of bias downgrades (sum): {int(profile_df['risk_of_bias_downgrade'].sum())}")
-    lines.append(f"- Inconsistency downgrades (sum): {int(profile_df['inconsistency_downgrade'].sum())}")
-    lines.append(f"- Indirectness downgrades (sum): {int(profile_df['indirectness_downgrade'].sum())}")
-    lines.append(f"- Imprecision downgrades (sum): {int(profile_df['imprecision_downgrade'].sum())}")
+    lines.append(
+        f"- Risk of bias downgrades (sum): {int(profile_df['risk_of_bias_downgrade'].sum())}"
+    )
+    lines.append(
+        f"- Inconsistency downgrades (sum): {int(profile_df['inconsistency_downgrade'].sum())}"
+    )
+    lines.append(
+        f"- Indirectness downgrades (sum): {int(profile_df['indirectness_downgrade'].sum())}"
+    )
+    lines.append(
+        f"- Imprecision downgrades (sum): {int(profile_df['imprecision_downgrade'].sum())}"
+    )
 
     lines.append("")
     lines.append("## Priority Studies for Calibration")
@@ -668,8 +706,12 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- This profiler provides a transparent, reproducible heuristic approximation of GRADE domains.")
-    lines.append("- Use results as calibration support, then finalize evidence judgments in manuscript consensus review.")
+    lines.append(
+        "- This profiler provides a transparent, reproducible heuristic approximation of GRADE domains."
+    )
+    lines.append(
+        "- Use results as calibration support, then finalize evidence judgments in manuscript consensus review."
+    )
     lines.append("")
 
     return "\n".join(lines)

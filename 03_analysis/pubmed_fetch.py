@@ -11,7 +11,6 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-
 EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 DOI_PATTERN = re.compile(r"10\.\d{4,9}/[^\s]+", re.IGNORECASE)
 YEAR_PATTERN = re.compile(r"(19|20)\d{2}")
@@ -109,9 +108,13 @@ class EutilsClient:
                 charset = response.headers.get_content_charset() or "utf-8"
                 body = response.read().decode(charset, errors="replace")
         except HTTPError as error:
-            raise RuntimeError(f"E-utilities HTTP error {error.code} for {endpoint}: {error.reason}") from error
+            raise RuntimeError(
+                f"E-utilities HTTP error {error.code} for {endpoint}: {error.reason}"
+            ) from error
         except URLError as error:
-            raise RuntimeError(f"E-utilities network error for {endpoint}: {error.reason}") from error
+            raise RuntimeError(
+                f"E-utilities network error for {endpoint}: {error.reason}"
+            ) from error
 
         self.last_call_time = time.time()
         return body
@@ -139,7 +142,9 @@ class EutilsClient:
 
         return int(count_text), webenv, query_key
 
-    def fetch_medline_batch(self, *, webenv: str, query_key: str, retstart: int, retmax: int) -> str:
+    def fetch_medline_batch(
+        self, *, webenv: str, query_key: str, retstart: int, retmax: int
+    ) -> str:
         return self._request(
             "efetch.fcgi",
             {
@@ -291,7 +296,9 @@ def load_query_text(query_version: str, query_file: str) -> str:
     return text
 
 
-def resolve_query_inputs(*, query: str, query_file: str, query_version: str) -> tuple[str, str, str]:
+def resolve_query_inputs(
+    *, query: str, query_file: str, query_version: str
+) -> tuple[str, str, str]:
     inline_query = compact_query_text(query)
     file_path = clean_text(query_file)
     resolved_version = clean_text(query_version)
@@ -320,7 +327,9 @@ def ensure_search_log_columns(df: pd.DataFrame) -> pd.DataFrame:
     for column in SEARCH_LOG_COLUMNS:
         if column not in df.columns:
             df[column] = ""
-    ordered = SEARCH_LOG_COLUMNS + [column for column in df.columns if column not in SEARCH_LOG_COLUMNS]
+    ordered = SEARCH_LOG_COLUMNS + [
+        column for column in df.columns if column not in SEARCH_LOG_COLUMNS
+    ]
     return df[ordered]
 
 
@@ -388,7 +397,9 @@ def fetch_medline_text(
     chunks: list[str] = []
     for start in range(0, records_to_export, batch_size):
         size = min(batch_size, records_to_export - start)
-        text = client.fetch_medline_batch(webenv=webenv, query_key=query_key, retstart=start, retmax=size)
+        text = client.fetch_medline_batch(
+            webenv=webenv, query_key=query_key, retstart=start, retmax=size
+        )
         if text:
             chunks.append(text.strip())
     if not chunks:
@@ -400,29 +411,52 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Fetch PubMed records via NCBI E-utilities, save RIS to 02_data/raw, and update search_log.csv."
     )
-    parser.add_argument("query_version", nargs="?", default="", help="Optional query version token, e.g., v0.2")
+    parser.add_argument(
+        "query_version", nargs="?", default="", help="Optional query version token, e.g., v0.2"
+    )
     parser.add_argument(
         "--query-version",
         dest="query_version_override",
         default="",
         help="Optional query version token (overrides positional query_version)",
     )
-    parser.add_argument("--query", default="", help="Direct PubMed query text (inline, no query file needed)")
+    parser.add_argument(
+        "--query", default="", help="Direct PubMed query text (inline, no query file needed)"
+    )
     parser.add_argument("--query-file", default="", help="Optional explicit query file path")
     parser.add_argument("--raw-dir", default="../02_data/raw", help="Directory for RIS export")
-    parser.add_argument("--search-log", default="../02_data/processed/search_log.csv", help="Path to search_log.csv")
-    parser.add_argument("--run-date", default=datetime.now().strftime("%Y-%m-%d"), help="Run date (YYYY-MM-DD)")
+    parser.add_argument(
+        "--search-log", default="../02_data/processed/search_log.csv", help="Path to search_log.csv"
+    )
+    parser.add_argument(
+        "--run-date", default=datetime.now().strftime("%Y-%m-%d"), help="Run date (YYYY-MM-DD)"
+    )
     parser.add_argument("--email", default="", help="Contact email for NCBI requests")
     parser.add_argument("--api-key", default="", help="NCBI API key (optional)")
-    parser.add_argument("--tool", default="prism_pubmed_fetch", help="Tool name sent to E-utilities")
+    parser.add_argument(
+        "--tool", default="prism_pubmed_fetch", help="Tool name sent to E-utilities"
+    )
     parser.add_argument("--timeout", type=int, default=60, help="HTTP timeout in seconds")
     parser.add_argument("--batch-size", type=int, default=200, help="EFetch batch size")
-    parser.add_argument("--max-records", type=int, default=0, help="Optional max number of records to export (0 = all)")
+    parser.add_argument(
+        "--max-records",
+        type=int,
+        default=0,
+        help="Optional max number of records to export (0 = all)",
+    )
     parser.add_argument("--export-filename", default="", help="Optional RIS filename override")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite output filename if it already exists")
-    parser.add_argument("--skip-log-update", action="store_true", help="Skip updating search_log.csv")
-    parser.add_argument("--dry-run", action="store_true", help="Fetch and convert records without writing files")
-    parser.add_argument("--start-year-default", default="1980", help="Default start_year for a new PubMed row")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite output filename if it already exists"
+    )
+    parser.add_argument(
+        "--skip-log-update", action="store_true", help="Skip updating search_log.csv"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Fetch and convert records without writing files"
+    )
+    parser.add_argument(
+        "--start-year-default", default="1980", help="Default start_year for a new PubMed row"
+    )
     parser.add_argument(
         "--filters-default",
         default="NCBI E-utilities automated PubMed fetch",
@@ -442,7 +476,9 @@ def main() -> None:
         query_version=requested_version,
     )
 
-    client = EutilsClient(tool=args.tool, email=args.email, api_key=args.api_key, timeout=args.timeout)
+    client = EutilsClient(
+        tool=args.tool, email=args.email, api_key=args.api_key, timeout=args.timeout
+    )
     results_total, webenv, query_key = client.search(query_text)
 
     records_to_export = results_total
@@ -471,9 +507,11 @@ def main() -> None:
         output_path.write_text(ris_text, encoding="utf-8")
 
         if not args.skip_log_update:
-            notes = f"Auto-fetched via pubmed_fetch.py on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            notes = (
+                f"Auto-fetched via pubmed_fetch.py on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            )
             notes += f" | source={query_source}"
-            notes += f" | query=\"{query_preview(query_text, limit=120)}\""
+            notes += f' | query="{query_preview(query_text, limit=120)}"'
             if args.max_records > 0 and args.max_records < results_total:
                 notes += f" (max_records={args.max_records})"
 

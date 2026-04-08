@@ -1,21 +1,23 @@
 import importlib.util
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-
+from pathlib import Path
 
 ANALYSIS_ROOT = Path(__file__).resolve().parents[1]
 if str(ANALYSIS_ROOT) not in sys.path:
     sys.path.insert(0, str(ANALYSIS_ROOT))
 
-from prospero_submission_drafter_layers.builder import build_prefill_fields as build_prefill_fields_layer
-from prospero_submission_drafter_layers.field_composition import field_value_map
-from prospero_submission_drafter_layers.field_composition import is_required_in_mode
-from prospero_submission_drafter_layers.field_composition import prospero_field_templates
-
+from prospero_submission_drafter_layers.builder import (
+    build_prefill_fields as build_prefill_fields_layer,
+)
+from prospero_submission_drafter_layers.field_composition import (
+    field_value_map,
+    is_required_in_mode,
+    prospero_field_templates,
+)
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "prospero_submission_drafter.py"
 spec = importlib.util.spec_from_file_location("prospero_submission_drafter", MODULE_PATH)
@@ -138,11 +140,17 @@ class ProsperoSubmissionDrafterTests(unittest.TestCase):
     def test_extract_protocol_data_parses_core_fields(self) -> None:
         data = prospero_submission_drafter.extract_protocol_data(FILLED_PROTOCOL)
 
-        self.assertEqual(data.working_title, "Sleep quality and anxiety symptoms in university students: a systematic review")
+        self.assertEqual(
+            data.working_title,
+            "Sleep quality and anxiety symptoms in university students: a systematic review",
+        )
         self.assertEqual(data.last_updated, "2026-03-14")
         self.assertEqual(data.languages, "English, Spanish.")
         self.assertIn("PubMed/MEDLINE", data.information_sources)
-        self.assertIn("SSRN, dissertations, preprint repositories (clearly labeled as non-peer-reviewed evidence).", data.gray_sources)
+        self.assertIn(
+            "SSRN, dissertations, preprint repositories (clearly labeled as non-peer-reviewed evidence).",
+            data.gray_sources,
+        )
 
     def test_build_prefill_fields_shim_emits_deprecation_warning(self) -> None:
         data = prospero_submission_drafter.extract_protocol_data(FILLED_PROTOCOL)
@@ -157,7 +165,9 @@ class ProsperoSubmissionDrafterTests(unittest.TestCase):
         data = prospero_submission_drafter.extract_protocol_data(protocol_with_placeholder)
         fields = build_prefill_fields_canonical(data, registration_mode="new")
 
-        population_field = next(field for field in fields if field.field_id == "participants_population")
+        population_field = next(
+            field for field in fields if field.field_id == "participants_population"
+        )
         self.assertEqual(population_field.status, "needs_input")
         self.assertIn("placeholder", population_field.notes.lower())
         self.assertIn("[POPULATION]", data.unresolved_placeholders)
@@ -226,7 +236,9 @@ class ProsperoSubmissionDrafterTests(unittest.TestCase):
         )
 
         title_field = next(field for field in fields if field.field_id == "review_title")
-        population_field = next(field for field in fields if field.field_id == "participants_population")
+        population_field = next(
+            field for field in fields if field.field_id == "participants_population"
+        )
         country_field = next(field for field in fields if field.field_id == "country")
 
         self.assertEqual(title_field.value, "Custom Automated Title")
@@ -331,12 +343,15 @@ class ProsperoSubmissionDrafterTests(unittest.TestCase):
             self.assertIn("Cyprus", text)
 
     def test_main_auto_complete_allows_fail_on_placeholders(self) -> None:
-        protocol_with_placeholders = FILLED_PROTOCOL.replace(
-            "Sleep quality and anxiety symptoms in university students: a systematic review",
-            "[YOUR REVIEW TITLE]",
-        ).replace("sleep quality", "[EXPOSURE_OR_CONCEPT]").replace(
-            "anxiety symptoms", "[OUTCOME]"
-        ).replace("university students", "[POPULATION]")
+        protocol_with_placeholders = (
+            FILLED_PROTOCOL.replace(
+                "Sleep quality and anxiety symptoms in university students: a systematic review",
+                "[YOUR REVIEW TITLE]",
+            )
+            .replace("sleep quality", "[EXPOSURE_OR_CONCEPT]")
+            .replace("anxiety symptoms", "[OUTCOME]")
+            .replace("university students", "[POPULATION]")
+        )
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)

@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -17,19 +16,19 @@ def make_fake_python(binary_path: Path, log_path: Path, tracked_output_path: Pat
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         f"printf '%s\\n' \"$*\" >> '{log_path.as_posix()}'\n"
-        "if [[ \"$*\" == *\"validate_csv_inputs.py\"* ]]; then\n"
+        'if [[ "$*" == *"validate_csv_inputs.py"* ]]; then\n'
         f"  printf '%s\\n' 'partial_corrupted_output' > '{tracked_output_literal}'\n"
         "  exit 42\n"
         "fi\n"
-        "if [[ \"$*\" == *\"status_report.py\"* ]]; then\n"
-        "  if [[ -f \"${DAILY_RUN_FAILED_MARKER:-}\" ]]; then\n"
+        'if [[ "$*" == *"status_report.py"* ]]; then\n'
+        '  if [[ -f "${DAILY_RUN_FAILED_MARKER:-}" ]]; then\n'
         f"    printf '%s\\n' 'status_report_after_failed_marker' >> '{log_path.as_posix()}'\n"
         "  else\n"
         f"    printf '%s\\n' 'status_report_before_failed_marker' >> '{log_path.as_posix()}'\n"
         "  fi\n"
         "  exit 0\n"
         "fi\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "  exit 0\n"
         "fi\n"
@@ -104,7 +103,11 @@ class DailyRunAtomicOutputRecoveryTests(unittest.TestCase):
             restored_output_text = tracked_output_path.read_text(encoding="utf-8")
             self.assertEqual(restored_output_text, "baseline_valid_output\n")
 
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
             self.assertIn("status_report_after_failed_marker", calls)
 
 

@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "reviewer_workload_balancer.py"
 spec = importlib.util.spec_from_file_location("reviewer_workload_balancer", MODULE_PATH)

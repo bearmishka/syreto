@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "retraction_checker.py"
 spec = importlib.util.spec_from_file_location("retraction_checker", MODULE_PATH)
@@ -70,7 +69,9 @@ class RetractionCheckerTests(unittest.TestCase):
         )
 
         indexes = retraction_checker.build_master_indexes(master_df)
-        source_rows, counts = retraction_checker.resolve_source_studies(included_df, master_df, indexes)
+        source_rows, counts = retraction_checker.resolve_source_studies(
+            included_df, master_df, indexes
+        )
 
         self.assertEqual(len(source_rows), 1)
         self.assertEqual(source_rows[0]["source_doi"], "10.5555/demo")
@@ -112,7 +113,9 @@ class RetractionCheckerTests(unittest.TestCase):
             ]
         }
 
-        rows, counts = retraction_checker.build_result_rows(source_rows, retraction_index, api_error="")
+        rows, counts = retraction_checker.build_result_rows(
+            source_rows, retraction_index, api_error=""
+        )
 
         self.assertEqual(rows[0]["retraction_status"], "retracted")
         self.assertEqual(rows[1]["retraction_status"], "missing_doi")

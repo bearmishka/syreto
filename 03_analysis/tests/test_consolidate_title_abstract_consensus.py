@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "consolidate_title_abstract_consensus.py"
 spec = importlib.util.spec_from_file_location("consolidate_title_abstract_consensus", MODULE_PATH)

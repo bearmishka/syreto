@@ -1,12 +1,11 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "dedup_stats.py"
 spec = importlib.util.spec_from_file_location("dedup_stats", MODULE_PATH)
@@ -257,7 +256,9 @@ class DedupStatsPrismaSyncTests(unittest.TestCase):
             original = prisma_path.read_text(encoding="utf-8")
             original_copy2 = dedup_stats.shutil.copy2
 
-            def corrupting_copy2(src: str | Path, dst: str | Path, *args: object, **kwargs: object) -> str | Path:
+            def corrupting_copy2(
+                src: str | Path, dst: str | Path, *args: object, **kwargs: object
+            ) -> str | Path:
                 copied_path = original_copy2(src, dst, *args, **kwargs)
                 backup_target = Path(dst)
                 payload = backup_target.read_text(encoding="utf-8")
@@ -322,7 +323,9 @@ class DedupStatsPrismaSyncTests(unittest.TestCase):
             existing_df.loc[existing_df["stage"] == "reports_sought_for_retrieval", "count"] = "7"
             existing_df.loc[existing_df["stage"] == "reports_assessed_full_text", "count"] = "6"
             existing_df.loc[existing_df["stage"] == "reports_excluded_full_text", "count"] = "5"
-            existing_df.loc[existing_df["stage"] == "studies_included_qualitative_synthesis", "count"] = "4"
+            existing_df.loc[
+                existing_df["stage"] == "studies_included_qualitative_synthesis", "count"
+            ] = "4"
             existing_df.to_csv(prisma_path, index=False)
 
             exit_code = dedup_stats.main(

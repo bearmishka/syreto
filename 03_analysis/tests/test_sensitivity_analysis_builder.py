@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "sensitivity_analysis_builder.py"
 
@@ -181,8 +180,20 @@ class SensitivityAnalysisBuilderTests(unittest.TestCase):
 
             pd.DataFrame(
                 [
-                    {"study_id": "S1", "ci_lower": "0.00", "ci_upper": "0.40", "sample_size": "120", "effect_direction": "positive"},
-                    {"study_id": "S2", "ci_lower": "0.10", "ci_upper": "0.50", "sample_size": "120", "effect_direction": "positive"},
+                    {
+                        "study_id": "S1",
+                        "ci_lower": "0.00",
+                        "ci_upper": "0.40",
+                        "sample_size": "120",
+                        "effect_direction": "positive",
+                    },
+                    {
+                        "study_id": "S2",
+                        "ci_lower": "0.10",
+                        "ci_upper": "0.50",
+                        "sample_size": "120",
+                        "effect_direction": "positive",
+                    },
                 ]
             ).to_csv(extraction_path, index=False)
 

@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
 import sys
 import unittest
-
+from datetime import datetime
+from pathlib import Path
 
 ANALYSIS_ROOT = Path(__file__).resolve().parents[1]
 if str(ANALYSIS_ROOT) not in sys.path:
     sys.path.insert(0, str(ANALYSIS_ROOT))
 
 from prospero_submission_drafter_layers import builder
-from prospero_submission_drafter_layers.models import ManuscriptMetadata
-from prospero_submission_drafter_layers.models import PrefillField
-from prospero_submission_drafter_layers.models import ProtocolData
+from prospero_submission_drafter_layers.models import ManuscriptMetadata, PrefillField, ProtocolData
 
 
 def sample_protocol_data() -> ProtocolData:
@@ -78,7 +75,9 @@ class ProsperoSubmissionDrafterBuilderLayerTests(unittest.TestCase):
 
         captured: dict[str, object] = {}
 
-        def fake_resolve_registration_mode(*, requested_mode: str, protocol_data: ProtocolData) -> str:
+        def fake_resolve_registration_mode(
+            *, requested_mode: str, protocol_data: ProtocolData
+        ) -> str:
             captured["requested_mode"] = requested_mode
             captured["protocol_data"] = protocol_data
             return "new"

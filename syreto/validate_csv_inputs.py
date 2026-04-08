@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 EMPTY_VALUES = {"", "nan", "none"}
 TEMPLATE_EXPORT_FILENAME_TOKENS = ("yyyy-mm-dd", "yyyy_mm_dd", "yyyy.mm.dd", "yyyymmdd")
 

@@ -1,11 +1,10 @@
 import importlib.util
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "prospero_submission_drafter.py"
 spec = importlib.util.spec_from_file_location("prospero_submission_drafter", MODULE_PATH)

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "progress_history_builder.py"
 
@@ -24,8 +23,12 @@ def run_builder(
     manifest_path = history_path.parent / "daily_run_manifest.json"
     status_summary_path = history_path.parent / "status_summary.json"
 
-    manifest_path.write_text(json.dumps(manifest_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    status_summary_path.write_text(json.dumps(status_summary_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    status_summary_path.write_text(
+        json.dumps(status_summary_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     return subprocess.run(
         [

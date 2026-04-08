@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 EMPTY_VALUES = {"", "nan", "none"}
 YES_VALUES = {"yes", "y", "1", "true"}
 VALID_DUPLICATE_VALUES = YES_VALUES | {"no", "n", "0", "false"}
@@ -19,7 +18,9 @@ EXTRACTION_ERRORS_PATTERN = re.compile(r"-\s*Errors:\s*(\d+)", re.IGNORECASE)
 EXTRACTION_WARNINGS_PATTERN = re.compile(r"-\s*Warnings:\s*(\d+)", re.IGNORECASE)
 REVIEWER_WORKLOAD_STAGE_PATTERN = re.compile(r"-\s*Stage filter:\s*`([^`]+)`", re.IGNORECASE)
 REVIEWER_WORKLOAD_REVIEWERS_PATTERN = re.compile(r"-\s*Reviewers observed:\s*(\d+)", re.IGNORECASE)
-REVIEWER_WORKLOAD_TOTAL_PATTERN = re.compile(r"-\s*Total screened records in scope:\s*(\d+)", re.IGNORECASE)
+REVIEWER_WORKLOAD_TOTAL_PATTERN = re.compile(
+    r"-\s*Total screened records in scope:\s*(\d+)", re.IGNORECASE
+)
 REVIEWER_WORKLOAD_NON_BLOCKING_PATTERN = re.compile(
     r"-\s*Non-blocking fallback active:\s*(yes|no)",
     re.IGNORECASE,
@@ -483,9 +484,7 @@ def cohen_kappa_from_screening_log(df: pd.DataFrame) -> dict:
     )
 
     log = log[
-        log["record_id"].ne("")
-        & log["reviewer"].ne("")
-        & log["title_abstract_decision"].ne("")
+        log["record_id"].ne("") & log["reviewer"].ne("") & log["title_abstract_decision"].ne("")
     ]
     if log.empty:
         result["reason"] = "No non-empty title/abstract decisions in record-level log."
@@ -622,17 +621,25 @@ def assess_project_stage(
     reasons: list[str] = []
 
     if stage_id == "bootstrap_demo":
-        reasons.append("Master records include demo/template markers while `search_log.csv` totals remain zero.")
+        reasons.append(
+            "Master records include demo/template markers while `search_log.csv` totals remain zero."
+        )
     elif stage_id == "pre_screening_unlogged_search":
         reasons.append("Master records exist, but `search_log.csv` totals are still zero.")
     elif stage_id == "pre_screening_ready":
-        reasons.append("Search totals and deduplicated records are available; screening has not started yet.")
+        reasons.append(
+            "Search totals and deduplicated records are available; screening has not started yet."
+        )
     elif stage_id == "screening_or_beyond":
         reasons.append("Screening decisions are logged, so the review moved beyond setup stage.")
     elif stage_id == "search_logged_merge_pending":
-        reasons.append("Search totals are logged, but deduplicated master records are not populated yet.")
+        reasons.append(
+            "Search totals are logged, but deduplicated master records are not populated yet."
+        )
     else:
-        reasons.append("Protocol/search templates are present, but no operational review data is logged yet.")
+        reasons.append(
+            "Protocol/search templates are present, but no operational review data is logged yet."
+        )
 
     if analytics_artifacts_ready and stage_id in {
         "template_setup",
@@ -671,7 +678,9 @@ def unresolved_placeholder_tokens(path: Path) -> list[str]:
 
 def assess_semantic_completeness(protocol_path: Path, manuscript_path: Path | None) -> dict:
     protocol_tokens = unresolved_placeholder_tokens(protocol_path)
-    manuscript_tokens = unresolved_placeholder_tokens(manuscript_path) if manuscript_path is not None else []
+    manuscript_tokens = (
+        unresolved_placeholder_tokens(manuscript_path) if manuscript_path is not None else []
+    )
 
     complete = not protocol_tokens and not manuscript_tokens
 
@@ -767,8 +776,12 @@ def build_status_report(
     csv_input_validation = parse_csv_input_validation_summary(csv_input_validation_summary_path)
     extraction_validation = parse_extraction_validation_summary(extraction_validation_summary_path)
     if reviewer_workload_summary_path is None:
-        reviewer_workload_summary_path = screening_summary_path.parent / "reviewer_workload_balancer_summary.md"
-    reviewer_workload_balancer = parse_reviewer_workload_balancer_summary(reviewer_workload_summary_path)
+        reviewer_workload_summary_path = (
+            screening_summary_path.parent / "reviewer_workload_balancer_summary.md"
+        )
+    reviewer_workload_balancer = parse_reviewer_workload_balancer_summary(
+        reviewer_workload_summary_path
+    )
 
     prisma_counts = {key: prisma_int(prisma_df, key) for key in PRISMA_KEYS}
     prisma_identified = prisma_counts["records_identified_databases"]
@@ -833,17 +846,23 @@ def build_status_report(
         add_health("ok", "Dedup flags are internally consistent (`duplicates <= master rows`).")
     else:
         add_health("error", "Dedup inconsistency: duplicates exceed master rows.")
-        warnings.append("Fix duplicate flags in `02_data/processed/master_records.csv` (`duplicates` cannot exceed rows).")
+        warnings.append(
+            "Fix duplicate flags in `02_data/processed/master_records.csv` (`duplicates` cannot exceed rows)."
+        )
 
     if master_structure["matches"]:
         add_health("ok", "Master record columns match dedup workflow/template.")
     elif not master_structure["actual_columns"]:
-        add_health("warning", "Master record header is missing; expected dedup columns are not present.")
+        add_health(
+            "warning", "Master record header is missing; expected dedup columns are not present."
+        )
         warnings.append(
             "Restore header columns in `02_data/processed/master_records.csv` from `02_data/processed/master_records_template.csv`."
         )
     else:
-        add_health("warning", f"Master record columns differ from template: {master_structure['details']}.")
+        add_health(
+            "warning", f"Master record columns differ from template: {master_structure['details']}."
+        )
         warnings.append(
             "Align `02_data/processed/master_records.csv` columns with `01_protocol/dedup_workflow.md` (or copy header from `02_data/processed/master_records_template.csv`)."
         )
@@ -853,16 +872,24 @@ def build_status_report(
         add_health("info", "Screening sessions are not logged yet.")
         warnings.append("Log at least one session in `02_data/processed/screening_daily_log.csv`.")
     elif screening_decision_total == screened_records:
-        add_health("ok", "Screening totals are consistent (`include + exclude + maybe + pending = screened`).")
+        add_health(
+            "ok",
+            "Screening totals are consistent (`include + exclude + maybe + pending = screened`).",
+        )
     else:
-        add_health("error", "Screening totals mismatch (`include + exclude + maybe + pending != screened`).")
+        add_health(
+            "error",
+            "Screening totals mismatch (`include + exclude + maybe + pending != screened`).",
+        )
         warnings.append(
             "Reconcile screening counts in `02_data/processed/screening_daily_log.csv` so decision totals match `records_screened`."
         )
 
     if not prospero_registration["protocol_present"]:
         add_health("error", "Protocol file is missing; cannot verify PROSPERO registration.")
-        warnings.append("Restore `01_protocol/protocol.md` and record PROSPERO registration ID before screening.")
+        warnings.append(
+            "Restore `01_protocol/protocol.md` and record PROSPERO registration ID before screening."
+        )
     elif prospero_registration["registered"]:
         registration_id = prospero_registration["registration_id"]
         add_health("ok", f"PROSPERO registration recorded (`{registration_id}`).")
@@ -872,7 +899,10 @@ def build_status_report(
             "Register protocol in PROSPERO immediately and record the ID (e.g., `CRD420...`) in `01_protocol/protocol.md`; preregistration is usually required before screening."
         )
     else:
-        add_health("warning", "PROSPERO registration ID is missing; register before first screening session.")
+        add_health(
+            "warning",
+            "PROSPERO registration ID is missing; register before first screening session.",
+        )
         warnings.append(
             "Register protocol in PROSPERO before screening and record the ID in `01_protocol/protocol.md`."
         )
@@ -892,9 +922,15 @@ def build_status_report(
             "Add an independent second reviewer for title/abstract screening and report Cohen's kappa; if this remains a single-reviewer pilot, state it explicitly as a limitation."
         )
     elif title_abstract_sessions == 0 and sessions == 0:
-        add_health("info", "Title/abstract screening has not started; assign a second independent reviewer before launch.")
+        add_health(
+            "info",
+            "Title/abstract screening has not started; assign a second independent reviewer before launch.",
+        )
     elif title_abstract_sessions == 0 and sessions > 0:
-        add_health("warning", "No title/abstract stage labels detected; dual-screening status cannot be verified.")
+        add_health(
+            "warning",
+            "No title/abstract stage labels detected; dual-screening status cannot be verified.",
+        )
         warnings.append(
             "Fill the `stage` column (e.g., `title_abstract`) in `02_data/processed/screening_daily_log.csv` so reviewer independence can be tracked."
         )
@@ -918,7 +954,9 @@ def build_status_report(
             "Run CSV input validation (`python 03_analysis/validate_csv_inputs.py`) or `make daily` to regenerate `03_analysis/outputs/csv_input_validation_summary.md`."
         )
     elif not csv_input_validation["parsed"]:
-        add_health("warning", "CSV input validation summary exists, but counters could not be parsed.")
+        add_health(
+            "warning", "CSV input validation summary exists, but counters could not be parsed."
+        )
         warnings.append(
             "Regenerate `03_analysis/outputs/csv_input_validation_summary.md` with `python 03_analysis/validate_csv_inputs.py`."
         )
@@ -936,7 +974,10 @@ def build_status_report(
                 "Fix CSV input validation errors in `03_analysis/outputs/csv_input_validation_summary.md` and rerun `make daily`."
             )
         elif csv_input_warnings > 0:
-            add_health("warning", f"CSV input validation reports {csv_input_warnings} warning(s) (errors: 0).")
+            add_health(
+                "warning",
+                f"CSV input validation reports {csv_input_warnings} warning(s) (errors: 0).",
+            )
             warnings.append(
                 "Review CSV input warnings in `03_analysis/outputs/csv_input_validation_summary.md` and update processed CSV files where needed."
             )
@@ -952,7 +993,9 @@ def build_status_report(
             "Run extraction validation (`python 03_analysis/validate_extraction.py`) or `make daily` to regenerate `03_analysis/outputs/extraction_validation_summary.md`."
         )
     elif not extraction_validation["parsed"]:
-        add_health("warning", "Extraction validation summary exists, but counters could not be parsed.")
+        add_health(
+            "warning", "Extraction validation summary exists, but counters could not be parsed."
+        )
         warnings.append(
             "Regenerate `03_analysis/outputs/extraction_validation_summary.md` with `python 03_analysis/validate_extraction.py`."
         )
@@ -970,7 +1013,10 @@ def build_status_report(
                 "Fix extraction validation errors in `02_data/codebook/extraction_template.csv` and rerun `make daily`."
             )
         elif extraction_warnings > 0:
-            add_health("warning", f"Extraction validation reports {extraction_warnings} warning(s) (errors: 0).")
+            add_health(
+                "warning",
+                f"Extraction validation reports {extraction_warnings} warning(s) (errors: 0).",
+            )
             warnings.append(
                 "Review extraction warnings in `03_analysis/outputs/extraction_validation_summary.md` and update extraction coding where needed."
             )
@@ -1015,12 +1061,22 @@ def build_status_report(
         if not effect_size_converted_present:
             missing_effect_size.append(f"`{effect_size_converted_path.as_posix()}`")
         joined_missing_effect_size = ", ".join(missing_effect_size)
-        add_health("error", f"Effect-size conversion artifact(s) missing: {joined_missing_effect_size}.")
+        add_health(
+            "error", f"Effect-size conversion artifact(s) missing: {joined_missing_effect_size}."
+        )
         warnings.append(
             "Run effect-size conversion (`python 03_analysis/effect_size_converter.py`) or `make daily` to regenerate missing outputs."
         )
 
-    missing_prisma_keys = [key for key in ["records_identified_databases", "duplicates_removed", "records_screened_title_abstract"] if prisma_counts[key] is None]
+    missing_prisma_keys = [
+        key
+        for key in [
+            "records_identified_databases",
+            "duplicates_removed",
+            "records_screened_title_abstract",
+        ]
+        if prisma_counts[key] is None
+    ]
 
     mismatch_messages: list[str] = []
     prisma_sync_ok = False
@@ -1030,7 +1086,9 @@ def build_status_report(
     if missing_prisma_keys:
         joined = ", ".join(f"`{key}`" for key in missing_prisma_keys)
         add_health("warning", f"PRISMA key counts missing: {joined}.")
-        warnings.append(f"Fill PRISMA counts for: {joined} in `02_data/processed/prisma_counts_template.csv`.")
+        warnings.append(
+            f"Fill PRISMA counts for: {joined} in `02_data/processed/prisma_counts_template.csv`."
+        )
     else:
         if identified_total > 0:
             if prisma_identified != identified_total:
@@ -1039,7 +1097,10 @@ def build_status_report(
                 )
         else:
             identified_check_deferred = True
-            add_health("warning", "PRISMA identified count cannot be fully verified while `search_log.csv` totals remain 0.")
+            add_health(
+                "warning",
+                "PRISMA identified count cannot be fully verified while `search_log.csv` totals remain 0.",
+            )
         if prisma_duplicates != duplicates:
             mismatch_messages.append(
                 f"`duplicates_removed` is {prisma_duplicates}, but `master_records.csv` flags {duplicates} duplicates"
@@ -1087,7 +1148,11 @@ def build_status_report(
 
     daily_run_integrity: dict | None = None
     if daily_run_manifest_path is not None or daily_run_failed_marker_path is not None:
-        manifest = parse_daily_run_manifest(daily_run_manifest_path) if daily_run_manifest_path is not None else None
+        manifest = (
+            parse_daily_run_manifest(daily_run_manifest_path)
+            if daily_run_manifest_path is not None
+            else None
+        )
         failed_marker = (
             parse_daily_run_failed_marker(daily_run_failed_marker_path)
             if daily_run_failed_marker_path is not None
@@ -1098,14 +1163,20 @@ def build_status_report(
 
         if failed_marker is not None and failed_marker["present"]:
             integrity_ok = False
-            run_id = failed_marker.get("run_id") or (manifest.get("run_id") if manifest else None) or "unknown"
+            run_id = (
+                failed_marker.get("run_id")
+                or (manifest.get("run_id") if manifest else None)
+                or "unknown"
+            )
             if failed_marker.get("parsed"):
                 if int(failed_marker.get("stream_object_count") or 0) > 1:
                     add_health(
                         "warning",
                         "Daily-run failed marker contains concatenated JSON objects; using the last object for integrity state.",
                     )
-                    warnings.append("Clean run metadata by rerunning `make daily` to rewrite failed-marker metadata atomically.")
+                    warnings.append(
+                        "Clean run metadata by rerunning `make daily` to rewrite failed-marker metadata atomically."
+                    )
 
                 add_health(
                     "error",
@@ -1120,7 +1191,11 @@ def build_status_report(
                 "Treat current analysis artifacts as potentially stale; resolve the failure and rerun `make daily`."
             )
 
-            if manifest is not None and manifest.get("parsed") and manifest.get("rollback_applied") is True:
+            if (
+                manifest is not None
+                and manifest.get("parsed")
+                and manifest.get("rollback_applied") is True
+            ):
                 add_health(
                     "warning",
                     "Failure-state rollback was applied; visible artifacts may be from the previous run snapshot.",
@@ -1131,7 +1206,10 @@ def build_status_report(
         elif manifest is not None and manifest["present"]:
             if not manifest["parsed"]:
                 integrity_ok = False
-                add_health("warning", "Daily-run manifest is present but unreadable; run integrity cannot be verified.")
+                add_health(
+                    "warning",
+                    "Daily-run manifest is present but unreadable; run integrity cannot be verified.",
+                )
                 warnings.append("Regenerate run metadata by rerunning `make daily`.")
             else:
                 if int(manifest.get("stream_object_count") or 0) > 1:
@@ -1140,7 +1218,9 @@ def build_status_report(
                         "warning",
                         "Daily-run manifest contains concatenated JSON objects; using the last object for integrity state.",
                     )
-                    warnings.append("Clean run metadata by rerunning `make daily` to rewrite manifest atomically.")
+                    warnings.append(
+                        "Clean run metadata by rerunning `make daily` to rewrite manifest atomically."
+                    )
 
                 state = str(manifest.get("state") or "").strip().lower()
                 if state == "success":
@@ -1155,11 +1235,19 @@ def build_status_report(
                         )
                     else:
                         integrity_ok = False
-                        add_health("warning", "Daily-run manifest indicates an unfinished run (`state=running`).")
-                        warnings.append("Finish or rerun `make daily` before trusting the latest artifact set.")
+                        add_health(
+                            "warning",
+                            "Daily-run manifest indicates an unfinished run (`state=running`).",
+                        )
+                        warnings.append(
+                            "Finish or rerun `make daily` before trusting the latest artifact set."
+                        )
                 elif state == "failed":
                     integrity_ok = False
-                    add_health("error", "Daily-run manifest indicates failure; outputs may be partially updated.")
+                    add_health(
+                        "error",
+                        "Daily-run manifest indicates failure; outputs may be partially updated.",
+                    )
                     warnings.append("Resolve run failures and rerun `make daily`.")
 
                     rollback_applied = manifest.get("rollback_applied")
@@ -1173,8 +1261,13 @@ def build_status_report(
                         )
                 else:
                     integrity_ok = False
-                    add_health("warning", f"Daily-run manifest state is unexpected (`{manifest.get('state')}`).")
-                    warnings.append("Verify run metadata and rerun `make daily` to refresh integrity state.")
+                    add_health(
+                        "warning",
+                        f"Daily-run manifest state is unexpected (`{manifest.get('state')}`).",
+                    )
+                    warnings.append(
+                        "Verify run metadata and rerun `make daily` to refresh integrity state."
+                    )
 
         details_parts: list[str] = []
         if manifest is not None:
@@ -1210,12 +1303,16 @@ def build_status_report(
 
         daily_run_integrity = {
             "ok": integrity_ok,
-            "details": "; ".join(details_parts) if details_parts else "No run-integrity metadata configured.",
+            "details": "; ".join(details_parts)
+            if details_parts
+            else "No run-integrity metadata configured.",
             "manifest": manifest,
             "failed_marker": failed_marker,
         }
 
-    analytics_artifacts_ready = quality_appraisal_ok and effect_size_conversion_ok and not missing_artifacts
+    analytics_artifacts_ready = (
+        quality_appraisal_ok and effect_size_conversion_ok and not missing_artifacts
+    )
     stage_assessment = assess_project_stage(
         identified_total=identified_total,
         unique_records=unique_records,
@@ -1227,10 +1324,13 @@ def build_status_report(
     )
     semantic_completeness = assess_semantic_completeness(protocol_path, manuscript_path)
     project_posture = build_project_posture(stage_assessment, semantic_completeness)
-    active_review_mode = normalize_review_mode(review_mode if review_mode is not None else os.getenv("REVIEW_MODE"))
+    active_review_mode = normalize_review_mode(
+        review_mode if review_mode is not None else os.getenv("REVIEW_MODE")
+    )
 
     unresolved_placeholder_total = (
-        semantic_completeness["protocol_placeholder_count"] + semantic_completeness["manuscript_placeholder_count"]
+        semantic_completeness["protocol_placeholder_count"]
+        + semantic_completeness["manuscript_placeholder_count"]
     )
     placeholders_allowed_in_mode = active_review_mode == "template"
     placeholder_policy_done = semantic_completeness["complete"] or placeholders_allowed_in_mode
@@ -1246,7 +1346,9 @@ def build_status_report(
                 "warning",
                 "Unresolved placeholders are not allowed in REVIEW_MODE=production.",
             )
-            warnings.append("Resolve unresolved placeholders in protocol/manuscript before production sign-off.")
+            warnings.append(
+                "Resolve unresolved placeholders in protocol/manuscript before production sign-off."
+            )
 
     if stage_assessment["id"] == "bootstrap_demo":
         add_health(
@@ -1285,7 +1387,9 @@ def build_status_report(
             "title": "Add master records and duplicate flags",
             "file": "02_data/processed/master_records.csv",
             "done": master_rows > 0,
-            "details": checklist_details(f"Current non-empty rows: {master_rows}; duplicates: {duplicates}"),
+            "details": checklist_details(
+                f"Current non-empty rows: {master_rows}; duplicates: {duplicates}"
+            ),
             "hint": "Merge exported records and mark duplicates (`is_duplicate=yes/no`).",
         },
         {
@@ -1333,7 +1437,9 @@ def build_status_report(
             "title": "Log at least one screening session",
             "file": "02_data/processed/screening_daily_log.csv",
             "done": sessions > 0,
-            "details": checklist_details(f"Current sessions: {sessions}; screened: {screened_records}"),
+            "details": checklist_details(
+                f"Current sessions: {sessions}; screened: {screened_records}"
+            ),
             "hint": "Add date, reviewer, and decision counts for each session.",
         },
         {
@@ -1440,7 +1546,9 @@ def build_status_report(
         f"manuscript={semantic_completeness['manuscript_placeholder_count']}"
     )
     if semantic_completeness["placeholder_examples"]:
-        examples = ", ".join(f"`{token}`" for token in semantic_completeness["placeholder_examples"])
+        examples = ", ".join(
+            f"`{token}`" for token in semantic_completeness["placeholder_examples"]
+        )
         lines.append(f"- Placeholder examples: {examples}")
     if blocker == "semantic_completeness":
         lines.append(
@@ -1621,15 +1729,43 @@ def build_status_report(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate a consolidated status report for the review workspace.")
-    parser.add_argument("--screening-log", default="../02_data/processed/screening_daily_log.csv", help="Path to screening daily log CSV")
-    parser.add_argument("--screening-record-log", default="../02_data/processed/screening_title_abstract_dual_log.csv", help="Path to record-level dual-screening log CSV")
-    parser.add_argument("--master", default="../02_data/processed/master_records.csv", help="Path to master records CSV")
-    parser.add_argument("--search-log", default="../02_data/processed/search_log.csv", help="Path to search log CSV")
-    parser.add_argument("--prisma", default="../02_data/processed/prisma_counts_template.csv", help="Path to PRISMA counts CSV")
-    parser.add_argument("--protocol", default="../01_protocol/protocol.md", help="Path to protocol markdown file")
-    parser.add_argument("--manuscript", default="../04_manuscript/main.tex", help="Path to manuscript main tex file")
-    parser.add_argument("--screening-summary", default="outputs/screening_metrics_summary.md", help="Path to screening metrics summary markdown")
+    parser = argparse.ArgumentParser(
+        description="Generate a consolidated status report for the review workspace."
+    )
+    parser.add_argument(
+        "--screening-log",
+        default="../02_data/processed/screening_daily_log.csv",
+        help="Path to screening daily log CSV",
+    )
+    parser.add_argument(
+        "--screening-record-log",
+        default="../02_data/processed/screening_title_abstract_dual_log.csv",
+        help="Path to record-level dual-screening log CSV",
+    )
+    parser.add_argument(
+        "--master",
+        default="../02_data/processed/master_records.csv",
+        help="Path to master records CSV",
+    )
+    parser.add_argument(
+        "--search-log", default="../02_data/processed/search_log.csv", help="Path to search log CSV"
+    )
+    parser.add_argument(
+        "--prisma",
+        default="../02_data/processed/prisma_counts_template.csv",
+        help="Path to PRISMA counts CSV",
+    )
+    parser.add_argument(
+        "--protocol", default="../01_protocol/protocol.md", help="Path to protocol markdown file"
+    )
+    parser.add_argument(
+        "--manuscript", default="../04_manuscript/main.tex", help="Path to manuscript main tex file"
+    )
+    parser.add_argument(
+        "--screening-summary",
+        default="outputs/screening_metrics_summary.md",
+        help="Path to screening metrics summary markdown",
+    )
     parser.add_argument(
         "--csv-input-validation-summary",
         default="outputs/csv_input_validation_summary.md",
@@ -1665,7 +1801,11 @@ def main() -> None:
         default="outputs/reviewer_workload_balancer_summary.md",
         help="Path to reviewer workload balancer summary markdown",
     )
-    parser.add_argument("--dedup-summary", default="outputs/dedup_stats_summary.md", help="Path to dedup stats summary markdown")
+    parser.add_argument(
+        "--dedup-summary",
+        default="outputs/dedup_stats_summary.md",
+        help="Path to dedup stats summary markdown",
+    )
     parser.add_argument(
         "--prisma-flow",
         default="outputs/prisma_flow_diagram.tex",
@@ -1687,8 +1827,14 @@ def main() -> None:
         choices=["template", "production"],
         help="Override REVIEW_MODE policy context for placeholder handling",
     )
-    parser.add_argument("--output", default="outputs/status_report.md", help="Path to status report markdown")
-    parser.add_argument("--json-output", default="outputs/status_summary.json", help="Path to JSON status summary output")
+    parser.add_argument(
+        "--output", default="outputs/status_report.md", help="Path to status report markdown"
+    )
+    parser.add_argument(
+        "--json-output",
+        default="outputs/status_summary.json",
+        help="Path to JSON status summary output",
+    )
     args = parser.parse_args()
 
     screening_log_path = Path(args.screening_log)
@@ -1740,7 +1886,9 @@ def main() -> None:
     output_path.write_text(report, encoding="utf-8")
 
     json_output_path.parent.mkdir(parents=True, exist_ok=True)
-    json_output_path.write_text(json.dumps(status_summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    json_output_path.write_text(
+        json.dumps(status_summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     print(f"Wrote: {output_path}")
     print(f"Wrote: {json_output_path}")

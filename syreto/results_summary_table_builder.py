@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
-from pathlib import Path
 import os
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 RESULT_COLUMNS = [
     "outcome",

@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 ITEM_COLUMNS = [f"item_{index:02d}" for index in range(1, 12)]
 JBI_COLUMNS = [
     "study_id",
@@ -53,7 +52,12 @@ def detect_design_key(study_design: object) -> str:
     text = normalize_lower(study_design)
     if "case" in text and "control" in text:
         return "case_control"
-    if "cohort" in text or "longitudinal" in text or "prospective" in text or "retrospective" in text:
+    if (
+        "cohort" in text
+        or "longitudinal" in text
+        or "prospective" in text
+        or "retrospective" in text
+    ):
         return "cohort"
     return "cross_sectional"
 
@@ -163,7 +167,9 @@ def build_summary(
     lines.append(f"- Converted rows: {int(converted_df.shape[0])}")
 
     if not converted_df.empty:
-        design_counts = converted_df["study_design"].fillna("").astype(str).str.strip().value_counts()
+        design_counts = (
+            converted_df["study_design"].fillna("").astype(str).str.strip().value_counts()
+        )
         lines.append("")
         lines.append("## Converted study designs")
         lines.append("")
@@ -173,15 +179,21 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Conversion is heuristic and preserves reviewer-driven risk judgments from NOS domains.")
-    lines.append("- `quality_appraisal.py` scoring remains based on JBI checklist fields in the converted output.")
+    lines.append(
+        "- Conversion is heuristic and preserves reviewer-driven risk judgments from NOS domains."
+    )
+    lines.append(
+        "- `quality_appraisal.py` scoring remains based on JBI checklist fields in the converted output."
+    )
     lines.append("")
 
     return "\n".join(lines)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Convert NOS-oriented quality appraisal CSV into JBI-compatible template CSV.")
+    parser = argparse.ArgumentParser(
+        description="Convert NOS-oriented quality appraisal CSV into JBI-compatible template CSV."
+    )
     parser.add_argument(
         "--nos-input",
         default="../02_data/codebook/quality_appraisal_template_nos.csv",
@@ -211,7 +223,9 @@ def main() -> None:
         converted_df = pd.DataFrame(columns=JBI_COLUMNS)
     else:
         deduped = source_df.drop_duplicates(subset=["study_id"], keep="last").copy()
-        converted_rows = [row_to_jbi(row) for _, row in deduped.iterrows() if normalize(row.get("study_id", ""))]
+        converted_rows = [
+            row_to_jbi(row) for _, row in deduped.iterrows() if normalize(row.get("study_id", ""))
+        ]
         converted_df = pd.DataFrame(converted_rows, columns=JBI_COLUMNS)
 
     jbi_output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "analysis_lineage.py"
 
@@ -111,8 +110,7 @@ class AnalysisLineageTests(unittest.TestCase):
             self.assertEqual(grade_records["quality_of_life"], ["S5"])
 
             meta_records = {
-                record["outcome"]: record
-                for record in payload["meta_analysis"]["records"]
+                record["outcome"]: record for record in payload["meta_analysis"]["records"]
             }
             self.assertEqual(meta_records["body_image"]["studies_used"], ["S1", "S2"])
             self.assertIn("publication_bias_data", meta_records["body_image"]["evidence_sources"])
@@ -121,7 +119,9 @@ class AnalysisLineageTests(unittest.TestCase):
             self.assertIn("forest_plot_data", meta_records["self_esteem"]["evidence_sources"])
 
             self.assertEqual(meta_records["quality_of_life"]["studies_used"], ["S5"])
-            self.assertIn("grade_evidence_profile", meta_records["quality_of_life"]["evidence_sources"])
+            self.assertIn(
+                "grade_evidence_profile", meta_records["quality_of_life"]["evidence_sources"]
+            )
 
             self.assertEqual(meta_records["anxiety"]["studies_used"], ["S4"])
             self.assertIn("extraction_template", meta_records["anxiety"]["evidence_sources"])

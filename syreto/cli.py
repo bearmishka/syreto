@@ -3,9 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .scripts import AVAILABLE_SCRIPTS
-from .scripts import run_script
-from .scripts import script_path
+from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
 
 
 def parser() -> argparse.ArgumentParser:

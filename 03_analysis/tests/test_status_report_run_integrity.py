@@ -1,12 +1,11 @@
 import importlib.util
 import os
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "status_report.py"
 spec = importlib.util.spec_from_file_location("status_report", MODULE_PATH)
@@ -55,9 +54,13 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
             "prisma_flow": prisma_flow_path,
         }
 
-    def _build_base_frames(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    def _build_base_frames(
+        self,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-        screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+        screening_records_df = pd.DataFrame(
+            columns=["record_id", "reviewer", "title_abstract_decision"]
+        )
         master_df = pd.DataFrame(
             [
                 {
@@ -81,7 +84,9 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
             ],
             columns=status_report.MASTER_RECORD_COLUMNS,
         )
-        search_df = pd.DataFrame([{"database": "PubMed", "date_searched": "2026-03-15", "results_total": "1"}])
+        search_df = pd.DataFrame(
+            [{"database": "PubMed", "date_searched": "2026-03-15", "results_total": "1"}]
+        )
         prisma_df = pd.DataFrame(
             [
                 {"stage": "records_identified_databases", "count": "1", "notes": ""},
@@ -98,7 +103,9 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             base = Path(tmp_dir)
             artifacts = self._write_minimum_artifacts(base)
-            screening_df, screening_records_df, master_df, search_df, prisma_df = self._build_base_frames()
+            screening_df, screening_records_df, master_df, search_df, prisma_df = (
+                self._build_base_frames()
+            )
 
             protocol_path = base / "protocol.md"
             protocol_path.write_text("# Protocol\nPROSPERO: CRD42026000001\n", encoding="utf-8")
@@ -156,7 +163,9 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             base = Path(tmp_dir)
             artifacts = self._write_minimum_artifacts(base)
-            screening_df, screening_records_df, master_df, search_df, prisma_df = self._build_base_frames()
+            screening_df, screening_records_df, master_df, search_df, prisma_df = (
+                self._build_base_frames()
+            )
 
             protocol_path = base / "protocol.md"
             protocol_path.write_text("# Protocol\nPROSPERO: CRD42026000001\n", encoding="utf-8")
@@ -203,7 +212,9 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             base = Path(tmp_dir)
             artifacts = self._write_minimum_artifacts(base)
-            screening_df, screening_records_df, master_df, search_df, prisma_df = self._build_base_frames()
+            screening_df, screening_records_df, master_df, search_df, prisma_df = (
+                self._build_base_frames()
+            )
 
             protocol_path = base / "protocol.md"
             protocol_path.write_text("# Protocol\nPROSPERO: CRD42026000001\n", encoding="utf-8")
@@ -246,7 +257,8 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
             )
             self.assertTrue(
                 any(
-                    check["level"] == "warning" and "contains concatenated JSON objects" in check["message"]
+                    check["level"] == "warning"
+                    and "contains concatenated JSON objects" in check["message"]
                     for check in summary["health_checks"]
                 )
             )
@@ -255,7 +267,9 @@ class StatusReportRunIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             base = Path(tmp_dir)
             artifacts = self._write_minimum_artifacts(base)
-            screening_df, screening_records_df, master_df, search_df, prisma_df = self._build_base_frames()
+            screening_df, screening_records_df, master_df, search_df, prisma_df = (
+                self._build_base_frames()
+            )
 
             protocol_path = base / "protocol.md"
             protocol_path.write_text("# Protocol\nPROSPERO: CRD42026000001\n", encoding="utf-8")

@@ -1,12 +1,11 @@
 import copy
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "multilang_abstract_screener.py"
 spec = importlib.util.spec_from_file_location("multilang_abstract_screener", MODULE_PATH)

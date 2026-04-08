@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 ITEM_COLUMNS = [f"item_{index:02d}" for index in range(1, 12)]
 NOS_COLUMNS = [
     "study_id",
@@ -47,7 +46,12 @@ def detect_design_key(study_design: object, jbi_tool: object) -> str:
 
     if "case" in design_text and "control" in design_text:
         return "case_control"
-    if "cohort" in design_text or "longitudinal" in design_text or "prospective" in design_text or "retrospective" in design_text:
+    if (
+        "cohort" in design_text
+        or "longitudinal" in design_text
+        or "prospective" in design_text
+        or "retrospective" in design_text
+    ):
         return "cohort"
 
     if "case" in tool_text and "control" in tool_text:
@@ -104,7 +108,9 @@ def row_to_nos(row: pd.Series) -> dict[str, str]:
     item_08_risk = response_to_risk(item_values["item_08"])
     overall_risk = item_08_risk
     if is_missing(item_values["item_08"]):
-        overall_risk = worst_risk(selection_bias, performance_bias, detection_bias, attrition_bias, reporting_bias)
+        overall_risk = worst_risk(
+            selection_bias, performance_bias, detection_bias, attrition_bias, reporting_bias
+        )
 
     selection_stars = star_count(selection_values)
     comparability_stars = star_count(comparability_values)
@@ -172,7 +178,9 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Conversion is heuristic and recodes JBI checklist responses into NOS-oriented bias domains.")
+    lines.append(
+        "- Conversion is heuristic and recodes JBI checklist responses into NOS-oriented bias domains."
+    )
     lines.append("- This output is intended for narrative appraisal reporting and traceability.")
     lines.append("")
 
@@ -180,7 +188,9 @@ def build_summary(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Convert JBI-compatible quality appraisal CSV into NOS-oriented worksheet CSV.")
+    parser = argparse.ArgumentParser(
+        description="Convert JBI-compatible quality appraisal CSV into NOS-oriented worksheet CSV."
+    )
     parser.add_argument(
         "--jbi-input",
         default="../02_data/codebook/quality_appraisal_template.csv",
@@ -210,7 +220,9 @@ def main() -> None:
         converted_df = pd.DataFrame(columns=NOS_COLUMNS)
     else:
         deduped = source_df.drop_duplicates(subset=["study_id"], keep="last").copy()
-        converted_rows = [row_to_nos(row) for _, row in deduped.iterrows() if normalize(row.get("study_id", ""))]
+        converted_rows = [
+            row_to_nos(row) for _, row in deduped.iterrows() if normalize(row.get("study_id", ""))
+        ]
         converted_df = pd.DataFrame(converted_rows, columns=NOS_COLUMNS)
 
     nos_output_path.parent.mkdir(parents=True, exist_ok=True)

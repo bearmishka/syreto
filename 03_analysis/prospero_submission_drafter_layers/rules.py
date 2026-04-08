@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
 
-from .models import ManuscriptMetadata
-from .models import PrefillField
-from .models import ProtocolData
-
+from .models import ManuscriptMetadata, PrefillField, ProtocolData
 
 PLACEHOLDER_PATTERN = re.compile(r"\[[A-Z][A-Z0-9_ ]{1,}\]")
 ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -62,7 +59,9 @@ def parse_date_label_to_iso(text: str) -> str:
     return parsed.strftime("%Y-%m-01")
 
 
-def infer_default_start_date(protocol_data: ProtocolData, manuscript_metadata: ManuscriptMetadata | None) -> str:
+def infer_default_start_date(
+    protocol_data: ProtocolData, manuscript_metadata: ManuscriptMetadata | None
+) -> str:
     if manuscript_metadata is not None:
         manuscript_iso = parse_date_label_to_iso(manuscript_metadata.date_label)
         if manuscript_iso:
@@ -86,7 +85,9 @@ def default_placeholder_replacements(
     protocol_data: ProtocolData,
     manuscript_metadata: ManuscriptMetadata | None,
 ) -> dict[str, str]:
-    title_fallback = manuscript_metadata.title if manuscript_metadata else "Systematic review protocol"
+    title_fallback = (
+        manuscript_metadata.title if manuscript_metadata else "Systematic review protocol"
+    )
 
     replacements: dict[str, str] = {}
     canonical_defaults = {
@@ -129,11 +130,17 @@ def auto_complete_missing_required_fields(
         "review_start_date": infer_default_start_date(protocol_data, manuscript_metadata),
         "review_completion_date": "",
         "named_contact": manuscript_metadata.contact_name if manuscript_metadata else "Review lead",
-        "named_contact_email": manuscript_metadata.contact_email if manuscript_metadata else "review-team@example.org",
-        "organisational_affiliation": manuscript_metadata.affiliation if manuscript_metadata else "Independent research team",
+        "named_contact_email": manuscript_metadata.contact_email
+        if manuscript_metadata
+        else "review-team@example.org",
+        "organisational_affiliation": manuscript_metadata.affiliation
+        if manuscript_metadata
+        else "Independent research team",
         "review_team": (
             f"{manuscript_metadata.contact_name} ({manuscript_metadata.affiliation})"
-            if manuscript_metadata and manuscript_metadata.contact_name and manuscript_metadata.affiliation
+            if manuscript_metadata
+            and manuscript_metadata.contact_name
+            and manuscript_metadata.affiliation
             else "Review team to be finalized"
         ),
         "funding_sources": (
@@ -146,7 +153,9 @@ def auto_complete_missing_required_fields(
             if manuscript_metadata and manuscript_metadata.conflicts_statement
             else "No conflicts of interest reported."
         ),
-        "country": manuscript_metadata.country if manuscript_metadata and manuscript_metadata.country else "Not specified",
+        "country": manuscript_metadata.country
+        if manuscript_metadata and manuscript_metadata.country
+        else "Not specified",
         "language": "English",
         "subgroups": "None planned.",
         "review_status": "Ongoing review",
@@ -168,7 +177,16 @@ def auto_complete_missing_required_fields(
     placeholder_overrides = {
         key: value
         for key, value in profile_values.items()
-        if key.startswith("[") or key in {"YOUR_REVIEW_TITLE", "POPULATION", "EXPOSURE_OR_CONCEPT", "OUTCOME", "ELIGIBLE_LANGUAGES", "START_YEAR"}
+        if key.startswith("[")
+        or key
+        in {
+            "YOUR_REVIEW_TITLE",
+            "POPULATION",
+            "EXPOSURE_OR_CONCEPT",
+            "OUTCOME",
+            "ELIGIBLE_LANGUAGES",
+            "START_YEAR",
+        }
     }
     placeholder_replacements = merge_placeholder_replacements(
         default_placeholder_replacements(protocol_data, manuscript_metadata),
@@ -210,7 +228,9 @@ def field_notes_for_missing(field: PrefillField) -> str:
     if not field.required:
         return field.notes
 
-    requirement_note = "Required by PROSPERO for this registration mode; complete manually before submission."
+    requirement_note = (
+        "Required by PROSPERO for this registration mode; complete manually before submission."
+    )
     if field.notes:
         return f"{requirement_note} {field.notes}"
     return requirement_note

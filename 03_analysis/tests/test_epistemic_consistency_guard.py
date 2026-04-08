@@ -1,9 +1,8 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "epistemic_consistency_guard.py"
 spec = importlib.util.spec_from_file_location("epistemic_consistency_guard", MODULE_PATH)
@@ -38,8 +37,7 @@ class EpistemicConsistencyGuardTests(unittest.TestCase):
             encoding="utf-8",
         )
         master_records.write_text(
-            "record_id,title\n"
-            "MR_DEMO_001,Demo row for smoke test\n",
+            "record_id,title\nMR_DEMO_001,Demo row for smoke test\n",
             encoding="utf-8",
         )
         table.write_text("% table content\n", encoding="utf-8")
@@ -87,7 +85,9 @@ class EpistemicConsistencyGuardTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             fixture = self._build_fixture_workspace(Path(tmp_dir))
 
-            exit_code = self._run_guard(fixture, review_mode="template", fail_on_risk_flag="--no-fail-on-risk")
+            exit_code = self._run_guard(
+                fixture, review_mode="template", fail_on_risk_flag="--no-fail-on-risk"
+            )
 
             self.assertEqual(exit_code, 0)
             report_text = fixture["report"].read_text(encoding="utf-8")
@@ -104,7 +104,9 @@ class EpistemicConsistencyGuardTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             fixture = self._build_fixture_workspace(Path(tmp_dir))
 
-            first_exit = self._run_guard(fixture, review_mode="template", fail_on_risk_flag="--no-fail-on-risk")
+            first_exit = self._run_guard(
+                fixture, review_mode="template", fail_on_risk_flag="--no-fail-on-risk"
+            )
             self.assertEqual(first_exit, 0)
 
             fixture["protocol"].write_text("# Protocol\nOperational title\n", encoding="utf-8")
@@ -114,14 +116,20 @@ class EpistemicConsistencyGuardTests(unittest.TestCase):
                 "PubMed,2026-03-14,run_2026_03_14,pubmed_2026-03-14.ris\n",
                 encoding="utf-8",
             )
-            fixture["master_records"].write_text("record_id,title\nMR0001,Operational row\n", encoding="utf-8")
+            fixture["master_records"].write_text(
+                "record_id,title\nMR0001,Operational row\n", encoding="utf-8"
+            )
 
-            second_exit = self._run_guard(fixture, review_mode="template", fail_on_risk_flag="--no-fail-on-risk")
+            second_exit = self._run_guard(
+                fixture, review_mode="template", fail_on_risk_flag="--no-fail-on-risk"
+            )
 
             self.assertEqual(second_exit, 0)
             table_lines = fixture["table"].read_text(encoding="utf-8").splitlines()
             tikz_lines = fixture["tikz"].read_text(encoding="utf-8").splitlines()
-            self.assertNotEqual(table_lines[0], epistemic_consistency_guard.EPISTEMIC_WARNING_MARKER)
+            self.assertNotEqual(
+                table_lines[0], epistemic_consistency_guard.EPISTEMIC_WARNING_MARKER
+            )
             self.assertNotEqual(tikz_lines[0], epistemic_consistency_guard.EPISTEMIC_WARNING_MARKER)
 
             report_text = fixture["report"].read_text(encoding="utf-8")
@@ -132,7 +140,9 @@ class EpistemicConsistencyGuardTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             fixture = self._build_fixture_workspace(Path(tmp_dir))
 
-            exit_code = self._run_guard(fixture, review_mode="production", fail_on_risk_flag="--fail-on-risk")
+            exit_code = self._run_guard(
+                fixture, review_mode="production", fail_on_risk_flag="--fail-on-risk"
+            )
 
             self.assertEqual(exit_code, 1)
             report_text = fixture["report"].read_text(encoding="utf-8")

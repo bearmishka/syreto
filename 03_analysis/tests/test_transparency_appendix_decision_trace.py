@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "transparency_appendix_decision_trace.py"
 
@@ -82,7 +81,9 @@ class TransparencyAppendixDecisionTraceTests(unittest.TestCase):
             self.assertIn("| MR00002 | fulltext | exclude | wrong outcome | R2 |", appendix_text)
             self.assertIn("<!-- AUTO_ANALYSIS_TRACE_START -->", appendix_text)
             self.assertIn("### Analysis traceability (auto-export)", appendix_text)
-            self.assertIn("| body_image | random_effects | S1, S2 | S7 | missing variance |", appendix_text)
+            self.assertIn(
+                "| body_image | random_effects | S1, S2 | S7 | missing variance |", appendix_text
+            )
             self.assertLess(
                 appendix_text.find("<!-- AUTO_DECISION_TRACE_START -->"),
                 appendix_text.find("## 3. Extraction sample (3 studies)"),
@@ -99,7 +100,10 @@ class TransparencyAppendixDecisionTraceTests(unittest.TestCase):
 
             analysis_latex_text = analysis_latex_output_path.read_text(encoding="utf-8")
             self.assertIn(r"\label{tab:analysis_trace_log}", analysis_latex_text)
-            self.assertIn("body\\_image & random\\_effects & S1, S2 & S7 & missing variance", analysis_latex_text)
+            self.assertIn(
+                "body\\_image & random\\_effects & S1, S2 & S7 & missing variance",
+                analysis_latex_text,
+            )
 
     def test_replaces_existing_auto_block_idempotently(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -173,8 +177,12 @@ class TransparencyAppendixDecisionTraceTests(unittest.TestCase):
             self.assertEqual(appendix_text.count("<!-- AUTO_DECISION_TRACE_END -->"), 1)
             self.assertEqual(appendix_text.count("<!-- AUTO_ANALYSIS_TRACE_START -->"), 1)
             self.assertEqual(appendix_text.count("<!-- AUTO_ANALYSIS_TRACE_END -->"), 1)
-            self.assertIn("| MR00003 | screening | exclude | wrong population | R3 |", appendix_text)
-            self.assertIn("| confidence | random_effects | S1 | S9 | missing variance |", appendix_text)
+            self.assertIn(
+                "| MR00003 | screening | exclude | wrong population | R3 |", appendix_text
+            )
+            self.assertIn(
+                "| confidence | random_effects | S1 | S9 | missing variance |", appendix_text
+            )
 
             latex_text = latex_output_path.read_text(encoding="utf-8")
             self.assertIn("MR00003 & screening & exclude & R3 & wrong population", latex_text)
@@ -340,12 +348,16 @@ class TransparencyAppendixDecisionTraceTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
 
             appendix_text = appendix_path.read_text(encoding="utf-8")
-            self.assertIn("| body_image | random_effects | S1 | S5 | missing variance |", appendix_text)
+            self.assertIn(
+                "| body_image | random_effects | S1 | S5 | missing variance |", appendix_text
+            )
             self.assertNotIn("| self_esteem | random_effects | S2 | — | — |", appendix_text)
             self.assertIn("Table truncated to first 1 rows", appendix_text)
 
             analysis_latex_text = analysis_latex_output_path.read_text(encoding="utf-8")
-            self.assertIn("body\\_image & random\\_effects & S1 & S5 & missing variance", analysis_latex_text)
+            self.assertIn(
+                "body\\_image & random\\_effects & S1 & S5 & missing variance", analysis_latex_text
+            )
             self.assertNotIn("self\\_esteem & random\\_effects & S2", analysis_latex_text)
             self.assertIn("Table truncated to first 1 rows", analysis_latex_text)
 

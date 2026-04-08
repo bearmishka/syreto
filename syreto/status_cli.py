@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 SEVERITY_ORDER = {"minor": 1, "major": 2, "critical": 3}
 DEFAULT_CHECKLIST_SEVERITY = "major"

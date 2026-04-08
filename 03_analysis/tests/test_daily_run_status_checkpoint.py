@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -16,11 +15,11 @@ def make_fake_python(binary_path: Path, log_path: Path) -> None:
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         f"printf '%s\\n' \"$*\" >> '{log_path.as_posix()}'\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "  exit 0\n"
         "fi\n"
-        "if [[ \"$*\" == *\"validate_csv_inputs.py\"* ]]; then\n"
+        'if [[ "$*" == *"validate_csv_inputs.py"* ]]; then\n'
         "  exit 42\n"
         "fi\n"
         "exit 0\n",
@@ -66,11 +65,21 @@ class DailyRunStatusCheckpointTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 42)
             self.assertTrue(calls_log.exists())
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
 
-            validate_idx = next((idx for idx, call in enumerate(calls) if "validate_csv_inputs.py" in call), None)
-            status_report_idx = next((idx for idx, call in enumerate(calls) if "status_report.py" in call), None)
-            status_cli_idx = next((idx for idx, call in enumerate(calls) if "status_cli.py" in call), None)
+            validate_idx = next(
+                (idx for idx, call in enumerate(calls) if "validate_csv_inputs.py" in call), None
+            )
+            status_report_idx = next(
+                (idx for idx, call in enumerate(calls) if "status_report.py" in call), None
+            )
+            status_cli_idx = next(
+                (idx for idx, call in enumerate(calls) if "status_cli.py" in call), None
+            )
 
             self.assertIsNotNone(validate_idx)
             self.assertIsNotNone(status_report_idx)
@@ -79,7 +88,9 @@ class DailyRunStatusCheckpointTests(unittest.TestCase):
             self.assertGreater(status_cli_idx, validate_idx)
 
             self.assertTrue(status_cli_snapshot.exists())
-            self.assertIn("status_cli_checkpoint_ok", status_cli_snapshot.read_text(encoding="utf-8"))
+            self.assertIn(
+                "status_cli_checkpoint_ok", status_cli_snapshot.read_text(encoding="utf-8")
+            )
 
             self.assertTrue(run_manifest.exists())
             manifest_payload = json.loads(run_manifest.read_text(encoding="utf-8"))

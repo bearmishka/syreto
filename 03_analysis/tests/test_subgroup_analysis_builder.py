@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "subgroup_analysis_builder.py"
 
@@ -83,7 +82,9 @@ class SubgroupAnalysisBuilderTests(unittest.TestCase):
             self.assertTrue(summary_path.exists())
 
             output_df = pd.read_csv(output_path, dtype=str)
-            self.assertEqual(list(output_df.columns), ["subgroup", "k", "effect", "ci_low", "ci_high", "i2"])
+            self.assertEqual(
+                list(output_df.columns), ["subgroup", "k", "effect", "ci_low", "ci_high", "i2"]
+            )
             self.assertGreaterEqual(int(output_df.shape[0]), 6)
 
             subgroup_labels = output_df["subgroup"].tolist()

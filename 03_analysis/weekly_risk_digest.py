@@ -95,14 +95,20 @@ def build_digest(
     snapshot = summary.get("data_snapshot", {})
     stage_assessment = summary.get("stage_assessment", {})
     project_posture = summary.get("project_posture", {})
-    semantic_completeness = project_posture.get("semantic_completeness", {}) if isinstance(project_posture, dict) else {}
+    semantic_completeness = (
+        project_posture.get("semantic_completeness", {})
+        if isinstance(project_posture, dict)
+        else {}
+    )
     registration = summary.get("registration", {})
     reviewer_agreement = summary.get("reviewer_agreement", {})
     kappa = reviewer_agreement.get("cohen_kappa", {})
 
     counts = health_counts(summary.get("health_checks", []))
     risks = top_risks(summary, max_items=max_risks)
-    actions = [str(step).strip() for step in summary.get("suggested_next_step", []) if str(step).strip()][:max_actions]
+    actions = [
+        str(step).strip() for step in summary.get("suggested_next_step", []) if str(step).strip()
+    ][:max_actions]
     pending = pending_checklist(summary, max_items=max_actions)
 
     if registration.get("registered"):
@@ -207,7 +213,9 @@ def build_digest(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Generate a concise weekly risk digest for PI updates.")
+    parser = argparse.ArgumentParser(
+        description="Generate a concise weekly risk digest for PI updates."
+    )
     parser.add_argument(
         "--status-summary",
         default="outputs/status_summary.json",
@@ -220,7 +228,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--today", default=None, help="Override current date (YYYY-MM-DD)")
     parser.add_argument("--max-risks", type=int, default=5, help="Maximum number of risk bullets")
-    parser.add_argument("--max-actions", type=int, default=5, help="Maximum number of action bullets")
+    parser.add_argument(
+        "--max-actions", type=int, default=5, help="Maximum number of action bullets"
+    )
     args = parser.parse_args(argv)
 
     status_summary_path = Path(args.status_summary)

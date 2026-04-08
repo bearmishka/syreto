@@ -3,8 +3,8 @@ import io
 import os
 import re
 import tempfile
-from difflib import SequenceMatcher
 from datetime import datetime
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import pandas as pd

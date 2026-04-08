@@ -6,7 +6,6 @@ from datetime import datetime
 from glob import glob
 from pathlib import Path
 
-
 DEFAULT_PLACEHOLDER_TARGETS = [
     "../01_protocol/protocol.md",
     "../04_manuscript/main.tex",

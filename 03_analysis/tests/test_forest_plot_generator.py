@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "forest_plot_generator.py"
 spec = importlib.util.spec_from_file_location("forest_plot_generator", MODULE_PATH)
@@ -17,7 +16,9 @@ spec.loader.exec_module(forest_plot_generator)
 
 class ForestPlotGeneratorTests(unittest.TestCase):
     def test_extraction_template_contains_required_metadata_columns(self) -> None:
-        extraction_template_path = Path(__file__).resolve().parents[2] / "02_data" / "codebook" / "extraction_template.csv"
+        extraction_template_path = (
+            Path(__file__).resolve().parents[2] / "02_data" / "codebook" / "extraction_template.csv"
+        )
         extraction_header = pd.read_csv(extraction_template_path, nrows=0).columns.tolist()
 
         missing = [

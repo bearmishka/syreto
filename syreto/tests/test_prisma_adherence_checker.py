@@ -1,9 +1,8 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "prisma_adherence_checker.py"
 spec = importlib.util.spec_from_file_location("prisma_adherence_checker", MODULE_PATH)

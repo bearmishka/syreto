@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
 
-def make_fake_python(binary_path: Path, log_path: Path, *, fail_on_template_guard: bool = False) -> None:
+def make_fake_python(
+    binary_path: Path, log_path: Path, *, fail_on_template_guard: bool = False
+) -> None:
     fail_clause = ""
     if fail_on_template_guard:
         fail_clause = (
-            "if [[ \"$*\" == *\"template_term_guard.py\"* ]] && [[ \"$*\" == *\"--fail-on-match\"* ]]; then\n"
+            'if [[ "$*" == *"template_term_guard.py"* ]] && [[ "$*" == *"--fail-on-match"* ]]; then\n'
             "  exit 1\n"
             "fi\n"
         )
@@ -80,7 +81,11 @@ def run_daily_run_with_mode(
 
         calls: list[str] = []
         if calls_log.exists():
-            calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+            calls = [
+                line.strip()
+                for line in calls_log.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
 
         return result, calls
 
@@ -117,7 +122,9 @@ class DailyRunTemplateTermGuardModesTests(unittest.TestCase):
         self.assertEqual(len(guard_calls), 1)
         self.assertIn("--fail-on-match", guard_calls[0])
 
-    def test_production_mode_enforces_strict_manuscript_guard_even_when_skip_requested(self) -> None:
+    def test_production_mode_enforces_strict_manuscript_guard_even_when_skip_requested(
+        self,
+    ) -> None:
         result, calls = run_daily_run_with_mode("skip", review_mode="production")
 
         self.assertEqual(result.returncode, 0)
@@ -154,7 +161,9 @@ class DailyRunTemplateTermGuardModesTests(unittest.TestCase):
         result, calls = run_daily_run_with_mode("1")
 
         self.assertEqual(result.returncode, 0)
-        self.assertIn("Compatibility alias detected: RUN_TEMPLATE_TERM_GUARD=1 -> fail", result.stdout)
+        self.assertIn(
+            "Compatibility alias detected: RUN_TEMPLATE_TERM_GUARD=1 -> fail", result.stdout
+        )
         guard_calls = self._template_guard_calls(calls)
         self.assertEqual(len(guard_calls), 1)
         self.assertIn("--fail-on-match", guard_calls[0])
@@ -163,7 +172,9 @@ class DailyRunTemplateTermGuardModesTests(unittest.TestCase):
         result, calls = run_daily_run_with_mode("0")
 
         self.assertEqual(result.returncode, 0)
-        self.assertIn("Compatibility alias detected: RUN_TEMPLATE_TERM_GUARD=0 -> skip", result.stdout)
+        self.assertIn(
+            "Compatibility alias detected: RUN_TEMPLATE_TERM_GUARD=0 -> skip", result.stdout
+        )
         guard_calls = self._template_guard_calls(calls)
         self.assertEqual(guard_calls, [])
 

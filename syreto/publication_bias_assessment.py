@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -1269,14 +1268,16 @@ def build_summary(
         for _, row in publication_bias_results_df.iterrows():
             egger_p = numeric_or_none(row.get("egger_test_p", ""))
             begg_p = numeric_or_none(row.get("begg_test_p", ""))
+            escaped_outcome = normalize(row.get("outcome", "")).replace("|", "\\|")
+            escaped_asymmetry = normalize(row.get("funnel_asymmetry", "")).replace("|", "\\|")
             lines.append(
                 "| "
-                + f"{normalize(row.get('outcome', '')).replace('|', '\\|')} | "
+                + f"{escaped_outcome} | "
                 + f"{int(numeric_or_none(row.get('k_studies', '')) or 0)} | "
                 + f"{int(numeric_or_none(row.get('n_with_se', '')) or 0)} | "
                 + f"{format_p_value(egger_p)} | "
                 + f"{format_p_value(begg_p)} | "
-                + f"{normalize(row.get('funnel_asymmetry', '')).replace('|', '\\|')} |"
+                + f"{escaped_asymmetry} |"
             )
 
     lines.append("")

@@ -54,7 +54,9 @@ def main(argv: list[str] | None = None) -> int:
     summary_path = Path(args.summary)
 
     if not summary_path.exists():
-        print(f"[prospero_manual_fields_check] Missing summary file: {summary_path}", file=sys.stderr)
+        print(
+            f"[prospero_manual_fields_check] Missing summary file: {summary_path}", file=sys.stderr
+        )
         return 2
 
     summary_text = summary_path.read_text(encoding="utf-8")

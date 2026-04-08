@@ -1,12 +1,11 @@
 import argparse
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 OUTPUT_COLUMNS = [
     "run_started_at_utc",

@@ -2,9 +2,8 @@ import importlib.util
 import re
 import sys
 import tempfile
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "template_term_guard.py"
 spec = importlib.util.spec_from_file_location("template_term_guard", MODULE_PATH)

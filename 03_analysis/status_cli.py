@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 SEVERITY_ORDER = {"minor": 1, "major": 2, "critical": 3}
 DEFAULT_CHECKLIST_SEVERITY = "major"
@@ -53,7 +52,9 @@ def normalize_priority_policy(raw_policy: object) -> dict:
             item_id = str(item_id_raw).strip()
             if not item_id:
                 continue
-            checklist_priority[item_id] = normalize_severity(str(severity_raw), default=DEFAULT_CHECKLIST_SEVERITY)
+            checklist_priority[item_id] = normalize_severity(
+                str(severity_raw), default=DEFAULT_CHECKLIST_SEVERITY
+            )
     if "default" not in checklist_priority:
         checklist_priority["default"] = DEFAULT_CHECKLIST_SEVERITY
 
@@ -179,7 +180,9 @@ def checklist_priority(item_id: str, priority_policy: dict) -> str:
 def collect_findings(summary: dict, priority_policy: dict) -> list[dict]:
     priority_policy = normalize_priority_policy(priority_policy)
     findings: list[dict] = []
-    health_level_severity = priority_policy.get("health_level_severity", DEFAULT_HEALTH_LEVEL_SEVERITY)
+    health_level_severity = priority_policy.get(
+        "health_level_severity", DEFAULT_HEALTH_LEVEL_SEVERITY
+    )
     if not isinstance(health_level_severity, dict):
         health_level_severity = DEFAULT_HEALTH_LEVEL_SEVERITY
 
@@ -262,7 +265,9 @@ def health_counts(health_checks: list[dict]) -> dict:
     return counts
 
 
-def grouped_todo_items(checklist: list[dict], *, todo_only: bool) -> dict[str, list[dict[str, str]]]:
+def grouped_todo_items(
+    checklist: list[dict], *, todo_only: bool
+) -> dict[str, list[dict[str, str]]]:
     grouped: dict[str, list[dict[str, str]]] = {}
     for raw_item in checklist:
         if not isinstance(raw_item, dict):
@@ -363,7 +368,9 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
         if summary_present and converted_present:
             effect_size_label = f"OK ({effect_size_details})" if effect_size_details else "OK"
         elif summary_present or converted_present:
-            effect_size_label = f"WARN ({effect_size_details})" if effect_size_details else "WARN (partial)"
+            effect_size_label = (
+                f"WARN ({effect_size_details})" if effect_size_details else "WARN (partial)"
+            )
         else:
             effect_size_label = "ERROR (missing)"
 
@@ -392,7 +399,9 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
     lines.append("")
     lines.append("Checklist")
     if checklist:
-        active_items = [item for item in checklist if not item.get("done")] if todo_only else checklist
+        active_items = (
+            [item for item in checklist if not item.get("done")] if todo_only else checklist
+        )
         if active_items:
             for item in active_items:
                 mark = "x" if item.get("done") else " "
@@ -411,7 +420,9 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
     else:
         lines.append("- checklist not available")
 
-    grouped_todos = grouped_todo_items(checklist if isinstance(checklist, list) else [], todo_only=todo_only)
+    grouped_todos = grouped_todo_items(
+        checklist if isinstance(checklist, list) else [], todo_only=todo_only
+    )
     lines.append("")
     lines.append("TODO by file")
     if grouped_todos:
@@ -420,7 +431,9 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
             for item in items:
                 detail_suffix = f" | {item['details']}" if item["details"] else ""
                 quick_fix_suffix = f" | quick-fix: {item['quick_fix']}" if item["quick_fix"] else ""
-                lines.append(f"  - [{item['done']}] {item['title']}{detail_suffix}{quick_fix_suffix}")
+                lines.append(
+                    f"  - [{item['done']}] {item['title']}{detail_suffix}{quick_fix_suffix}"
+                )
     else:
         lines.append("- no pending TODO items")
 
@@ -444,7 +457,9 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Print a concise CLI summary from status_summary.json.")
+    parser = argparse.ArgumentParser(
+        description="Print a concise CLI summary from status_summary.json."
+    )
     parser.add_argument(
         "--input",
         default="outputs/status_summary.json",

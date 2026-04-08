@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-
 FIELD_TERM_RE = re.compile(
     r'(?P<term>"(?:[^"\\]|\\.)*"|[^\s()]+)\s*\[\s*(?P<tag>[^\]]+)\s*\]',
     re.IGNORECASE,

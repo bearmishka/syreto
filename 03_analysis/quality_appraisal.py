@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 ITEM_COLUMNS = [f"item_{index:02d}" for index in range(1, 12)]
 APPRAISAL_COLUMNS = [
@@ -114,7 +113,12 @@ def detect_tool_from_design(study_design: str) -> str | None:
         return "case_control"
     if "cross" in text:
         return "cross_sectional"
-    if "cohort" in text or "longitudinal" in text or "prospective" in text or "retrospective" in text:
+    if (
+        "cohort" in text
+        or "longitudinal" in text
+        or "prospective" in text
+        or "retrospective" in text
+    ):
         return "cohort"
 
     return None
@@ -148,7 +152,9 @@ def build_extraction_study_map(extraction_df: pd.DataFrame) -> dict[str, str]:
     return study_map
 
 
-def ensure_appraisal_rows(appraisal_df: pd.DataFrame, extraction_study_map: dict[str, str]) -> pd.DataFrame:
+def ensure_appraisal_rows(
+    appraisal_df: pd.DataFrame, extraction_study_map: dict[str, str]
+) -> pd.DataFrame:
     working = appraisal_df.copy()
 
     for study_id, study_design in extraction_study_map.items():
@@ -371,7 +377,11 @@ def sync_extraction_quality(
     extraction_df: pd.DataFrame,
     scored_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    if extraction_df.empty or "study_id" not in extraction_df.columns or "quality_appraisal" not in extraction_df.columns:
+    if (
+        extraction_df.empty
+        or "study_id" not in extraction_df.columns
+        or "quality_appraisal" not in extraction_df.columns
+    ):
         return extraction_df
 
     score_map: dict[str, str] = {}
@@ -438,7 +448,9 @@ def aggregate_scores(scored_df: pd.DataFrame) -> pd.DataFrame:
         )
 
     aggregated = pd.DataFrame(rows, columns=columns)
-    return aggregated.sort_values(by=["study_design", "jbi_tool"], kind="stable").reset_index(drop=True)
+    return aggregated.sort_values(by=["study_design", "jbi_tool"], kind="stable").reset_index(
+        drop=True
+    )
 
 
 def build_summary(
@@ -478,7 +490,9 @@ def build_summary(
     if aggregate_df.empty:
         lines.append("- No appraisal rows available for aggregation.")
     else:
-        lines.append("| study_design | jbi_tool | studies | scored | mean | median | min | max | high/moderate/low/not_scored |")
+        lines.append(
+            "| study_design | jbi_tool | studies | scored | mean | median | min | max | high/moderate/low/not_scored |"
+        )
         lines.append("|---|---|---:|---:|---:|---:|---:|---:|---|")
         for _, row in aggregate_df.iterrows():
             distribution = (
@@ -535,7 +549,9 @@ def build_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- JBI tool mapping is inferred from `study_design` (cross-sectional, case-control, cohort).")
+    lines.append(
+        "- JBI tool mapping is inferred from `study_design` (cross-sectional, case-control, cohort)."
+    )
     lines.append("- Scoring rule: `yes=1`, `no=0`, `unclear=0`, `na` excluded from denominator.")
     lines.append("- Quality bands: high (>=75%), moderate (50-74.9%), low (<50%).")
 

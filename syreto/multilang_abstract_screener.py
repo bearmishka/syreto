@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 PLACEHOLDER_PATTERN = re.compile(r"\[[^\]]+\]")
 WORD_PATTERN = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿĀ-žЀ-ӿ0-9]+")
 CYRILLIC_PATTERN = re.compile(r"[А-Яа-яЁё]")

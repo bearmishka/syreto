@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 OUTPUT_COLUMNS = [
     "study_id",
@@ -75,7 +74,9 @@ def is_included_in_review(row: pd.Series) -> bool:
     )
 
 
-def build_source_to_record_id_map(master_df: pd.DataFrame, record_id_map_df: pd.DataFrame) -> dict[str, str]:
+def build_source_to_record_id_map(
+    master_df: pd.DataFrame, record_id_map_df: pd.DataFrame
+) -> dict[str, str]:
     mapping: dict[str, str] = {}
 
     def add_mapping(key: str, record_id: str) -> None:
@@ -185,9 +186,15 @@ def build_study_flow_map(
         if source_id:
             grouped[study_id]["source_ids"].add(source_id)
 
-        grouped[study_id]["included_in_review"] = bool(grouped[study_id]["included_in_review"] or is_included_in_review(row))
-        grouped[study_id]["included_in_meta"] = bool(grouped[study_id]["included_in_meta"] or is_yes(row.get("included_in_meta", "")))
-        grouped[study_id]["included_in_bias"] = bool(grouped[study_id]["included_in_bias"] or is_yes(row.get("included_in_bias", "")))
+        grouped[study_id]["included_in_review"] = bool(
+            grouped[study_id]["included_in_review"] or is_included_in_review(row)
+        )
+        grouped[study_id]["included_in_meta"] = bool(
+            grouped[study_id]["included_in_meta"] or is_yes(row.get("included_in_meta", ""))
+        )
+        grouped[study_id]["included_in_bias"] = bool(
+            grouped[study_id]["included_in_bias"] or is_yes(row.get("included_in_bias", ""))
+        )
 
     has_screening_include = any(decision == "include" for decision in screening_decisions.values())
 
@@ -252,11 +259,21 @@ def build_study_flow_map(
         "total_studies": len(frame),
         "mapped_source_links": mapped_source_links,
         "heuristic_screening_assumptions": heuristic_screening_assumptions,
-        "found_in_search_yes": int((frame["found_in_search"] == "yes").sum()) if not frame.empty else 0,
-        "passed_screening_yes": int((frame["passed_screening"] == "yes").sum()) if not frame.empty else 0,
-        "included_in_review_yes": int((frame["included_in_review"] == "yes").sum()) if not frame.empty else 0,
-        "included_in_meta_yes": int((frame["included_in_meta"] == "yes").sum()) if not frame.empty else 0,
-        "included_in_bias_yes": int((frame["included_in_bias"] == "yes").sum()) if not frame.empty else 0,
+        "found_in_search_yes": int((frame["found_in_search"] == "yes").sum())
+        if not frame.empty
+        else 0,
+        "passed_screening_yes": int((frame["passed_screening"] == "yes").sum())
+        if not frame.empty
+        else 0,
+        "included_in_review_yes": int((frame["included_in_review"] == "yes").sum())
+        if not frame.empty
+        else 0,
+        "included_in_meta_yes": int((frame["included_in_meta"] == "yes").sum())
+        if not frame.empty
+        else 0,
+        "included_in_bias_yes": int((frame["included_in_bias"] == "yes").sum())
+        if not frame.empty
+        else 0,
     }
 
     return frame, metrics

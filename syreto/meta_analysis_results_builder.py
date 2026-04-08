@@ -1,15 +1,14 @@
 import argparse
-import math
-from collections import Counter, defaultdict
-from datetime import datetime, timezone
 import json
-from pathlib import Path
+import math
 import os
 import tempfile
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 from scipy import stats
-
 
 MISSING_CODES = {
     "",
@@ -556,8 +555,10 @@ def build_summary(
         lines.append("| level | outcome | study_id | message |")
         lines.append("|---|---|---|---|")
         for issue in issues:
+            escaped_outcome = normalize(issue["outcome"]).replace("|", "\\|")
+            escaped_study_id = normalize(issue["study_id"]).replace("|", "\\|")
             lines.append(
-                f"| {issue['level']} | {normalize(issue['outcome']).replace('|', '\\|')} | {normalize(issue['study_id']).replace('|', '\\|')} | {issue['message']} |"
+                f"| {issue['level']} | {escaped_outcome} | {escaped_study_id} | {issue['message']} |"
             )
     else:
         lines.append("- ✅ No issues found.")

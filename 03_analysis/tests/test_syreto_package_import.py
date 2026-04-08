@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from contextlib import redirect_stderr
-from contextlib import redirect_stdout
 import importlib
-from io import StringIO
-from pathlib import Path
 import sys
 import tomllib
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+from pathlib import Path
 from unittest import mock
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:

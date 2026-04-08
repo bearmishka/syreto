@@ -1,13 +1,12 @@
 import argparse
 import math
+import os
+import tempfile
 from collections import Counter
 from datetime import datetime
-import os
 from pathlib import Path
-import tempfile
 
 import pandas as pd
-
 
 MISSING_CODES = {
     "",
@@ -361,7 +360,9 @@ def build_summary(
     lines.append("- `d = ln(OR) * sqrt(3) / pi` and `OR = exp(d * pi / sqrt(3))`")
     lines.append("- `eta^2 = r^2`; `r = ±sqrt(eta^2)` requires effect direction sign")
     lines.append("- `fisher_z = atanh(r)` when `|r| < 1`")
-    lines.append("- If CI bounds are present (`ci_lower`, `ci_upper`), they must use the same metric scale as `main_effect_metric`.")
+    lines.append(
+        "- If CI bounds are present (`ci_lower`, `ci_upper`), they must use the same metric scale as `main_effect_metric`."
+    )
 
     lines.append("")
     lines.append("## Issues")
@@ -657,7 +658,10 @@ def main() -> None:
     print(f"Wrote: {summary_output_path}")
     print(
         "Conversion status counts: "
-        + ", ".join(f"{key}={int(status_counts.get(key, 0))}" for key in ["converted", "partial", "skipped", "error"])
+        + ", ".join(
+            f"{key}={int(status_counts.get(key, 0))}"
+            for key in ["converted", "partial", "skipped", "error"]
+        )
     )
     print(f"Issues: errors={error_count}, warnings={warning_count}")
 

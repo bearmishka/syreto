@@ -11,7 +11,6 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -150,7 +149,14 @@ def load_master(path: Path, include_duplicates: bool) -> pd.DataFrame:
             master_df[column] = ""
 
     if not include_duplicates:
-        is_dup = master_df["is_duplicate"].fillna("").astype(str).str.strip().str.lower().isin(YES_VALUES)
+        is_dup = (
+            master_df["is_duplicate"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .isin(YES_VALUES)
+        )
         master_df = master_df.loc[~is_dup].copy()
 
     return master_df
@@ -224,7 +230,9 @@ def pick_master_match(
         return master_df.loc[indexes["record_id"][ext_record_id][0]], "record_id"
 
     if ext_source_record_id and ext_source_record_id in indexes["source_record_id"]:
-        return master_df.loc[indexes["source_record_id"][ext_source_record_id][0]], "source_record_id"
+        return master_df.loc[
+            indexes["source_record_id"][ext_source_record_id][0]
+        ], "source_record_id"
 
     if ext_doi and ext_doi in indexes["doi"]:
         return master_df.loc[indexes["doi"][ext_doi][0]], "doi"
@@ -251,7 +259,11 @@ def pick_master_match(
 def build_manual_query(*, first_author: str, year: str, doi: str) -> str:
     if doi:
         return f'"{doi}"'
-    parts = [part for part in [first_author, year, "target population", "target concept", "target outcome"] if part]
+    parts = [
+        part
+        for part in [first_author, year, "target population", "target concept", "target outcome"]
+        if part
+    ]
     return " ".join(parts)
 
 
@@ -358,7 +370,9 @@ class OpenCitationsClient:
                 payload = json.loads(body) if body.strip() else []
                 if isinstance(payload, list):
                     return payload
-                raise RuntimeError(f"Unexpected payload type from OpenCitations: {type(payload).__name__}")
+                raise RuntimeError(
+                    f"Unexpected payload type from OpenCitations: {type(payload).__name__}"
+                )
 
             except HTTPError as error:
                 self.last_call_time = time.time()
@@ -384,7 +398,9 @@ def crawl_citations(
     *,
     dry_run: bool,
     strict_api_errors: bool,
-) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]], Counter[str], set[str]]:
+) -> tuple[
+    list[dict[str, str]], list[dict[str, str]], list[dict[str, str]], Counter[str], set[str]
+]:
     forward_rows: list[dict[str, str]] = []
     backward_rows: list[dict[str, str]] = []
     grey_logs: list[dict[str, str]] = []
@@ -543,7 +559,9 @@ def crawl_citations(
     return forward_rows, backward_rows, grey_logs, counters, related_dois
 
 
-def deduplicate_rows(rows: list[dict[str, str]], key_fields: list[str]) -> tuple[list[dict[str, str]], int]:
+def deduplicate_rows(
+    rows: list[dict[str, str]], key_fields: list[str]
+) -> tuple[list[dict[str, str]], int]:
     seen: set[tuple[str, ...]] = set()
     deduped: list[dict[str, str]] = []
     dropped = 0
@@ -642,7 +660,9 @@ def render_summary(
     lines.append("")
     lines.append(f"- Dry run mode: {'yes' if dry_run else 'no'}")
     lines.append(f"- API records fetched (`citations`): {counters.get('api_citations_records', 0)}")
-    lines.append(f"- API records fetched (`references`): {counters.get('api_references_records', 0)}")
+    lines.append(
+        f"- API records fetched (`references`): {counters.get('api_references_records', 0)}"
+    )
     lines.append(f"- API errors: {counters.get('api_errors', 0)}")
     lines.append(f"- Skipped API calls in dry run: {counters.get('dry_run_skipped_calls', 0)}")
     lines.append("")
@@ -662,9 +682,15 @@ def render_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Forward citation list is built from OpenCitations `citations/{doi}` (citing records).")
-    lines.append("- Backward reference list is built from OpenCitations `references/{doi}` (cited records).")
-    lines.append("- Grey-search log combines unresolved DOI studies, API issues, and citation-derived DOI candidates.")
+    lines.append(
+        "- Forward citation list is built from OpenCitations `citations/{doi}` (citing records)."
+    )
+    lines.append(
+        "- Backward reference list is built from OpenCitations `references/{doi}` (cited records)."
+    )
+    lines.append(
+        "- Grey-search log combines unresolved DOI studies, API issues, and citation-derived DOI candidates."
+    )
     lines.append("")
     return "\n".join(lines)
 
@@ -767,7 +793,9 @@ def main() -> None:
     master_df = load_master(master_path, include_duplicates=args.include_duplicate_master)
     master_indexes = build_master_indexes(master_df)
 
-    source_rows, unresolved_logs, doi_source_counts = resolve_source_studies(included_df, master_df, master_indexes)
+    source_rows, unresolved_logs, doi_source_counts = resolve_source_studies(
+        included_df, master_df, master_indexes
+    )
 
     client = OpenCitationsClient(
         api_base=args.api_base,

@@ -12,7 +12,6 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -32,7 +31,9 @@ YES_VALUES = {"yes", "y", "1", "true"}
 YEAR_PATTERN = re.compile(r"(19|20)\d{2}")
 DOI_PATTERN = re.compile(r"10\.\d{4,9}/[^\s]+", re.IGNORECASE)
 
-DEFAULT_RETRACTION_DB_URL = "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
+DEFAULT_RETRACTION_DB_URL = (
+    "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
+)
 
 PREFERRED_DOI_COLUMNS = [
     "OriginalPaperDOI",
@@ -197,7 +198,9 @@ def load_master(path: Path, include_duplicates: bool) -> pd.DataFrame:
     if include_duplicates:
         return master_df
 
-    is_dup = master_df["is_duplicate"].fillna("").astype(str).str.strip().str.lower().isin(YES_VALUES)
+    is_dup = (
+        master_df["is_duplicate"].fillna("").astype(str).str.strip().str.lower().isin(YES_VALUES)
+    )
     return master_df.loc[~is_dup].copy()
 
 
@@ -264,7 +267,9 @@ def pick_master_match(
         return master_df.loc[indexes["record_id"][ext_record_id][0]], "record_id"
 
     if ext_source_record_id and ext_source_record_id in indexes["source_record_id"]:
-        return master_df.loc[indexes["source_record_id"][ext_source_record_id][0]], "source_record_id"
+        return master_df.loc[
+            indexes["source_record_id"][ext_source_record_id][0]
+        ], "source_record_id"
 
     if ext_doi and ext_doi in indexes["doi"]:
         return master_df.loc[indexes["doi"][ext_doi][0]], "doi"
@@ -345,14 +350,18 @@ def fetch_retraction_watch_csv(url: str, timeout: int) -> str:
         raise RuntimeError(f"Retraction DB network error: {error.reason}") from error
 
 
-def first_non_empty_from_row(row: dict[str, object], fieldnames: list[str], candidates: list[str]) -> str:
+def first_non_empty_from_row(
+    row: dict[str, object], fieldnames: list[str], candidates: list[str]
+) -> str:
     selected = find_first_matching_column(fieldnames, candidates)
     if not selected:
         return ""
     return normalize(row.get(selected, ""))
 
 
-def parse_retraction_database(csv_text: str) -> tuple[dict[str, list[dict[str, str]]], dict[str, object]]:
+def parse_retraction_database(
+    csv_text: str,
+) -> tuple[dict[str, list[dict[str, str]]], dict[str, object]]:
     reader = csv.DictReader(io.StringIO(csv_text))
     fieldnames = list(reader.fieldnames or [])
     if not fieldnames:
@@ -381,7 +390,9 @@ def parse_retraction_database(csv_text: str) -> tuple[dict[str, list[dict[str, s
             "record_id": first_non_empty_from_row(row, fieldnames, RECORD_ID_COLUMNS),
             "title": first_non_empty_from_row(row, fieldnames, TITLE_COLUMNS),
             "retraction_date": first_non_empty_from_row(row, fieldnames, RETRACTION_DATE_COLUMNS),
-            "retraction_reason": first_non_empty_from_row(row, fieldnames, RETRACTION_REASON_COLUMNS),
+            "retraction_reason": first_non_empty_from_row(
+                row, fieldnames, RETRACTION_REASON_COLUMNS
+            ),
             "url": first_non_empty_from_row(row, fieldnames, URL_COLUMNS),
         }
 
@@ -442,9 +453,15 @@ def build_result_rows(
                 "master_source_record_id": normalize(source.get("master_source_record_id", "")),
                 "retraction_status": status,
                 "retraction_hit_count": str(len(hits)) if hits else "0",
-                "retraction_record_ids": dedupe_join([normalize(hit.get("record_id", "")) for hit in hits]),
-                "retraction_dates": dedupe_join([normalize(hit.get("retraction_date", "")) for hit in hits]),
-                "retraction_reasons": dedupe_join([normalize(hit.get("retraction_reason", "")) for hit in hits]),
+                "retraction_record_ids": dedupe_join(
+                    [normalize(hit.get("record_id", "")) for hit in hits]
+                ),
+                "retraction_dates": dedupe_join(
+                    [normalize(hit.get("retraction_date", "")) for hit in hits]
+                ),
+                "retraction_reasons": dedupe_join(
+                    [normalize(hit.get("retraction_reason", "")) for hit in hits]
+                ),
                 "retraction_titles": dedupe_join([normalize(hit.get("title", "")) for hit in hits]),
                 "retraction_urls": dedupe_join([normalize(hit.get("url", "")) for hit in hits]),
                 "notes": notes,
@@ -488,13 +505,17 @@ def render_summary(
     lines.append("")
     lines.append(f"- Included studies evaluated: {included_rows}")
     lines.append(f"- Included studies with resolved DOI: {with_doi_rows}")
-    lines.append(f"- Retraction dataset fetch performed: {'yes' if database_fetch_performed else 'no'}")
+    lines.append(
+        f"- Retraction dataset fetch performed: {'yes' if database_fetch_performed else 'no'}"
+    )
     lines.append("")
     lines.append("## Retraction Dataset")
     lines.append("")
     lines.append(f"- CSV rows scanned: {int(database_metadata.get('rows_scanned', 0))}")
     lines.append(f"- CSV rows with DOI values: {int(database_metadata.get('rows_with_doi', 0))}")
-    lines.append(f"- Unique DOI values indexed: {int(database_metadata.get('unique_doi_count', 0))}")
+    lines.append(
+        f"- Unique DOI values indexed: {int(database_metadata.get('unique_doi_count', 0))}"
+    )
     doi_columns = database_metadata.get("doi_columns", [])
     if isinstance(doi_columns, list) and doi_columns:
         lines.append(f"- DOI columns used: {', '.join(str(value) for value in doi_columns)}")
@@ -526,7 +547,9 @@ def render_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- This checker performs a single network request to fetch the Retraction Watch DOI dataset snapshot.")
+    lines.append(
+        "- This checker performs a single network request to fetch the Retraction Watch DOI dataset snapshot."
+    )
     lines.append("- Results are deterministic DOI matches against the fetched CSV snapshot.")
     lines.append("- Final inclusion/exclusion decisions remain reviewer-led.")
     lines.append("")
@@ -651,7 +674,11 @@ def main(argv: list[str] | None = None) -> int:
     }
     retraction_index: dict[str, list[dict[str, str]]] = {}
 
-    doi_to_check = {normalize_doi(row.get("source_doi", "")) for row in source_rows if normalize_doi(row.get("source_doi", ""))}
+    doi_to_check = {
+        normalize_doi(row.get("source_doi", ""))
+        for row in source_rows
+        if normalize_doi(row.get("source_doi", ""))
+    }
 
     if doi_to_check:
         try:
@@ -661,7 +688,9 @@ def main(argv: list[str] | None = None) -> int:
                 payload = snapshot_path.read_text(encoding="utf-8")
             else:
                 database_fetch_performed = True
-                payload = fetch_retraction_watch_csv(args.database_url, timeout=max(int(args.timeout), 1))
+                payload = fetch_retraction_watch_csv(
+                    args.database_url, timeout=max(int(args.timeout), 1)
+                )
 
             retraction_index, database_metadata = parse_retraction_database(payload)
         except (OSError, RuntimeError) as error:
@@ -669,7 +698,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.strict_api_errors:
                 raise SystemExit(api_error) from error
 
-    result_rows, status_counts = build_result_rows(source_rows, retraction_index, api_error=api_error)
+    result_rows, status_counts = build_result_rows(
+        source_rows, retraction_index, api_error=api_error
+    )
 
     write_results_csv(results_output_path, result_rows)
 

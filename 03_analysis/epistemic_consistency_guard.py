@@ -6,7 +6,6 @@ from datetime import datetime
 from glob import glob
 from pathlib import Path
 
-
 DEFAULT_PLACEHOLDER_TARGETS = [
     "../01_protocol/protocol.md",
     "../04_manuscript/main.tex",
@@ -143,13 +142,17 @@ def scan_file(path: Path, patterns: list[re.Pattern[str]], *, match_group: str) 
     return matches
 
 
-def resolve_artifact_paths(script_dir: Path, artifact_targets: list[str]) -> tuple[list[Path], list[str]]:
+def resolve_artifact_paths(
+    script_dir: Path, artifact_targets: list[str]
+) -> tuple[list[Path], list[str]]:
     files: set[Path] = set()
     missing_targets: list[str] = []
 
     for target in artifact_targets:
         if any(symbol in target for symbol in "*?[]"):
-            glob_pattern = target if Path(target).is_absolute() else (script_dir / target).as_posix()
+            glob_pattern = (
+                target if Path(target).is_absolute() else (script_dir / target).as_posix()
+            )
             matched = [Path(path).resolve() for path in glob(glob_pattern, recursive=True)]
             matched_files = [path for path in matched if path.is_file()]
             if matched_files:
@@ -244,9 +247,15 @@ def build_report(
     lines.append(f"- Total matches: {len(matches)}")
     lines.append(f"- Processed files scanned: {len(processed_files)}")
     lines.append(f"- Artifact files checked: {len(artifact_updates)}")
-    lines.append(f"- Artifact files marked: {sum(1 for item in artifact_updates if item.status == 'marked')}")
-    lines.append(f"- Artifact files unmarked: {sum(1 for item in artifact_updates if item.status == 'unmarked')}")
-    lines.append(f"- Artifact files unchanged: {sum(1 for item in artifact_updates if item.status == 'unchanged')}")
+    lines.append(
+        f"- Artifact files marked: {sum(1 for item in artifact_updates if item.status == 'marked')}"
+    )
+    lines.append(
+        f"- Artifact files unmarked: {sum(1 for item in artifact_updates if item.status == 'unmarked')}"
+    )
+    lines.append(
+        f"- Artifact files unchanged: {sum(1 for item in artifact_updates if item.status == 'unchanged')}"
+    )
     lines.append("")
 
     missing_items: list[str] = []
@@ -267,7 +276,9 @@ def build_report(
     lines.append("## Risk Matches")
     lines.append("")
     if matches:
-        ordered = sorted(matches, key=lambda item: (item.path.as_posix(), item.line_number, item.pattern))
+        ordered = sorted(
+            matches, key=lambda item: (item.path.as_posix(), item.line_number, item.pattern)
+        )
         for match in ordered:
             lines.append(
                 "- "
@@ -348,9 +359,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Invalid review mode: {review_mode}")
         return 2
 
-    fail_on_risk = args.fail_on_risk if args.fail_on_risk is not None else review_mode == "production"
+    fail_on_risk = (
+        args.fail_on_risk if args.fail_on_risk is not None else review_mode == "production"
+    )
 
-    placeholder_specs = args.placeholder_target if args.placeholder_target else DEFAULT_PLACEHOLDER_TARGETS
+    placeholder_specs = (
+        args.placeholder_target if args.placeholder_target else DEFAULT_PLACEHOLDER_TARGETS
+    )
     placeholder_targets = [resolve_path(script_dir, spec) for spec in placeholder_specs]
 
     processed_dir = resolve_path(script_dir, args.processed_dir)
@@ -402,7 +417,9 @@ def main(argv: list[str] | None = None) -> int:
     summary_output.write_text(report_text, encoding="utf-8")
 
     if risk_detected:
-        print(f"Epistemic risk markers detected ({len(all_matches)} matches). Report: {summary_output}")
+        print(
+            f"Epistemic risk markers detected ({len(all_matches)} matches). Report: {summary_output}"
+        )
     else:
         print(f"No epistemic risk markers detected. Report: {summary_output}")
 

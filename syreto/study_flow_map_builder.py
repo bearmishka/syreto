@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 OUTPUT_COLUMNS = [
     "study_id",

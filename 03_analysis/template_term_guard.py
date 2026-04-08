@@ -5,7 +5,6 @@ from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
 
-
 DEFAULT_SCAN_PATHS = [
     "../01_protocol",
     "../02_data/codebook",
@@ -87,13 +86,17 @@ def should_skip(path: Path, exclude_globs: list[str]) -> bool:
     return any(fnmatch(posix_path, pattern) for pattern in exclude_globs)
 
 
-def iter_target_files(scan_paths: list[Path], allowed_extensions: set[str], exclude_globs: list[str]) -> list[Path]:
+def iter_target_files(
+    scan_paths: list[Path], allowed_extensions: set[str], exclude_globs: list[str]
+) -> list[Path]:
     files: set[Path] = set()
     for scan_path in scan_paths:
         if not scan_path.exists():
             continue
         if scan_path.is_file():
-            if scan_path.suffix.lower() in allowed_extensions and not should_skip(scan_path, exclude_globs):
+            if scan_path.suffix.lower() in allowed_extensions and not should_skip(
+                scan_path, exclude_globs
+            ):
                 files.add(scan_path)
             continue
 
@@ -109,7 +112,9 @@ def iter_target_files(scan_paths: list[Path], allowed_extensions: set[str], excl
     return sorted(files)
 
 
-def scan_file(path: Path, patterns: list[re.Pattern[str]], *, match_group: str = "banned_term") -> list[MatchResult]:
+def scan_file(
+    path: Path, patterns: list[re.Pattern[str]], *, match_group: str = "banned_term"
+) -> list[MatchResult]:
     text = path.read_text(encoding="utf-8", errors="replace")
     matches: list[MatchResult] = []
 
@@ -144,7 +149,8 @@ def filter_allowlisted_matches(
             (
                 rule
                 for rule in allowlist_rules
-                if rule.banned_pattern == match.pattern and fnmatch(match.path.as_posix(), rule.path_glob)
+                if rule.banned_pattern == match.pattern
+                and fnmatch(match.path.as_posix(), rule.path_glob)
             ),
             None,
         )
@@ -315,21 +321,35 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.check_banned_terms:
         enabled_checks.append("banned_terms")
-        banned_patterns_raw = args.banned_pattern if args.banned_pattern else DEFAULT_BANNED_PATTERNS
-        banned_patterns = [re.compile(pattern, flags=re.IGNORECASE) for pattern in banned_patterns_raw]
+        banned_patterns_raw = (
+            args.banned_pattern if args.banned_pattern else DEFAULT_BANNED_PATTERNS
+        )
+        banned_patterns = [
+            re.compile(pattern, flags=re.IGNORECASE) for pattern in banned_patterns_raw
+        ]
         for file_path in scanned_files:
             all_matches.extend(scan_file(file_path, banned_patterns, match_group="banned_terms"))
 
     if args.check_placeholders:
         enabled_checks.append("placeholders")
-        placeholder_patterns_raw = args.placeholder_pattern if args.placeholder_pattern else DEFAULT_PLACEHOLDER_PATTERNS
+        placeholder_patterns_raw = (
+            args.placeholder_pattern if args.placeholder_pattern else DEFAULT_PLACEHOLDER_PATTERNS
+        )
         placeholder_patterns = [re.compile(pattern) for pattern in placeholder_patterns_raw]
         for file_path in scanned_files:
-            all_matches.extend(scan_file(file_path, placeholder_patterns, match_group="placeholders"))
+            all_matches.extend(
+                scan_file(file_path, placeholder_patterns, match_group="placeholders")
+            )
 
-    actionable_matches, suppressed_matches = filter_allowlisted_matches(all_matches, DEFAULT_ALLOWLIST_RULES)
+    actionable_matches, suppressed_matches = filter_allowlisted_matches(
+        all_matches, DEFAULT_ALLOWLIST_RULES
+    )
 
-    summary_output = Path(args.summary_output) if args.summary_output else script_dir / "outputs/template_term_guard_summary.md"
+    summary_output = (
+        Path(args.summary_output)
+        if args.summary_output
+        else script_dir / "outputs/template_term_guard_summary.md"
+    )
     summary_output.parent.mkdir(parents=True, exist_ok=True)
     summary_text = build_summary(
         scan_paths=scan_paths,
@@ -350,7 +370,9 @@ def main(argv: list[str] | None = None) -> int:
             f"({len(suppressed_matches)} allowlisted suppressions). See: {summary_output}"
         )
         for match in actionable_matches:
-            print(f"- [{match.match_group}] {match.path}:{match.line_number} | {match.pattern} | {match.line_text}")
+            print(
+                f"- [{match.match_group}] {match.path}:{match.line_number} | {match.pattern} | {match.line_text}"
+            )
     elif suppressed_matches:
         print(
             f"No actionable matches across {len(scanned_files)} files "

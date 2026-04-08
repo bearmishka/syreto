@@ -1,7 +1,7 @@
 import argparse
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 
 def run_step(*, name: str, command: list[str], cwd: Path) -> None:

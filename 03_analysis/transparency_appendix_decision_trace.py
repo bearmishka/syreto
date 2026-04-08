@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-
 
 EMPTY_VALUES = {"", "nan", "none"}
 MARKER_START = "<!-- AUTO_DECISION_TRACE_START -->"
@@ -83,7 +82,9 @@ def build_decision_trace_block(
     lines.append("")
     lines.append(f"- `{decision_log_path_display}`")
     lines.append("")
-    lines.append("This subsection is auto-generated from the decision log to document who made each decision and why.")
+    lines.append(
+        "This subsection is auto-generated from the decision log to document who made each decision and why."
+    )
     lines.append("")
 
     if rows.empty:
@@ -168,7 +169,7 @@ def build_latex_decision_trace_table(
                 f"{latex_escape(row.get('stage', ''))} & "
                 f"{latex_escape(row.get('decision', ''))} & "
                 f"{latex_escape(row.get('reviewer', ''))} & "
-                f"{latex_escape(row.get('reason', ''))} \\\\" 
+                f"{latex_escape(row.get('reason', ''))} \\\\"
             )
 
     lines.append(r"\bottomrule")
@@ -357,7 +358,9 @@ def build_latex_analysis_trace_table(
     if status == "not_found":
         lines.append(r"--- & --- & --- & --- & Analysis trace artifact not found yet. \\")
     elif status in {"invalid_json", "invalid_format"}:
-        lines.append(r"--- & --- & --- & --- & Analysis trace artifact is present but could not be parsed. \\")
+        lines.append(
+            r"--- & --- & --- & --- & Analysis trace artifact is present but could not be parsed. \\"
+        )
     elif not rows:
         lines.append(r"--- & --- & --- & --- & No per-outcome analysis-trace rows found yet. \\")
     else:
@@ -367,7 +370,7 @@ def build_latex_analysis_trace_table(
                 f"{analysis_trace_cell(row.get('model', ''))} & "
                 f"{analysis_trace_cell(row.get('studies', []))} & "
                 f"{analysis_trace_cell(row.get('excluded', []))} & "
-                f"{analysis_trace_cell(row.get('reason_excluded', ''))} \\\\" 
+                f"{analysis_trace_cell(row.get('reason_excluded', ''))} \\\\"
             )
 
     lines.append(r"\bottomrule")
@@ -392,11 +395,19 @@ def update_appendix_text(
     end_index = appendix_text.find(marker_end)
     if start_index != -1 and end_index != -1 and end_index > start_index:
         end_index += len(marker_end)
-        updated = appendix_text[:start_index].rstrip() + "\n\n" + block + "\n" + appendix_text[end_index:].lstrip()
+        updated = (
+            appendix_text[:start_index].rstrip()
+            + "\n\n"
+            + block
+            + "\n"
+            + appendix_text[end_index:].lstrip()
+        )
         return updated, "replaced"
 
     if INSERT_BEFORE_HEADING in appendix_text:
-        updated = appendix_text.replace(INSERT_BEFORE_HEADING, block + "\n\n" + INSERT_BEFORE_HEADING, 1)
+        updated = appendix_text.replace(
+            INSERT_BEFORE_HEADING, block + "\n\n" + INSERT_BEFORE_HEADING, 1
+        )
         return updated, "inserted_before_extraction"
 
     if appendix_text and not appendix_text.endswith("\n"):
@@ -532,9 +543,7 @@ def main(argv: list[str] | None = None) -> int:
     required_columns = {"record_id", "stage", "decision", "reason", "reviewer"}
     missing = [column for column in required_columns if column not in decision_df.columns]
     if missing:
-        raise SystemExit(
-            "Decision log is missing required columns: " + ", ".join(sorted(missing))
-        )
+        raise SystemExit("Decision log is missing required columns: " + ", ".join(sorted(missing)))
 
     decision_log_display = "02_data/processed/decision_log.csv"
     block = build_decision_trace_block(

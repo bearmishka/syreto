@@ -2,11 +2,10 @@ import contextlib
 import importlib.util
 import io
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "python_source_guard.py"
 spec = importlib.util.spec_from_file_location("python_source_guard", MODULE_PATH)

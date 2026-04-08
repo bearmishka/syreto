@@ -3,11 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-import xml.etree.ElementTree as ET
-
 
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 BULLET_PATTERN = re.compile(r"^\s*[-*+]\s+(.*\S)\s*$")

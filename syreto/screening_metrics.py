@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
-import pandas as pd
 
+import pandas as pd
 
 DECISION_NORMALIZATION = {
     "include": "include",

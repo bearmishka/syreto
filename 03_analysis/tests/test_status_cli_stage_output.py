@@ -1,8 +1,7 @@
 import importlib.util
-from pathlib import Path
 import sys
 import unittest
-
+from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "status_cli.py"
 spec = importlib.util.spec_from_file_location("status_cli", MODULE_PATH)
@@ -54,7 +53,10 @@ class StatusCliStageOutputTests(unittest.TestCase):
             "data_snapshot": {},
             "stage_assessment": {"id": "screening_active", "label": "Screening Active"},
             "registration": {"registered": False},
-            "reviewer_agreement": {"title_abstract_reviewers": [], "cohen_kappa": {"available": False}},
+            "reviewer_agreement": {
+                "title_abstract_reviewers": [],
+                "cohen_kappa": {"available": False},
+            },
             "csv_input_validation": {},
             "extraction_validation": {},
             "effect_size_conversion": {},

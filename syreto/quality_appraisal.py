@@ -1,11 +1,10 @@
 import argparse
-from datetime import datetime
 import os
-from pathlib import Path
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
-
 
 ITEM_COLUMNS = [f"item_{index:02d}" for index in range(1, 12)]
 APPRAISAL_COLUMNS = [

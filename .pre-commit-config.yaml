@@ -3,11 +3,16 @@ repos:
     rev: v0.14.0
     hooks:
       - id: ruff
+        args: [--fix]
+        exclude: ^(03_analysis|syreto)/tests/fixtures/python_source_guard_broken/
       - id: ruff-format
+        exclude: ^(03_analysis|syreto)/tests/fixtures/python_source_guard_broken/
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
+        exclude: ^(03_analysis|syreto)/tests/fixtures/python_source_guard_broken/
       - id: trailing-whitespace
+        exclude: ^(03_analysis|syreto)/tests/fixtures/python_source_guard_broken/
       - id: check-merge-conflict
       - id: check-added-large-files

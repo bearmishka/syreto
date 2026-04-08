@@ -1,15 +1,14 @@
 import argparse
-import math
-from collections import Counter, defaultdict
-from datetime import datetime, timezone
 import json
-from pathlib import Path
+import math
 import os
 import tempfile
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 from scipy import stats
-
 
 MISSING_CODES = {
     "",
@@ -213,7 +212,9 @@ def convert_source_value(
     return converted.get(target_metric)
 
 
-def approximate_ci(metric: str, effect_value: float, sample_size: int | None) -> tuple[float, float] | None:
+def approximate_ci(
+    metric: str, effect_value: float, sample_size: int | None
+) -> tuple[float, float] | None:
     if sample_size is None or sample_size <= 0:
         return None
 
@@ -367,11 +368,15 @@ def build_analysis_trace_payload(
         candidate_studies = set(extraction_candidates_by_outcome.get(outcome, set()))
         candidate_studies.update(runtime_exclusions_by_outcome.get(outcome, {}).keys())
 
-        excluded_studies = sorted(study for study in candidate_studies if study not in included_studies)
+        excluded_studies = sorted(
+            study for study in candidate_studies if study not in included_studies
+        )
 
         reason_by_study: dict[str, str] = {}
         for study_id in excluded_studies:
-            runtime_reasons = sorted(runtime_exclusions_by_outcome.get(outcome, {}).get(study_id, set()))
+            runtime_reasons = sorted(
+                runtime_exclusions_by_outcome.get(outcome, {}).get(study_id, set())
+            )
 
             if runtime_reasons:
                 reason_by_study[study_id] = "; ".join(runtime_reasons)
@@ -435,9 +440,13 @@ def pool_group(
 ) -> dict[str, float]:
     weights_fixed = [1.0 / value for value in variances]
     sum_w_fixed = sum(weights_fixed)
-    fixed_pooled = sum(weight * effect for weight, effect in zip(weights_fixed, effects)) / sum_w_fixed
+    fixed_pooled = (
+        sum(weight * effect for weight, effect in zip(weights_fixed, effects)) / sum_w_fixed
+    )
 
-    q_stat = sum(weight * ((effect - fixed_pooled) ** 2) for weight, effect in zip(weights_fixed, effects))
+    q_stat = sum(
+        weight * ((effect - fixed_pooled) ** 2) for weight, effect in zip(weights_fixed, effects)
+    )
     degrees_freedom = max(0, len(effects) - 1)
 
     tau2 = 0.0
@@ -546,8 +555,10 @@ def build_summary(
         lines.append("| level | outcome | study_id | message |")
         lines.append("|---|---|---|---|")
         for issue in issues:
+            escaped_outcome = normalize(issue["outcome"]).replace("|", "\\|")
+            escaped_study_id = normalize(issue["study_id"]).replace("|", "\\|")
             lines.append(
-                f"| {issue['level']} | {normalize(issue['outcome']).replace('|', '\\|')} | {normalize(issue['study_id']).replace('|', '\\|')} | {issue['message']} |"
+                f"| {issue['level']} | {escaped_outcome} | {escaped_study_id} | {issue['message']} |"
             )
     else:
         lines.append("- ✅ No issues found.")
@@ -614,7 +625,11 @@ def main() -> None:
     extraction_path = Path(args.extraction_input)
     output_path = Path(args.output)
     summary_path = Path(args.summary_output)
-    trace_path = Path(args.trace_output) if normalize(args.trace_output) else output_path.with_name("analysis_trace.json")
+    trace_path = (
+        Path(args.trace_output)
+        if normalize(args.trace_output)
+        else output_path.with_name("analysis_trace.json")
+    )
 
     if not converted_path.exists():
         raise FileNotFoundError(f"Converted input not found: {converted_path}")
@@ -666,7 +681,9 @@ def main() -> None:
     metadata_by_study: defaultdict[str, list[dict[str, object]]] = defaultdict(list)
     extraction_candidates_by_outcome: defaultdict[str, set[str]] = defaultdict(set)
     extraction_reasons_by_outcome: defaultdict[str, dict[str, str]] = defaultdict(dict)
-    extraction_included_flag_by_outcome: defaultdict[str, dict[str, bool | None]] = defaultdict(dict)
+    extraction_included_flag_by_outcome: defaultdict[str, dict[str, bool | None]] = defaultdict(
+        dict
+    )
 
     for index, row in extraction_df.iterrows():
         payload = {
@@ -713,14 +730,18 @@ def main() -> None:
         return {}
 
     trace_included_studies: defaultdict[str, set[str]] = defaultdict(set)
-    trace_runtime_exclusions: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    trace_runtime_exclusions: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
 
     issues: list[dict] = []
     pooled_inputs: defaultdict[str, list[dict[str, float]]] = defaultdict(list)
     outcome_counts: Counter = Counter()
 
     working = converted_df.copy()
-    working["conversion_status"] = working["conversion_status"].fillna("").astype(str).str.strip().str.lower()
+    working["conversion_status"] = (
+        working["conversion_status"].fillna("").astype(str).str.strip().str.lower()
+    )
     working = working[working["conversion_status"].isin({"converted", "partial"})].copy()
 
     raw_rows = int(converted_df.shape[0])

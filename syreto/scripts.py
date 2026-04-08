@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import importlib
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 from types import ModuleType
 
 from .analysis import analysis_dir as _analysis_dir
-
 
 ANALYSIS_DIR = _analysis_dir()
 

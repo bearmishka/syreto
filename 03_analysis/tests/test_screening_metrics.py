@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "screening_metrics.py"
 spec = importlib.util.spec_from_file_location("screening_metrics", MODULE_PATH)

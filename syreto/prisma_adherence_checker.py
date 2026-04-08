@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-
 DEFAULT_MANUSCRIPT_ROOT = Path("../04_manuscript")
 DEFAULT_OUTPUT_PATH = Path("outputs/prisma_adherence_report.md")
 DEFAULT_EXTENSIONS = [".tex"]

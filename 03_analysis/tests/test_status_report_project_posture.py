@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "status_report.py"
 spec = importlib.util.spec_from_file_location("status_report", MODULE_PATH)
@@ -100,7 +99,9 @@ class StatusReportProjectPostureTests(unittest.TestCase):
             manuscript_path.write_text("\\title{[YOUR REVIEW TITLE]}\n", encoding="utf-8")
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
             search_df = pd.DataFrame([{"database": "PubMed", "results_total": "1"}])
             prisma_df = self._prisma_df()
@@ -128,7 +129,9 @@ class StatusReportProjectPostureTests(unittest.TestCase):
             self.assertIn("Primary blocker: semantic_completeness", report)
             self.assertEqual(summary["project_posture"]["primary_blocker"], "semantic_completeness")
             self.assertFalse(summary["project_posture"]["semantic_completeness"]["complete"])
-            self.assertGreater(summary["project_posture"]["semantic_completeness"]["protocol_placeholder_count"], 0)
+            self.assertGreater(
+                summary["project_posture"]["semantic_completeness"]["protocol_placeholder_count"], 0
+            )
             placeholder_policy = next(
                 item for item in summary["input_checklist"] if item["id"] == "semantic_placeholders"
             )
@@ -147,7 +150,9 @@ class StatusReportProjectPostureTests(unittest.TestCase):
             manuscript_path.write_text("\\title{Finalized review title}\n", encoding="utf-8")
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
             search_df = pd.DataFrame([{"database": "PubMed", "results_total": "1"}])
             prisma_df = self._prisma_df()
@@ -176,7 +181,9 @@ class StatusReportProjectPostureTests(unittest.TestCase):
             self.assertIsNone(summary["project_posture"]["primary_blocker"])
             self.assertTrue(summary["project_posture"]["semantic_completeness"]["complete"])
 
-    def test_production_mode_escalates_unresolved_placeholders_to_blocking_checklist_item(self) -> None:
+    def test_production_mode_escalates_unresolved_placeholders_to_blocking_checklist_item(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             base = Path(tmp_dir)
             artifacts = self._write_minimum_artifacts(base)
@@ -188,7 +195,9 @@ class StatusReportProjectPostureTests(unittest.TestCase):
             manuscript_path.write_text("\\title{[YOUR REVIEW TITLE]}\n", encoding="utf-8")
 
             screening_df = pd.DataFrame(columns=["date", "reviewer", "stage", "records_screened"])
-            screening_records_df = pd.DataFrame(columns=["record_id", "reviewer", "title_abstract_decision"])
+            screening_records_df = pd.DataFrame(
+                columns=["record_id", "reviewer", "title_abstract_decision"]
+            )
             master_df = self._full_master_df()
             search_df = pd.DataFrame([{"database": "PubMed", "results_total": "1"}])
             prisma_df = self._prisma_df()

@@ -1,42 +1,53 @@
 from __future__ import annotations
 
 import argparse
-import warnings
 import re
-from pathlib import Path
 import sys
+import warnings
 import xml.etree.ElementTree as ET
-
+from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from prospero_submission_drafter_layers.builder import build_draft_artifacts
-from prospero_submission_drafter_layers.builder import build_prefill_fields as build_prefill_fields_layer
-from prospero_submission_drafter_layers.builder import build_submission_context
-from prospero_submission_drafter_layers.field_composition import field_value_map
-from prospero_submission_drafter_layers.field_composition import is_required_in_mode
-from prospero_submission_drafter_layers.field_composition import prospero_field_templates
-from prospero_submission_drafter_layers.formatting import collapse_whitespace
-from prospero_submission_drafter_layers.formatting import extract_latex_macro_argument
-from prospero_submission_drafter_layers.formatting import latex_to_plain
-from prospero_submission_drafter_layers.formatting import strip_latex_macro_with_argument
-from prospero_submission_drafter_layers.formatting import strip_markdown_markup
-from prospero_submission_drafter_layers.io import load_autofill_profile
-from prospero_submission_drafter_layers.io import read_protocol_text
-from prospero_submission_drafter_layers.io import resolve_cli_paths
-from prospero_submission_drafter_layers.io import resolve_preset_manuscript_path
-from prospero_submission_drafter_layers.io import write_text_artifact
-from prospero_submission_drafter_layers.models import ManuscriptMetadata
-from prospero_submission_drafter_layers.models import MarkdownSection
-from prospero_submission_drafter_layers.models import PrefillField
-from prospero_submission_drafter_layers.models import ProtocolData
-from prospero_submission_drafter_layers.rules import completion_counts
-from prospero_submission_drafter_layers.rules import evaluate_exit_conditions
-from prospero_submission_drafter_layers.rules import required_scope_label
-from prospero_submission_drafter_layers.rules import unresolved_placeholders_in_fields
-
+from prospero_submission_drafter_layers.builder import (
+    build_draft_artifacts,
+    build_submission_context,
+)
+from prospero_submission_drafter_layers.builder import (
+    build_prefill_fields as build_prefill_fields_layer,
+)
+from prospero_submission_drafter_layers.field_composition import (
+    field_value_map,
+    is_required_in_mode,
+    prospero_field_templates,
+)
+from prospero_submission_drafter_layers.formatting import (
+    extract_latex_macro_argument,
+    latex_to_plain,
+    strip_latex_macro_with_argument,
+    strip_markdown_markup,
+)
+from prospero_submission_drafter_layers.io import (
+    load_autofill_profile,
+    read_protocol_text,
+    resolve_cli_paths,
+    resolve_preset_manuscript_path,
+    write_text_artifact,
+)
+from prospero_submission_drafter_layers.models import (
+    ManuscriptMetadata,
+    MarkdownSection,
+    PrefillField,
+    ProtocolData,
+)
+from prospero_submission_drafter_layers.rules import (
+    completion_counts,
+    evaluate_exit_conditions,
+    required_scope_label,
+    unresolved_placeholders_in_fields,
+)
 
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 BULLET_PATTERN = re.compile(r"^\s*[-*+]\s+(.*\S)\s*$")
@@ -112,7 +123,9 @@ def default_manuscript_path_for_preset(preset: str) -> str:
     return ""
 
 
-def load_preset_metadata(preset: str, manuscript_arg: str) -> tuple[ManuscriptMetadata | None, Path | None]:
+def load_preset_metadata(
+    preset: str, manuscript_arg: str
+) -> tuple[ManuscriptMetadata | None, Path | None]:
     if preset == "none":
         return None, None
 
@@ -165,7 +178,9 @@ def get_section(sections: list[MarkdownSection], heading: str) -> MarkdownSectio
     return None
 
 
-def get_child_sections(sections: list[MarkdownSection], parent_heading: str) -> dict[str, MarkdownSection]:
+def get_child_sections(
+    sections: list[MarkdownSection], parent_heading: str
+) -> dict[str, MarkdownSection]:
     parent = get_section(sections, parent_heading)
     if parent is None:
         return {}
@@ -273,7 +288,9 @@ def extract_protocol_data(markdown_text: str) -> ProtocolData:
     synthesis_section = get_section(sections, "Synthesis plan")
     reproducibility_section = get_section(sections, "Reproducibility notes")
 
-    core_questions = extract_list_items(core_questions_section.content_lines) if core_questions_section else []
+    core_questions = (
+        extract_list_items(core_questions_section.content_lines) if core_questions_section else []
+    )
     publication_time_language = extract_list_items(
         eligibility_section.get("time and language", MarkdownSection(0, "", [])).content_lines
     )
@@ -283,21 +300,31 @@ def extract_protocol_data(markdown_text: str) -> ProtocolData:
 
     last_updated_match = LAST_UPDATED_PATTERN.search(markdown_text)
     registration_match = PROSPERO_ID_PATTERN.search(markdown_text)
-    unresolved_placeholders = sorted(set(match.group(0) for match in PLACEHOLDER_PATTERN.finditer(markdown_text)))
+    unresolved_placeholders = sorted(
+        set(match.group(0) for match in PLACEHOLDER_PATTERN.finditer(markdown_text))
+    )
 
     return ProtocolData(
-        last_updated=strip_markdown_markup(last_updated_match.group(1)) if last_updated_match else "",
+        last_updated=strip_markdown_markup(last_updated_match.group(1))
+        if last_updated_match
+        else "",
         registration_id=registration_match.group(0).upper() if registration_match else "",
         unresolved_placeholders=unresolved_placeholders,
-        working_title=merge_section_text(working_title_section.content_lines) if working_title_section else "",
-        review_type=merge_section_text(review_type_section.content_lines) if review_type_section else "",
+        working_title=merge_section_text(working_title_section.content_lines)
+        if working_title_section
+        else "",
+        review_type=merge_section_text(review_type_section.content_lines)
+        if review_type_section
+        else "",
         objective=merge_section_text(objective_section.content_lines) if objective_section else "",
         core_questions=core_questions,
         population=merge_section_text(
             eligibility_section.get("population", MarkdownSection(0, "", [])).content_lines
         ),
         concepts_exposures=merge_section_text(
-            eligibility_section.get("concepts / exposures", MarkdownSection(0, "", [])).content_lines
+            eligibility_section.get(
+                "concepts / exposures", MarkdownSection(0, "", [])
+            ).content_lines
         ),
         outcomes=merge_section_text(
             eligibility_section.get("outcomes", MarkdownSection(0, "", [])).content_lines
@@ -312,11 +339,21 @@ def extract_protocol_data(markdown_text: str) -> ProtocolData:
         ),
         information_sources=information_sources,
         gray_sources=gray_sources,
-        screening_workflow=extract_list_items(screening_section.content_lines) if screening_section else [],
-        extraction_fields=extract_list_items(extraction_section.content_lines) if extraction_section else [],
-        quality_appraisal=merge_section_text(quality_section.content_lines) if quality_section else "",
-        synthesis_plan=extract_list_items(synthesis_section.content_lines) if synthesis_section else [],
-        reproducibility_notes=extract_list_items(reproducibility_section.content_lines) if reproducibility_section else [],
+        screening_workflow=extract_list_items(screening_section.content_lines)
+        if screening_section
+        else [],
+        extraction_fields=extract_list_items(extraction_section.content_lines)
+        if extraction_section
+        else [],
+        quality_appraisal=merge_section_text(quality_section.content_lines)
+        if quality_section
+        else "",
+        synthesis_plan=extract_list_items(synthesis_section.content_lines)
+        if synthesis_section
+        else [],
+        reproducibility_notes=extract_list_items(reproducibility_section.content_lines)
+        if reproducibility_section
+        else [],
     )
 
 
@@ -487,7 +524,7 @@ def render_xml_draft(
 
     ET.indent(root, space="  ")
     xml_body = ET.tostring(root, encoding="unicode")
-    return f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{xml_body}\n"
+    return f'<?xml version="1.0" encoding="UTF-8"?>\n{xml_body}\n'
 
 
 def render_summary(
@@ -534,7 +571,9 @@ def render_summary(
     lines.append("")
     lines.append(f"- Total fields mapped: {counts['total_fields']}")
     lines.append(f"- Complete fields: {counts['total_complete']}")
-    lines.append(f"- Required fields complete: {counts['required_complete']}/{counts['required_total']}")
+    lines.append(
+        f"- Required fields complete: {counts['required_complete']}/{counts['required_total']}"
+    )
     lines.append(f"- Required fields needing input: {counts['required_missing']}")
     lines.append("")
     lines.append("## Missing Required Fields")
@@ -573,7 +612,9 @@ def parser() -> argparse.ArgumentParser:
             "(structured markdown + XML; aligned to the 47-field PROSPERO form schema)."
         )
     )
-    cli_parser.add_argument("--protocol", default="../01_protocol/protocol.md", help="Path to protocol markdown input")
+    cli_parser.add_argument(
+        "--protocol", default="../01_protocol/protocol.md", help="Path to protocol markdown input"
+    )
     cli_parser.add_argument(
         "--structured-output",
         default="outputs/prospero_registration_prefill.md",
@@ -630,7 +671,7 @@ def parser() -> argparse.ArgumentParser:
         "--autofill-profile",
         default="",
         help=(
-            "Optional JSON file with field overrides. Format: {\"fields\": {\"field_id\": \"value\"}} "
+            'Optional JSON file with field overrides. Format: {"fields": {"field_id": "value"}} '
             "or direct field map."
         ),
     )

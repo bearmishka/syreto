@@ -5,7 +5,6 @@ from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
 
-
 DEFAULT_SCAN_PATHS = [
     "../01_protocol",
     "../02_data/codebook",

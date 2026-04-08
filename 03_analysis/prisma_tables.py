@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 MISSING_VALUES = {
     "",
     "nan",
@@ -198,7 +197,9 @@ def render_summary(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate manuscript PRISMA LaTeX tables from processed CSV files.")
+    parser = argparse.ArgumentParser(
+        description="Generate manuscript PRISMA LaTeX tables from processed CSV files."
+    )
     parser.add_argument(
         "--prisma-input",
         default="../02_data/processed/prisma_counts_template.csv",

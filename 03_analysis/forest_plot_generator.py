@@ -7,7 +7,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -271,7 +270,9 @@ def convert_source_value(
     return converted.get(target_metric)
 
 
-def approximate_ci(metric: str, effect_value: float, sample_size: int | None) -> tuple[float, float] | None:
+def approximate_ci(
+    metric: str, effect_value: float, sample_size: int | None
+) -> tuple[float, float] | None:
     if sample_size is None or sample_size <= 0:
         return None
 
@@ -320,7 +321,9 @@ def build_study_label(study_id: str, first_author: str, year: str) -> str:
     return study_id
 
 
-def build_effect_text(effect: float, ci_lower: float | None, ci_upper: float | None, metric: str) -> str:
+def build_effect_text(
+    effect: float, ci_lower: float | None, ci_upper: float | None, metric: str
+) -> str:
     if metric == "converted_or":
         value_text = f"{effect:.2f}"
     else:
@@ -403,7 +406,9 @@ def harmonize_extraction_metadata(extraction_df: pd.DataFrame) -> pd.DataFrame:
                 extraction.at[index, "ci_upper"] = str(upper)
 
         if is_missing(row.get("effect_direction", "")):
-            extraction.at[index, "effect_direction"] = effect_direction_from_value(row.get("main_effect_value", ""))
+            extraction.at[index, "effect_direction"] = effect_direction_from_value(
+                row.get("main_effect_value", "")
+            )
 
     return extraction
 
@@ -542,7 +547,9 @@ def prepare_plot_data(
     stats["input_rows"] = int(converted_df.shape[0])
 
     working = converted_df.copy()
-    working["conversion_status"] = working["conversion_status"].fillna("").astype(str).str.strip().str.lower()
+    working["conversion_status"] = (
+        working["conversion_status"].fillna("").astype(str).str.strip().str.lower()
+    )
     working = working[working["conversion_status"].isin({"converted", "partial"})].copy()
 
     working["effect_value"] = pd.to_numeric(working[metric], errors="coerce")
@@ -738,10 +745,19 @@ def render_png(
         ci_upper = row["ci_upper"]
 
         if pd.notna(ci_lower) and pd.notna(ci_upper):
-            ax.hlines(y=y_pos, xmin=float(ci_lower), xmax=float(ci_upper), color="#4c4c4c", linewidth=1.5)
+            ax.hlines(
+                y=y_pos, xmin=float(ci_lower), xmax=float(ci_upper), color="#4c4c4c", linewidth=1.5
+            )
 
         marker_size = 6.5 if row["ci_source"] == "converted_raw_ci" else 5.5
-        ax.plot(effect, y_pos, marker="s", markersize=marker_size, color="#1f4e79", markeredgecolor="#1f4e79")
+        ax.plot(
+            effect,
+            y_pos,
+            marker="s",
+            markersize=marker_size,
+            color="#1f4e79",
+            markeredgecolor="#1f4e79",
+        )
 
     ax.axvline(null_value, color="#2f2f2f", linestyle="--", linewidth=1.2)
     ax.set_xlim(x_min, x_max)
@@ -796,7 +812,9 @@ def render_tikz(
 
     if plot_df.empty:
         lines.append(r"\begin{tikzpicture}")
-        lines.append(r"\node[anchor=west] at (0,0) {No effect-size rows available for forest plot.};")
+        lines.append(
+            r"\node[anchor=west] at (0,0) {No effect-size rows available for forest plot.};"
+        )
         lines.append(r"\end{tikzpicture}")
         lines.append("")
         output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -811,23 +829,33 @@ def render_tikz(
     axis_y = 0.25
 
     lines.append(r"\begin{tikzpicture}[x=12cm,y=1cm]")
-    lines.append(rf"\node[anchor=west, font=\small\bfseries] at (0,{y_top + 0.55:.3f}) {{Forest plot (auto-generated)}};")
+    lines.append(
+        rf"\node[anchor=west, font=\small\bfseries] at (0,{y_top + 0.55:.3f}) {{Forest plot (auto-generated)}};"
+    )
     lines.append(rf"\draw[->] (0,{axis_y:.3f}) -- (1.03,{axis_y:.3f});")
 
     null_x = normalized_x(null_value, x_min, x_max)
-    lines.append(rf"\draw[dashed, gray!70] ({null_x:.6f},{axis_y:.3f}) -- ({null_x:.6f},{y_top:.3f});")
+    lines.append(
+        rf"\draw[dashed, gray!70] ({null_x:.6f},{axis_y:.3f}) -- ({null_x:.6f},{y_top:.3f});"
+    )
 
     tick_positions = [0.0, 0.25, 0.5, 0.75, 1.0]
     for tick in tick_positions:
         tick_value = x_min + tick * (x_max - x_min)
-        lines.append(rf"\draw ({tick:.6f},{axis_y - 0.03:.3f}) -- ({tick:.6f},{axis_y + 0.03:.3f});")
+        lines.append(
+            rf"\draw ({tick:.6f},{axis_y - 0.03:.3f}) -- ({tick:.6f},{axis_y + 0.03:.3f});"
+        )
         if metric == "converted_or":
             label = f"{tick_value:.2f}"
         else:
             label = f"{tick_value:.2f}"
-        lines.append(rf"\node[anchor=north, font=\scriptsize] at ({tick:.6f},{axis_y - 0.05:.3f}) {{{latex_escape(label)}}};")
+        lines.append(
+            rf"\node[anchor=north, font=\scriptsize] at ({tick:.6f},{axis_y - 0.05:.3f}) {{{latex_escape(label)}}};"
+        )
 
-    lines.append(rf"\node[anchor=north west, font=\scriptsize] at (1.05,{axis_y - 0.05:.3f}) {{{latex_escape(METRIC_LABELS[metric])}}};")
+    lines.append(
+        rf"\node[anchor=north west, font=\scriptsize] at (1.05,{axis_y - 0.05:.3f}) {{{latex_escape(METRIC_LABELS[metric])}}};"
+    )
 
     for idx, (_, row) in enumerate(plot_df.iterrows(), start=1):
         y = y_top - idx * y_step + 0.3
@@ -839,7 +867,9 @@ def render_tikz(
         if pd.notna(ci_lower) and pd.notna(ci_upper):
             x_ci_lower = normalized_x(float(ci_lower), x_min, x_max)
             x_ci_upper = normalized_x(float(ci_upper), x_min, x_max)
-            lines.append(rf"\draw[thick, gray!70] ({x_ci_lower:.6f},{y:.3f}) -- ({x_ci_upper:.6f},{y:.3f});")
+            lines.append(
+                rf"\draw[thick, gray!70] ({x_ci_lower:.6f},{y:.3f}) -- ({x_ci_upper:.6f},{y:.3f});"
+            )
 
         square_half = 0.008 if row["ci_source"] == "converted_raw_ci" else 0.006
         lines.append(
@@ -912,9 +942,15 @@ def build_summary(
             "- Point estimates are read from extraction (`main_effect_metric`, `main_effect_value`; legacy aliases are harmonized) and converted to the selected metric."
         )
     else:
-        lines.append("- Point estimates are read from `effect_size_converted.csv` selected metric column.")
-    lines.append("- CI preference: converted raw CI bounds (if available) → sample-size approximation fallback.")
-    lines.append("- Use PNG for direct manuscripts and TikZ for TeX-native figure embedding/customization.")
+        lines.append(
+            "- Point estimates are read from `effect_size_converted.csv` selected metric column."
+        )
+    lines.append(
+        "- CI preference: converted raw CI bounds (if available) → sample-size approximation fallback."
+    )
+    lines.append(
+        "- Use PNG for direct manuscripts and TikZ for TeX-native figure embedding/customization."
+    )
     lines.append("")
 
     return "\n".join(lines)

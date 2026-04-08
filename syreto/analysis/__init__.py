@@ -1,15 +1,10 @@
 from __future__ import annotations
 
 import pkgutil
-from pathlib import Path
 import sys
+from pathlib import Path
 
-from .registry import ScriptSpec
-from .registry import available_scripts
-from .registry import get_script_spec
-from .registry import has_script
-from .registry import iter_script_specs
-
+from .registry import ScriptSpec, available_scripts, get_script_spec, has_script, iter_script_specs
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = PACKAGE_ROOT.parent

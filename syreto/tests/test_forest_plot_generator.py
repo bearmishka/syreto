@@ -1,11 +1,10 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "forest_plot_generator.py"
 spec = importlib.util.spec_from_file_location("forest_plot_generator", MODULE_PATH)

@@ -1,12 +1,11 @@
 import importlib.util
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "publication_bias_assessment.py"
 spec = importlib.util.spec_from_file_location("publication_bias_assessment", MODULE_PATH)
@@ -194,7 +193,9 @@ class PublicationBiasAssessmentTests(unittest.TestCase):
             min_studies_begg=3,
         )
 
-        self.assertEqual(list(results_df.columns), publication_bias_assessment.PUBLICATION_BIAS_RESULTS_COLUMNS)
+        self.assertEqual(
+            list(results_df.columns), publication_bias_assessment.PUBLICATION_BIAS_RESULTS_COLUMNS
+        )
         self.assertEqual(int(results_df.shape[0]), 1)
         self.assertEqual(results_df.iloc[0]["outcome"], "confidence")
         self.assertEqual(int(results_df.iloc[0]["k_studies"]), 3)

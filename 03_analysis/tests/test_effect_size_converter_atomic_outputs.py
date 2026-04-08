@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "effect_size_converter.py"
 
@@ -65,7 +64,9 @@ class EffectSizeConverterAtomicOutputsTests(unittest.TestCase):
             self.assertEqual(int(converted_df.shape[0]), 1)
             self.assertEqual(converted_df.iloc[0]["study_id"], "S1")
             self.assertEqual(converted_df.iloc[0]["converted_d"], "0.5")
-            self.assertIn("study_id", converted_output_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertIn(
+                "study_id", converted_output_path.read_text(encoding="utf-8").splitlines()[0]
+            )
 
             summary_text = summary_output_path.read_text(encoding="utf-8")
             self.assertIn("Effect Size Conversion Summary", summary_text)

@@ -4,7 +4,6 @@ import argparse
 import csv
 from pathlib import Path
 
-
 EXPECTED_HEADER = ["stable_key", "record_id", "first_seen_date"]
 EXPECTED_HEADER_LINE = ",".join(EXPECTED_HEADER)
 

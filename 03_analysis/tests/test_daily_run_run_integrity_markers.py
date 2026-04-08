@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "daily_run.sh"
 
@@ -22,7 +21,7 @@ def make_fake_python(
     fail_clause = ""
     if fail_validate_csv:
         fail_clause = (
-            "if [[ \"$*\" == *\"validate_csv_inputs.py\"* ]]; then\n"
+            'if [[ "$*" == *"validate_csv_inputs.py"* ]]; then\n'
             f"  printf '%s\\n' 'partial_update' > '{target_literal}'\n"
             "  exit 42\n"
             "fi\n"
@@ -32,7 +31,7 @@ def make_fake_python(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
         f"printf '%s\\n' \"$*\" >> '{log_path.as_posix()}'\n"
-        "if [[ \"$*\" == *\"status_cli.py\"* ]]; then\n"
+        'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "fi\n"
         f"{fail_clause}"
@@ -99,7 +98,11 @@ class DailyRunRunIntegrityMarkersTests(unittest.TestCase):
 
             calls: list[str] = []
             if calls_log.exists():
-                calls = [line.strip() for line in calls_log.read_text(encoding="utf-8").splitlines() if line.strip()]
+                calls = [
+                    line.strip()
+                    for line in calls_log.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                ]
 
             manifest_payload: dict = {}
             if run_manifest.exists():
@@ -122,8 +125,8 @@ class DailyRunRunIntegrityMarkersTests(unittest.TestCase):
             )
 
     def test_successful_run_marks_manifest_success_and_clears_failed_marker(self) -> None:
-        result, manifest_payload, failed_marker_exists, _, _, transactional_target_text = self._run_daily(
-            fail_validate_csv=False
+        result, manifest_payload, failed_marker_exists, _, _, transactional_target_text = (
+            self._run_daily(fail_validate_csv=False)
         )
 
         self.assertEqual(result.returncode, 0)

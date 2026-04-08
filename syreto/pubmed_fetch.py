@@ -11,7 +11,6 @@ from urllib.request import Request, urlopen
 
 import pandas as pd
 
-
 EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 DOI_PATTERN = re.compile(r"10\.\d{4,9}/[^\s]+", re.IGNORECASE)
 YEAR_PATTERN = re.compile(r"(19|20)\d{2}")

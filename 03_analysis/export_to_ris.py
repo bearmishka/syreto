@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 MISSING_CODES = {
     "",
     "nan",
@@ -195,7 +194,14 @@ def load_master(path: Path, include_duplicates: bool) -> pd.DataFrame:
             master_df[column] = ""
 
     if not include_duplicates:
-        is_dup = master_df["is_duplicate"].fillna("").astype(str).str.strip().str.lower().isin(YES_VALUES)
+        is_dup = (
+            master_df["is_duplicate"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .isin(YES_VALUES)
+        )
         master_df = master_df.loc[~is_dup].copy()
 
     return master_df
@@ -256,7 +262,9 @@ def pick_master_match(
 
     ext_source_record_id = normalize(extraction_row.get("source_record_id", ""))
     if ext_source_record_id and ext_source_record_id in indexes["source_record_id"]:
-        return master_df.loc[indexes["source_record_id"][ext_source_record_id][0]], "source_record_id"
+        return master_df.loc[
+            indexes["source_record_id"][ext_source_record_id][0]
+        ], "source_record_id"
 
     ext_doi = normalize_doi(extraction_row.get("doi", ""))
     if ext_doi and ext_doi in indexes["doi"]:
@@ -302,7 +310,9 @@ def sort_included_rows(df: pd.DataFrame) -> pd.DataFrame:
     sorted_df["_sort_year"] = pd.to_numeric(sorted_df["year"], errors="coerce").fillna(9999)
     sorted_df["_sort_author"] = sorted_df["first_author"].fillna("").astype(str).str.lower()
     sorted_df["_sort_study_id"] = sorted_df["study_id"].fillna("").astype(str).str.lower()
-    sorted_df = sorted_df.sort_values(by=["_sort_year", "_sort_author", "_sort_study_id"], kind="stable")
+    sorted_df = sorted_df.sort_values(
+        by=["_sort_year", "_sort_author", "_sort_study_id"], kind="stable"
+    )
     return sorted_df.drop(columns=["_sort_year", "_sort_author", "_sort_study_id"])
 
 
@@ -393,7 +403,14 @@ def render_ris_records(
         extraction_note = normalize(ext_row.get("notes", ""))
         if extraction_note:
             lines.append(ris_line("N1", extraction_note))
-        if match_method not in {"record_id", "source_record_id", "doi", "pmid", "title_author_year", "author_year_unique"}:
+        if match_method not in {
+            "record_id",
+            "source_record_id",
+            "doi",
+            "pmid",
+            "title_author_year",
+            "author_year_unique",
+        }:
             lines.append(ris_line("N1", f"export_match={match_method}"))
 
         lines.append(ris_line("ER", ""))
@@ -450,8 +467,12 @@ def render_summary(
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- Selection rule for included studies follows synthesis workflow: non-empty `study_id` rows in extraction table.")
-    lines.append("- Bibliographic enrichment uses `master_records.csv` when a reliable match is available.")
+    lines.append(
+        "- Selection rule for included studies follows synthesis workflow: non-empty `study_id` rows in extraction table."
+    )
+    lines.append(
+        "- Bibliographic enrichment uses `master_records.csv` when a reliable match is available."
+    )
     lines.append("- RIS structure is Zotero/EndNote compatible (`TY/T1/AU/PY/JF/DO/AB/KW/.../ER`).")
     lines.append("")
     return "\n".join(lines)

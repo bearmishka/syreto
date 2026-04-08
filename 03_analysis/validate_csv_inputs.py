@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
@@ -96,7 +95,13 @@ PRISMA_COLUMNS = ["stage", "count", "notes"]
 FULLTEXT_REASON_COLUMNS = ["reason", "count", "notes"]
 
 ALLOWED_DATABASES = {"pubmed", "embase", "scopus", "psycinfo", "web of science"}
-ALLOWED_SCREENING_STAGE = {"title_abstract", "title/abstract", "full_text", "full-text", "full text"}
+ALLOWED_SCREENING_STAGE = {
+    "title_abstract",
+    "title/abstract",
+    "full_text",
+    "full-text",
+    "full text",
+}
 ALLOWED_TA_DECISIONS = {"include", "exclude", "maybe"}
 ALLOWED_TA_RESULTS_DECISIONS = {"include", "exclude", "uncertain"}
 ALLOWED_DUPLICATE_FLAG = {"yes", "y", "1", "true", "no", "n", "0", "false"}
@@ -216,7 +221,9 @@ FILE_SPECS = [
         "allowed": {
             "fulltext_available": ALLOWED_FULLTEXT_AVAILABLE,
             "include": ALLOWED_FULLTEXT_INCLUDE,
-            "exclusion_reason": {value.lower() for value in ALLOWED_SCREENING_FULLTEXT_EXCLUSION_REASONS},
+            "exclusion_reason": {
+                value.lower() for value in ALLOWED_SCREENING_FULLTEXT_EXCLUSION_REASONS
+            },
         },
         "non_negative_int": [],
         "date_columns": [],
@@ -514,7 +521,9 @@ def validate_search_log_export_files(
             continue
 
         filename = normalize(raw_value)
-        exported_value = df.loc[index, "results_exported"] if "results_exported" in df.columns else ""
+        exported_value = (
+            df.loc[index, "results_exported"] if "results_exported" in df.columns else ""
+        )
         exported_count = parse_non_negative_int_or_none(exported_value)
         rows_with_export.append((int(index), filename, exported_count))
 
@@ -622,8 +631,7 @@ def validate_search_log_ranges(
                     row=row_number,
                     column="start_year",
                     message=(
-                        "start_year must be in realistic range "
-                        f"({MIN_VALID_YEAR}..{current_year})."
+                        f"start_year must be in realistic range ({MIN_VALID_YEAR}..{current_year})."
                     ),
                     value=str(start_year),
                 )
@@ -650,7 +658,11 @@ def validate_search_log_ranges(
                     value=f"start_year={start_year}; date_searched={normalize(row.get('date_searched', ''))}",
                 )
 
-        if date_searched is not None and end_date is not None and end_date.date() > date_searched.date():
+        if (
+            date_searched is not None
+            and end_date is not None
+            and end_date.date() > date_searched.date()
+        ):
             add_issue(
                 issues,
                 file_name=file_name,
@@ -664,7 +676,11 @@ def validate_search_log_ranges(
                 ),
             )
 
-        if results_total is not None and results_exported is not None and results_exported > results_total:
+        if (
+            results_total is not None
+            and results_exported is not None
+            and results_exported > results_total
+        ):
             add_issue(
                 issues,
                 file_name=file_name,
@@ -706,10 +722,7 @@ def validate_screening_daily_ranges(
                     row=row_number,
                     column="records_screened",
                     message="records_screened must equal include_n + exclude_n + maybe_n + pending_n.",
-                    value=(
-                        f"records_screened={records_screened}; "
-                        f"sum={decision_total}"
-                    ),
+                    value=(f"records_screened={records_screened}; sum={decision_total}"),
                 )
 
         if records_screened is not None and records_screened > 0 and time_spent == 0:
@@ -1039,7 +1052,11 @@ def validate_decision_log_rules(
                 value=reason,
             )
 
-        if stage in {"fulltext", "full_text", "full-text", "full text"} and decision_raw in {"maybe", "uncertain", "pending"}:
+        if stage in {"fulltext", "full_text", "full-text", "full text"} and decision_raw in {
+            "maybe",
+            "uncertain",
+            "pending",
+        }:
             add_issue(
                 issues,
                 file_name=file_name,
@@ -1112,11 +1129,15 @@ def fulltext_log_prisma_metrics(df: pd.DataFrame | None) -> dict[str, int]:
         return metrics
 
     working = working.drop_duplicates(["record_id"], keep="last")
-    working["fulltext_available_norm"] = working["fulltext_available"].apply(normalize_fulltext_available)
+    working["fulltext_available_norm"] = working["fulltext_available"].apply(
+        normalize_fulltext_available
+    )
     working["include_norm"] = working["include"].apply(normalize_fulltext_include)
 
     not_retrieved = working["fulltext_available_norm"].eq("no")
-    assessed = working["fulltext_available_norm"].eq("yes") & working["include_norm"].isin({"include", "exclude"})
+    assessed = working["fulltext_available_norm"].eq("yes") & working["include_norm"].isin(
+        {"include", "exclude"}
+    )
     excluded = working["fulltext_available_norm"].eq("yes") & working["include_norm"].eq("exclude")
     included = working["fulltext_available_norm"].eq("yes") & working["include_norm"].eq("include")
 
@@ -1195,7 +1216,9 @@ def title_abstract_results_metrics(df: pd.DataFrame | None) -> dict[str, object]
     elif "resolution_decision" in working.columns:
         decision_series = working["resolution_decision"]
     else:
-        decision_series = working.get("reviewer1_decision", pd.Series(["" for _ in range(len(working))]))
+        decision_series = working.get(
+            "reviewer1_decision", pd.Series(["" for _ in range(len(working))])
+        )
 
     decision_norm = decision_series.apply(normalize_screening_decision)
     record_ids = set(working["record_id"].tolist())
@@ -1273,7 +1296,9 @@ def validate_prisma_cross_file_consistency(
     assessed_in_prisma = prisma_stage_count(prisma_non_empty, "reports_assessed_full_text")
     excluded_fulltext_in_prisma = prisma_stage_count(prisma_non_empty, "reports_excluded_full_text")
     excluded_ta_in_prisma = prisma_stage_count(prisma_non_empty, "records_excluded_title_abstract")
-    included_in_prisma = prisma_stage_count(prisma_non_empty, "studies_included_qualitative_synthesis")
+    included_in_prisma = prisma_stage_count(
+        prisma_non_empty, "studies_included_qualitative_synthesis"
+    )
 
     ta_metrics = title_abstract_results_metrics(title_abstract_results_df)
     fulltext_reasons_total = full_text_exclusion_reason_total(fulltext_reasons_df)
@@ -1318,7 +1343,9 @@ def validate_prisma_cross_file_consistency(
                     issues,
                     file_name="prisma_counts_template",
                     level="error",
-                    row=prisma_stage_row_number(prisma_non_empty, "records_screened_title_abstract"),
+                    row=prisma_stage_row_number(
+                        prisma_non_empty, "records_screened_title_abstract"
+                    ),
                     column="count",
                     message="Deduplicated count mismatch: `identified - duplicates_removed` must equal `records_screened_title_abstract`.",
                     value=(
@@ -1374,7 +1401,11 @@ def validate_prisma_cross_file_consistency(
             value=f"ta_results_unique={ta_screened}; prisma_screened={screened_in_prisma}",
         )
 
-    if ta_screened > 0 and excluded_ta_in_prisma is not None and ta_excluded != excluded_ta_in_prisma:
+    if (
+        ta_screened > 0
+        and excluded_ta_in_prisma is not None
+        and ta_excluded != excluded_ta_in_prisma
+    ):
         add_issue(
             issues,
             file_name="screening_title_abstract_results",
@@ -1421,10 +1452,26 @@ def validate_prisma_cross_file_consistency(
     fulltext_metrics = fulltext_log_prisma_metrics(fulltext_df)
     if fulltext_metrics["unique_records"] > 0:
         prisma_vs_fulltext = [
-            ("reports_sought_for_retrieval", sought_in_prisma, fulltext_metrics["reports_sought_for_retrieval"]),
-            ("reports_not_retrieved", not_retrieved_in_prisma, fulltext_metrics["reports_not_retrieved"]),
-            ("reports_assessed_full_text", assessed_in_prisma, fulltext_metrics["reports_assessed_full_text"]),
-            ("reports_excluded_full_text", excluded_fulltext_in_prisma, fulltext_metrics["reports_excluded_full_text"]),
+            (
+                "reports_sought_for_retrieval",
+                sought_in_prisma,
+                fulltext_metrics["reports_sought_for_retrieval"],
+            ),
+            (
+                "reports_not_retrieved",
+                not_retrieved_in_prisma,
+                fulltext_metrics["reports_not_retrieved"],
+            ),
+            (
+                "reports_assessed_full_text",
+                assessed_in_prisma,
+                fulltext_metrics["reports_assessed_full_text"],
+            ),
+            (
+                "reports_excluded_full_text",
+                excluded_fulltext_in_prisma,
+                fulltext_metrics["reports_excluded_full_text"],
+            ),
             (
                 "studies_included_qualitative_synthesis",
                 included_in_prisma,
@@ -1450,11 +1497,18 @@ def validate_prisma_cross_file_consistency(
 
         included_ids = ta_metrics.get("included_record_ids", set())
         if isinstance(included_ids, set):
-            fulltext_working = non_empty_rows(fulltext_df.copy()) if isinstance(fulltext_df, pd.DataFrame) else pd.DataFrame()
+            fulltext_working = (
+                non_empty_rows(fulltext_df.copy())
+                if isinstance(fulltext_df, pd.DataFrame)
+                else pd.DataFrame()
+            )
             if not fulltext_working.empty and "record_id" in fulltext_working.columns:
                 fulltext_ids = {
                     record_id
-                    for record_id in fulltext_working["record_id"].fillna("").astype(str).str.strip()
+                    for record_id in fulltext_working["record_id"]
+                    .fillna("")
+                    .astype(str)
+                    .str.strip()
                     if record_id
                 }
                 if included_ids:
@@ -1511,7 +1565,11 @@ def validate_prisma_cross_file_consistency(
                 value=f"prisma_excluded_full_text={excluded_fulltext_in_prisma}",
             )
 
-    if fulltext_reasons_total is not None and fulltext_metrics["unique_records"] > 0 and fulltext_reasons_total > 0:
+    if (
+        fulltext_reasons_total is not None
+        and fulltext_metrics["unique_records"] > 0
+        and fulltext_reasons_total > 0
+    ):
         fulltext_excluded = int(fulltext_metrics["reports_excluded_full_text"])
         if fulltext_reasons_total != fulltext_excluded:
             add_issue(
@@ -1549,7 +1607,11 @@ def validate_prisma_cross_file_consistency(
                         value=f"missing_record_ids={','.join(missing_in_master[:5])}",
                     )
 
-    if included_in_prisma is not None and screened_in_prisma is not None and included_in_prisma > screened_in_prisma:
+    if (
+        included_in_prisma is not None
+        and screened_in_prisma is not None
+        and included_in_prisma > screened_in_prisma
+    ):
         add_issue(
             issues,
             file_name="prisma_counts_template",
@@ -1731,7 +1793,9 @@ def migrate_master_records_abstract_column(path: Path) -> tuple[bool, str]:
     if "abstract" in frame.columns:
         return False, "Migration skipped: `abstract` column already present."
 
-    insert_at = int(frame.columns.get_loc("title")) + 1 if "title" in frame.columns else len(frame.columns)
+    insert_at = (
+        int(frame.columns.get_loc("title")) + 1 if "title" in frame.columns else len(frame.columns)
+    )
     frame.insert(insert_at, "abstract", "")
     path.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(path, index=False)
@@ -1801,8 +1865,12 @@ def build_summary(results: list[dict], issues: list[dict]) -> str:
     lines.append(
         "- Decision trace checks validate `decision_log.csv` stage/decision vocabulary, per-row reasons, and record_id alignment with `master_records.csv`."
     )
-    lines.append("- For `search_log.csv`, `export_filename` is checked against files in `../02_data/raw/`.")
-    lines.append("- Placeholder export filenames (e.g., with `YYYY-MM-DD`) are reported as info when `results_exported` is empty.")
+    lines.append(
+        "- For `search_log.csv`, `export_filename` is checked against files in `../02_data/raw/`."
+    )
+    lines.append(
+        "- Placeholder export filenames (e.g., with `YYYY-MM-DD`) are reported as info when `results_exported` is empty."
+    )
     lines.append(
         "- Backward compatibility: legacy `master_records.csv` files without `abstract` are accepted with a warning; use `--migrate-master-records` to persist schema upgrade."
     )
@@ -1820,7 +1888,9 @@ def should_fail(fail_on: str, error_count: int, warning_count: int) -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate processed CSV inputs (schema + allowed values).")
+    parser = argparse.ArgumentParser(
+        description="Validate processed CSV inputs (schema + allowed values)."
+    )
     parser.add_argument(
         "--output",
         default="outputs/csv_input_validation_summary.md",
@@ -1857,7 +1927,9 @@ def main() -> None:
     all_issues: list[dict] = []
 
     for spec in FILE_SPECS:
-        result, issues = validate_file(spec, template_filename_as_info=args.template_export_filename_info)
+        result, issues = validate_file(
+            spec, template_filename_as_info=args.template_export_filename_info
+        )
         all_results.append(result)
         all_issues.extend(issues)
 
@@ -1876,7 +1948,9 @@ def main() -> None:
         spec_paths = {spec["name"]: resolve_input_path(Path(spec["path"])) for spec in FILE_SPECS}
         search_df = read_csv_for_cross_check(spec_paths["search_log"])
         screening_df = read_csv_for_cross_check(spec_paths["screening_daily_log"])
-        title_abstract_results_df = read_csv_for_cross_check(spec_paths["screening_title_abstract_results"])
+        title_abstract_results_df = read_csv_for_cross_check(
+            spec_paths["screening_title_abstract_results"]
+        )
         fulltext_df = read_csv_for_cross_check(spec_paths["screening_fulltext_log"])
         decision_log_df = read_csv_for_cross_check(spec_paths["decision_log"])
         fulltext_reasons_df = read_csv_for_cross_check(spec_paths["full_text_exclusion_reasons"])

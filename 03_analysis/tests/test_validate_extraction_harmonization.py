@@ -1,10 +1,9 @@
 import importlib.util
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "validate_extraction.py"
 spec = importlib.util.spec_from_file_location("validate_extraction", MODULE_PATH)
@@ -62,7 +61,9 @@ class ValidateExtractionHarmonizationTests(unittest.TestCase):
         row["included_in_bias"] = "yes"
         row["included_in_grade"] = "yes"
         row["exclusion_reason"] = "included_primary"
-        row["decision_justification"] = "Included: complete effect-size data available for synthesis workflows."
+        row["decision_justification"] = (
+            "Included: complete effect-size data available for synthesis workflows."
+        )
         row["effect_measure"] = "d"
         row["effect_value"] = "0.33"
         row["confidence_interval"] = "[0.11, 0.55]"
@@ -87,15 +88,13 @@ class ValidateExtractionHarmonizationTests(unittest.TestCase):
 
         self.assertTrue(
             any(
-                issue["column"] == "included_in_meta"
-                and issue["level"] == "error"
+                issue["column"] == "included_in_meta" and issue["level"] == "error"
                 for issue in issues
             )
         )
         self.assertTrue(
             any(
-                issue["column"] == "included_in_grade"
-                and issue["level"] == "error"
+                issue["column"] == "included_in_grade" and issue["level"] == "error"
                 for issue in issues
             )
         )
@@ -114,15 +113,13 @@ class ValidateExtractionHarmonizationTests(unittest.TestCase):
 
         self.assertTrue(
             any(
-                issue["column"] == "exclusion_reason"
-                and issue["level"] == "error"
+                issue["column"] == "exclusion_reason" and issue["level"] == "error"
                 for issue in issues
             )
         )
         self.assertTrue(
             any(
-                issue["column"] == "decision_justification"
-                and issue["level"] == "warning"
+                issue["column"] == "decision_justification" and issue["level"] == "warning"
                 for issue in issues
             )
         )
@@ -135,7 +132,9 @@ class ValidateExtractionHarmonizationTests(unittest.TestCase):
         row["included_in_bias"] = "yes"
         row["included_in_grade"] = "yes"
         row["exclusion_reason"] = "included_primary"
-        row["decision_justification"] = "Included: effect inputs available and scoped for synthesis."
+        row["decision_justification"] = (
+            "Included: effect inputs available and scoped for synthesis."
+        )
         row["main_effect_metric"] = "r"
         row["main_effect_value"] = "0.40"
         row["ci_lower"] = "-1.20"
@@ -163,7 +162,9 @@ class ValidateExtractionHarmonizationTests(unittest.TestCase):
         row["included_in_bias"] = "yes"
         row["included_in_grade"] = "yes"
         row["exclusion_reason"] = "included_primary"
-        row["decision_justification"] = "Included: effect inputs available and scoped for synthesis."
+        row["decision_justification"] = (
+            "Included: effect inputs available and scoped for synthesis."
+        )
         row["main_effect_metric"] = "hazard_ratio"
         row["main_effect_value"] = "1.20"
         row["effect_direction"] = "positive"

@@ -3,8 +3,8 @@ import io
 import os
 import re
 import tempfile
-from difflib import SequenceMatcher
 from datetime import datetime
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import pandas as pd
@@ -84,7 +84,12 @@ def atomic_write_dataframe_csv(frame: pd.DataFrame, path: Path, *, index: bool =
 
 def clean_text(value: object) -> str:
     text = str(value if value is not None else "")
-    text = text.replace("\u2013", "-").replace("\u2014", "-").replace("\u2019", "'").replace("\u2018", "'")
+    text = (
+        text.replace("\u2013", "-")
+        .replace("\u2014", "-")
+        .replace("\u2019", "'")
+        .replace("\u2018", "'")
+    )
     text = re.sub(r"\s+", " ", text).strip()
     if text.lower() in EMPTY_VALUES:
         return ""
@@ -256,7 +261,9 @@ def append_record_id_map_entries(path: Path, entries: list[dict[str, str]]) -> i
         if existing_payload and not existing_payload.endswith(b"\n"):
             existing_payload += b"\n"
 
-    new_rows_payload = output_df.to_csv(index=False, header=not has_existing_content).encode("utf-8")
+    new_rows_payload = output_df.to_csv(index=False, header=not has_existing_content).encode(
+        "utf-8"
+    )
     atomic_replace_bytes(path, existing_payload + new_rows_payload)
     return int(output_df.shape[0])
 
@@ -280,11 +287,15 @@ def canonical_master_rows(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame(columns=MASTER_COLUMNS)
 
-    duplicate_flags = df.get("is_duplicate", pd.Series(dtype=str)).fillna("").astype(str).str.strip().str.lower()
+    duplicate_flags = (
+        df.get("is_duplicate", pd.Series(dtype=str)).fillna("").astype(str).str.strip().str.lower()
+    )
     return df.loc[~duplicate_flags.eq("yes")].copy()
 
 
-def build_new_record_triage(current_master_df: pd.DataFrame, previous_master_df: pd.DataFrame) -> pd.DataFrame:
+def build_new_record_triage(
+    current_master_df: pd.DataFrame, previous_master_df: pd.DataFrame
+) -> pd.DataFrame:
     current_unique_df = canonical_master_rows(current_master_df)
     previous_unique_df = canonical_master_rows(previous_master_df)
 
@@ -327,7 +338,9 @@ def write_triage_csv(path: Path, triage_df: pd.DataFrame) -> None:
     atomic_write_dataframe_csv(output_df, path, index=False)
 
 
-def bootstrap_record_id_map_from_master(record_id_map_path: Path, master_path: Path, *, first_seen_date: str) -> int:
+def bootstrap_record_id_map_from_master(
+    record_id_map_path: Path, master_path: Path, *, first_seen_date: str
+) -> int:
     existing_map_df = read_record_id_map(record_id_map_path)
     if not existing_map_df.empty:
         return 0
@@ -436,7 +449,16 @@ def pick_column(df: pd.DataFrame, aliases: list[str]) -> str | None:
 
 
 def is_non_empty_record(record: dict[str, str]) -> bool:
-    for key in ["source_record_id", "title", "abstract", "authors", "year", "journal", "doi", "pmid"]:
+    for key in [
+        "source_record_id",
+        "title",
+        "abstract",
+        "authors",
+        "year",
+        "journal",
+        "doi",
+        "pmid",
+    ]:
         if clean_text(record.get(key, "")):
             return True
     return False
@@ -474,7 +496,9 @@ def parse_ris_file(path: Path, source_database: str) -> list[dict[str, str]]:
         tag, value = match.group(1).strip(), match.group(2).strip()
         if tag == "ER":
             if current:
-                records.append(build_record_from_ris(current, source_database, path, len(records) + 1))
+                records.append(
+                    build_record_from_ris(current, source_database, path, len(records) + 1)
+                )
                 current = {}
             continue
 
@@ -506,7 +530,9 @@ def join_tags(tags: dict[str, list[str]], keys: list[str]) -> str:
     return "; ".join(all_values)
 
 
-def build_record_from_ris(tags: dict[str, list[str]], source_database: str, path: Path, index: int) -> dict[str, str]:
+def build_record_from_ris(
+    tags: dict[str, list[str]], source_database: str, path: Path, index: int
+) -> dict[str, str]:
     title = first_tag(tags, ["TI", "T1", "CT", "BT"])
     abstract = first_tag(tags, ["AB", "N2", "N1"])
     authors = join_tags(tags, ["AU", "A1", "A2", "A3"])
@@ -541,12 +567,16 @@ def parse_csv_file(path: Path, source_database: str) -> list[dict[str, str]]:
     if df.empty:
         return []
 
-    source_id_col = pick_column(df, ["source_record_id", "record_id", "id", "eid", "accession number", "an", "ut"])
+    source_id_col = pick_column(
+        df, ["source_record_id", "record_id", "id", "eid", "accession number", "an", "ut"]
+    )
     title_col = pick_column(df, ["title", "article title", "document title", "ti"])
     abstract_col = pick_column(df, ["abstract", "summary", "description", "ab"])
     authors_col = pick_column(df, ["authors", "author", "author names", "au"])
     year_col = pick_column(df, ["year", "publication year", "pubyear", "py", "date"])
-    journal_col = pick_column(df, ["journal", "source title", "publication title", "journal title", "so"])
+    journal_col = pick_column(
+        df, ["journal", "source title", "publication title", "journal title", "so"]
+    )
     doi_col = pick_column(df, ["doi", "doi link", "elocation id"])
     pmid_col = pick_column(df, ["pmid", "pubmed id", "pubmed"])
 
@@ -582,7 +612,9 @@ def parse_csv_file(path: Path, source_database: str) -> list[dict[str, str]]:
     return records
 
 
-def load_source_files(search_log_path: Path, raw_dir: Path) -> tuple[list[dict[str, object]], list[str]]:
+def load_source_files(
+    search_log_path: Path, raw_dir: Path
+) -> tuple[list[dict[str, object]], list[str]]:
     sources: list[dict[str, object]] = []
     missing: list[str] = []
 
@@ -907,15 +939,21 @@ def build_summary(
     lines.append("## Notes")
     lines.append("")
     lines.append("- Merge order follows `01_protocol/dedup_workflow.md`.")
-    lines.append("- Duplicate priority is DOI → PMID → normalized title+first author (+year compatibility when available).")
+    lines.append(
+        "- Duplicate priority is DOI → PMID → normalized title+first author (+year compatibility when available)."
+    )
     if fuzzy_enabled:
         lines.append(
             f"- Fuzzy title matching is enabled for same first-author pairs with year-compatibility check (backend: `{fuzzy_backend}`, threshold: {title_fuzzy_threshold:.1f})."
         )
     else:
         lines.append("- Fuzzy title matching is disabled (threshold <= 0).")
-    lines.append("- `record_id_map.csv` is append-only: existing stable-key mappings are preserved and only unseen keys receive new IDs.")
-    lines.append("- New-record triage includes canonical records whose `record_id` was absent from previous master canonical rows.")
+    lines.append(
+        "- `record_id_map.csv` is append-only: existing stable-key mappings are preserved and only unseen keys receive new IDs."
+    )
+    lines.append(
+        "- New-record triage includes canonical records whose `record_id` was absent from previous master canonical rows."
+    )
     lines.append("- When no source exports are available, existing master is left unchanged.")
 
     return "\n".join(lines) + "\n"
@@ -978,7 +1016,9 @@ def build_skip_summary(
     return "\n".join(lines) + "\n"
 
 
-def should_run_if_new_exports(source_files: list[dict[str, object]], master_path: Path) -> tuple[bool, str]:
+def should_run_if_new_exports(
+    source_files: list[dict[str, object]], master_path: Path
+) -> tuple[bool, str]:
     if not source_files:
         return False, "no source exports found"
 
@@ -991,7 +1031,9 @@ def should_run_if_new_exports(source_files: list[dict[str, object]], master_path
         if not path.exists() or not path.is_file():
             continue
         mtime = path.stat().st_mtime
-        latest_source_mtime = mtime if latest_source_mtime is None else max(latest_source_mtime, mtime)
+        latest_source_mtime = (
+            mtime if latest_source_mtime is None else max(latest_source_mtime, mtime)
+        )
 
     if latest_source_mtime is None:
         return False, "no readable source export files"
@@ -1011,10 +1053,22 @@ def read_master_record_ids(master_path: Path) -> set[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Merge raw exports and auto-flag duplicates in master_records.csv.")
-    parser.add_argument("--raw-dir", default="../02_data/raw", help="Directory with raw export files (RIS/CSV)")
-    parser.add_argument("--search-log", default="../02_data/processed/search_log.csv", help="Search log CSV with export filenames")
-    parser.add_argument("--master", default="../02_data/processed/master_records.csv", help="Master records output CSV")
+    parser = argparse.ArgumentParser(
+        description="Merge raw exports and auto-flag duplicates in master_records.csv."
+    )
+    parser.add_argument(
+        "--raw-dir", default="../02_data/raw", help="Directory with raw export files (RIS/CSV)"
+    )
+    parser.add_argument(
+        "--search-log",
+        default="../02_data/processed/search_log.csv",
+        help="Search log CSV with export filenames",
+    )
+    parser.add_argument(
+        "--master",
+        default="../02_data/processed/master_records.csv",
+        help="Master records output CSV",
+    )
     parser.add_argument(
         "--record-id-map",
         default="../02_data/processed/record_id_map.csv",
@@ -1025,7 +1079,9 @@ def main(argv: list[str] | None = None) -> int:
         default="outputs/new_record_triage.csv",
         help="CSV queue of newly added unique records since previous merge.",
     )
-    parser.add_argument("--summary", default="outputs/dedup_merge_summary.md", help="Dedup merge summary markdown")
+    parser.add_argument(
+        "--summary", default="outputs/dedup_merge_summary.md", help="Dedup merge summary markdown"
+    )
     parser.add_argument(
         "--allow-empty-overwrite",
         action="store_true",
@@ -1084,7 +1140,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote: {summary_path}")
             print(f"Skipped merge (`--if-new-exports`): {reason}.")
             if bootstrap_rows_added:
-                print(f"Updated: {record_id_map_path} (+{bootstrap_rows_added} row(s) bootstrapped)")
+                print(
+                    f"Updated: {record_id_map_path} (+{bootstrap_rows_added} row(s) bootstrapped)"
+                )
             return 0
 
     source_stats: list[dict[str, object]] = []
@@ -1094,12 +1152,16 @@ def main(argv: list[str] | None = None) -> int:
         path = Path(item["path"])
         records = parse_source(path, database)
         parsed_records.extend(records)
-        source_stats.append({"database": database, "path": path.as_posix(), "records": len(records)})
+        source_stats.append(
+            {"database": database, "path": path.as_posix(), "records": len(records)}
+        )
 
     threshold = max(0.0, min(100.0, float(args.title_fuzzy_threshold)))
     fuzzy_backend = "rapidfuzz" if RAPIDFUZZ_AVAILABLE else "difflib-fallback"
     if threshold > 0 and not RAPIDFUZZ_AVAILABLE:
-        print("Warning: rapidfuzz is not installed; using difflib fallback for fuzzy title matching.")
+        print(
+            "Warning: rapidfuzz is not installed; using difflib fallback for fuzzy title matching."
+        )
 
     record_id_map_df = read_record_id_map(record_id_map_path)
     stable_key_to_record_id = build_record_id_lookup(record_id_map_df)
@@ -1161,7 +1223,9 @@ def main(argv: list[str] | None = None) -> int:
     if wrote_master:
         print(f"Updated: {master_path}")
     else:
-        print("Skipped master update (no source records loaded; use --allow-empty-overwrite to force).")
+        print(
+            "Skipped master update (no source records loaded; use --allow-empty-overwrite to force)."
+        )
     if total_record_id_map_rows_added:
         print(f"Updated: {record_id_map_path} (+{total_record_id_map_rows_added} row(s))")
     return 0
