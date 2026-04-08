@@ -68,4 +68,6 @@ select = ["E", "F", "I"]
 ignore = ["E402", "E501"]
 
 [tool.pytest.ini_options]
-testpaths = ["syreto/tests"]
+addopts = ["--import-mode=importlib"]
+norecursedirs = ["03_analysis/tests/fixtures", "syreto/tests/fixtures"]
+testpaths = ["syreto/tests", "03_analysis/tests"]

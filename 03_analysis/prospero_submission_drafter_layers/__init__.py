@@ -3,21 +3,9 @@ from __future__ import annotations
 from .builder import (
     DraftArtifacts,
     DraftBuildContext,
-    auto_complete_missing_required_fields,
     build_draft_artifacts,
     build_prefill_fields,
     build_submission_context,
-    completion_counts,
-    default_placeholder_replacements,
-    evaluate_exit_conditions,
-    infer_default_completion_date,
-    infer_default_start_date,
-    merge_placeholder_replacements,
-    normalize_placeholder_token,
-    parse_date_label_to_iso,
-    placeholder_token_variants,
-    replace_placeholders,
-    unresolved_placeholders_in_fields,
 )
 from .field_composition import field_value_map, is_required_in_mode, prospero_field_templates
 from .formatting import (
@@ -42,7 +30,23 @@ from .models import (
     ProsperoFieldTemplate,
     ProtocolData,
 )
-from .rules import field_notes_for_missing, finalize_fields, required_scope_label
+from .rules import (
+    auto_complete_missing_required_fields,
+    completion_counts,
+    default_placeholder_replacements,
+    evaluate_exit_conditions,
+    field_notes_for_missing,
+    finalize_fields,
+    infer_default_completion_date,
+    infer_default_start_date,
+    merge_placeholder_replacements,
+    normalize_placeholder_token,
+    parse_date_label_to_iso,
+    placeholder_token_variants,
+    replace_placeholders,
+    required_scope_label,
+    unresolved_placeholders_in_fields,
+)
 
 __all__ = [
     "DraftArtifacts",

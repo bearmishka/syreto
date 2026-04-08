@@ -55,14 +55,15 @@ fi
 
 normalize_mode_alias() {
   local var_name="$1"
-  local -n mode_ref="$var_name"
+  local mode_ref
+  mode_ref="$(eval "printf '%s' \"\${$var_name}\"")"
 
   if [[ "$mode_ref" == "1" ]]; then
     echo "[daily_run] Compatibility alias detected: ${var_name}=1 -> fail"
-    mode_ref="fail"
+    printf -v "$var_name" '%s' "fail"
   elif [[ "$mode_ref" == "0" ]]; then
     echo "[daily_run] Compatibility alias detected: ${var_name}=0 -> skip"
-    mode_ref="skip"
+    printf -v "$var_name" '%s' "skip"
   fi
 }
 
