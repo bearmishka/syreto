@@ -8,8 +8,26 @@ from typing import Callable
 from .models import ManuscriptMetadata, PrefillField, ProsperoFieldTemplate, ProtocolData
 from .rules import (
     auto_complete_missing_required_fields,
+    completion_counts,
+    evaluate_exit_conditions,
     finalize_fields,
+    parse_date_label_to_iso,
+    unresolved_placeholders_in_fields,
 )
+
+__all__ = [
+    "DraftArtifacts",
+    "DraftBuildContext",
+    "auto_complete_missing_required_fields",
+    "build_draft_artifacts",
+    "build_prefill_fields",
+    "build_submission_context",
+    "completion_counts",
+    "evaluate_exit_conditions",
+    "finalize_fields",
+    "parse_date_label_to_iso",
+    "unresolved_placeholders_in_fields",
+]
 
 
 @dataclass
