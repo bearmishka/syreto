@@ -31,6 +31,7 @@ That means small review-sized fixtures are valuable because they let the project
 The current first golden fixture is:
 
 - [reviews/fixtures/minimal-golden](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/minimal-golden)
+- [reviews/fixtures/repo-smoke](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke)
 
 It currently covers:
 
@@ -38,6 +39,15 @@ It currently covers:
 - extraction input
 - quality-band input
 - expected analytics outputs
+
+The `repo-smoke` fixture currently covers:
+
+- repository-aligned `review.toml`
+- config-aware `syreto review run --config ...`
+- manifest creation
+- run-event stream creation
+- failed-marker absence on successful smoke runs
+- core status artifact smoke generation through the current orchestration spine
 
 Its current focus is the `StudyTable` and review-analytics surface rather than the full repository-aligned `daily_run.sh` orchestration spine.
 
@@ -65,7 +75,8 @@ Over time, SyReTo can grow toward:
 
 - one tiny golden review fixture
 - one slightly richer fixture with more outputs
-- eventually one repository-aligned end-to-end smoke fixture
+- one repository-aligned end-to-end smoke fixture
+- and later one stricter end-to-end golden run with stronger output expectations
 
 ## Relationship To Other Contracts
 
