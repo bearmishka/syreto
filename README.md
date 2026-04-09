@@ -183,6 +183,8 @@ For the review-state analytics and visualization contract, see [docs/review-anal
 
 For the internal study-level contract that now backs several downstream synthesis, plotting, summary, and export steps, see [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md).
 
+For the testing surface organized by operational risk rather than only by module, see [docs/test-taxonomy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/test-taxonomy.md).
+
 ## Main Entry Points
 
 - `syreto list`: list packaged analysis scripts
