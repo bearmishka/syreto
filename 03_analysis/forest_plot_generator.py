@@ -6,6 +6,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from study_table import harmonize_study_columns, included_study_table
 
 MISSING_CODES = {
     "",
@@ -93,6 +94,19 @@ EFFECT_COLUMN_ALIASES = {
     "main_effect_metric": ("effect_measure", "effect_metric"),
     "main_effect_value": ("effect_value",),
 }
+
+FOREST_PLOT_STUDY_COLUMNS = (
+    "study_id",
+    "first_author",
+    "year",
+    "main_effect_metric",
+    "main_effect_value",
+    "ci_lower",
+    "ci_upper",
+    "sample_size",
+    "effect_direction",
+    "consensus_status",
+)
 
 
 def normalize(value: object) -> str:
@@ -369,31 +383,8 @@ def harmonize_extraction_metadata(extraction_df: pd.DataFrame) -> pd.DataFrame:
     if extraction_df.empty:
         return extraction_df
 
-    extraction = extraction_df.copy()
-
-    if "author" in extraction.columns and "first_author" not in extraction.columns:
-        extraction["first_author"] = extraction["author"]
-
-    for canonical_column in EFFECT_CANONICAL_COLUMNS:
-        if canonical_column not in extraction.columns:
-            extraction[canonical_column] = ""
-
-    for canonical_column, aliases in EFFECT_COLUMN_ALIASES.items():
-        for alias in aliases:
-            if alias not in extraction.columns:
-                continue
-            target_series = extraction[canonical_column].fillna("").astype(str).str.strip()
-            alias_series = extraction[alias].fillna("").astype(str)
-            mask = target_series.eq("") & alias_series.str.strip().ne("")
-            if mask.any():
-                extraction.loc[mask, canonical_column] = alias_series.loc[mask]
-
-    for column in EXTRACTION_METADATA_COLUMNS:
-        if column not in extraction.columns:
-            extraction[column] = ""
-
-    if "study_id" not in extraction.columns:
-        extraction["study_id"] = ""
+    extraction = harmonize_study_columns(extraction_df, list(FOREST_PLOT_STUDY_COLUMNS))
+    extraction = included_study_table(extraction, list(FOREST_PLOT_STUDY_COLUMNS))
 
     for index, row in extraction.iterrows():
         ci_lower = row.get("ci_lower", "")

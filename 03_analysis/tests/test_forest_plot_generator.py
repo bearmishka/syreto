@@ -244,6 +244,31 @@ class ForestPlotGeneratorTests(unittest.TestCase):
         self.assertEqual(converted_df.loc[0, "conversion_status"], "converted")
         self.assertLess(float(converted_df.loc[0, "converted_d"]), 0.0)
 
+    def test_harmonize_extraction_metadata_filters_non_included_rows(self) -> None:
+        extraction_df = pd.DataFrame(
+            [
+                {
+                    "study_id": "S1",
+                    "author": "Ng",
+                    "main_effect_metric": "r",
+                    "main_effect_value": "0.20",
+                    "consensus_status": "include",
+                },
+                {
+                    "study_id": "S2",
+                    "author": "Lopez",
+                    "main_effect_metric": "r",
+                    "main_effect_value": "0.90",
+                    "consensus_status": "exclude",
+                },
+            ]
+        )
+
+        harmonized = forest_plot_generator.harmonize_extraction_metadata(extraction_df)
+
+        self.assertEqual(list(harmonized["study_id"]), ["S1"])
+        self.assertEqual(harmonized.iloc[0]["first_author"], "Ng")
+
     def test_render_tikz_creates_tikzpicture(self) -> None:
         plot_df = pd.DataFrame(
             [
