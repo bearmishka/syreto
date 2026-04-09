@@ -1,0 +1,4 @@
+study_id,first_author,year,country,study_design,sample_size,predictor_construct,outcome_construct,consensus_status
+S1,Smith,2021,USA,cohort,120,attachment,distress,include
+S2,Jones,2022,Canada,trial,80,identity,functioning,include
+S3,Brown,2022,USA,cohort,90,attachment,distress,exclude

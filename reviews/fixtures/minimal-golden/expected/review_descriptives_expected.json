@@ -1,0 +1,61 @@
+{
+  "included_study_count": 2,
+  "missing_counts": {
+    "year": 0,
+    "country": 0,
+    "study_design": 0,
+    "sample_size": 0
+  },
+  "distributions": {
+    "year": {
+      "2021": 1,
+      "2022": 1
+    },
+    "country": {
+      "Canada": 1,
+      "USA": 1
+    },
+    "study_design": {
+      "cohort": 1,
+      "trial": 1
+    },
+    "predictor_construct": {
+      "attachment": 1,
+      "identity": 1
+    },
+    "outcome_construct": {
+      "distress": 1,
+      "functioning": 1
+    },
+    "quality_band": {
+      "high": 1,
+      "moderate": 1
+    }
+  },
+  "sample_size_summary": {
+    "studies_with_sample_size": 2,
+    "min": 80,
+    "median": 100.0,
+    "max": 120,
+    "total_reported_participants": 200
+  },
+  "predictor_outcome_pairs": [
+    {
+      "predictor_construct": "attachment",
+      "outcome_construct": "distress",
+      "count": 1
+    },
+    {
+      "predictor_construct": "identity",
+      "outcome_construct": "functioning",
+      "count": 1
+    }
+  ],
+  "figure_output_keys": [
+    "country",
+    "predictor_outcome_heatmap",
+    "quality_band",
+    "study_design",
+    "year"
+  ]
+}

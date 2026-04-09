@@ -185,6 +185,8 @@ For the internal study-level contract that now backs several downstream synthesi
 
 For the testing surface organized by operational risk rather than only by module, see [docs/test-taxonomy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/test-taxonomy.md).
 
+For the project’s small, versioned review-sized smoke and regression samples, see [docs/golden-review-fixtures.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/golden-review-fixtures.md).
+
 ## Main Entry Points
 
 - `syreto list`: list packaged analysis scripts
