@@ -4,6 +4,48 @@
 
 This page describes the main artifact classes produced and consumed by SyReTo, with an emphasis on which files act as canonical inputs, which files are generated outputs, and which files are used to assess operational health.
 
+It is both:
+
+- a human-facing inventory of important artifacts
+- a lightweight artifact contract for the most important operational and manuscript-facing files
+
+## Artifact Contract Fields
+
+For the highest-value artifacts, this page tracks:
+
+- `artifact`: the path or artifact family
+- `producer`: which script or layer creates it
+- `consumer`: which script, layer, or user-facing surface reads it
+- `required`: whether the artifact is expected for a trustworthy run in the current contract
+- `canonical`: whether the artifact is source-of-truth or merely derived
+- `human-readable`: whether a person can inspect it directly
+- `machine-readable`: whether downstream code can rely on structured parsing
+- `regenerable`: whether it should be recreated from upstream state rather than hand-maintained
+
+## Core Artifact Contract
+
+| Artifact | Producer | Consumer | Required | Canonical | Human-readable | Machine-readable | Regenerable |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `02_data/processed/search_log.csv` | review team / canonical inputs | validation, pipeline, status | yes | yes | yes | yes | no |
+| `02_data/processed/master_records.csv` | review team / dedup workflow | status, RIS export, screening logic | yes | yes | yes | yes | no |
+| `02_data/codebook/extraction_template.csv` | review team / extraction workflow | appraisal, synthesis, analytics, export | yes | yes | yes | yes | no |
+| `outputs/status_summary.json` | `status_report.py` | `status_cli.py`, `doctor`, `todo_action_plan_builder.py`, users | yes | no | limited | yes | yes |
+| `outputs/status_report.md` | `status_report.py` | users, postmortem, review workflow | yes | no | yes | no | yes |
+| `outputs/todo_action_plan.md` | `todo_action_plan_builder.py` | users, remediation workflow | yes | no | yes | no | yes |
+| `outputs/run_events.jsonl` | `daily_run.sh` observability layer | `syreto observability`, postmortem, future UI/metrics | expected for full run | no | partial | yes | yes |
+| `outputs/daily_run_manifest.json` | `daily_run.sh` | run integrity checks, postmortem | expected for full run | no | limited | yes | yes |
+| `outputs/review_descriptives.json` | `review_descriptives_builder.py` | analytics inspection, future programmatic analytics consumers | no | no | limited | yes | yes |
+| `outputs/review_descriptives.md` | `review_descriptives_builder.py` | users, review inspection | no | no | yes | no | yes |
+| `outputs/figures/*.png` | analytics builders | users, reporting, sanity checks | no | no | yes | no | yes |
+| `outputs/prisma_flow_diagram.svg` | `dedup_stats.py` | users, manuscript prep | expected in normal run | no | yes | no | yes |
+| `outputs/prisma_flow_diagram.tex` | `dedup_stats.py` | manuscript workflows | expected in normal run | no | yes | no | yes |
+| `outputs/forest_plot_data.csv` | `forest_plot_generator.py` | forest plot output layer, downstream inspection | optional/depends on stage | no | yes | yes | yes |
+| `outputs/forest_plot.png` | `forest_plot_generator.py` | users, manuscript/reporting | optional/depends on stage | no | yes | no | yes |
+| `outputs/included_studies_export.ris` | `export_to_ris.py` | Zotero, EndNote, external reference workflows | optional | no | yes | semi-structured | yes |
+| `04_manuscript/tables/grade_evidence_profile_table.tex` | `grade_evidence_profiler.py` | manuscript layer | expected when manuscript layer is active | no | yes | no | yes |
+| `04_manuscript/tables/results_summary_table.tex` | `results_summary_table_builder.py` | manuscript layer | expected when manuscript layer is active | no | yes | no | yes |
+| `04_manuscript/sections/03c_interpretation_auto.tex` | `results_interpretation_layer.py` | manuscript layer | expected when manuscript layer is active | no | yes | no | yes |
+
 ## Artifact Classes
 
 SyReTo uses four main artifact classes:
@@ -110,6 +152,24 @@ It helps to think of each artifact in one of these roles:
 - optional extension output
 
 The key discipline is that generated artifacts should be reproducible from canonical inputs and scripted execution.
+
+## How To Read This Catalog
+
+This catalog is intentionally not just a file list.
+
+Use it to answer questions such as:
+
+- which artifacts are canonical inputs and must not be hand-edited downstream
+- which artifacts are generated evidence of a run rather than source-of-truth
+- which outputs are primarily for humans and which are meant for structured machine consumption
+- which missing files are contract problems versus optional omissions
+- which artifacts can be safely regenerated from upstream state
+
+This makes the catalog a companion to:
+
+- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
+- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
+- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
 
 ## Fast Inspection Checklist
 
