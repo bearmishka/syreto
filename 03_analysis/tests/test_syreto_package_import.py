@@ -114,6 +114,8 @@ class SyretoPackageImportTests(unittest.TestCase):
         rendered = stdout.getvalue()
         self.assertIn("operational:", rendered)
         self.assertIn("outputs/status_summary.json", rendered)
+        self.assertIn("outputs/review_descriptives.json", rendered)
+        self.assertIn("outputs/figures/predictor_outcome_heatmap.png", rendered)
         self.assertNotIn("manuscript:", rendered)
 
     def test_cli_artifacts_missing_only_filters_present_items(self) -> None:

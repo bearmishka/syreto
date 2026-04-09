@@ -54,6 +54,8 @@ Common outputs under [`outputs/`](/Users/pigra/Documents/New%20project/syreto_cl
 - [`outputs/figures/year_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/year_distribution.png)
 - [`outputs/figures/study_design_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/study_design_distribution.png)
 - [`outputs/figures/country_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/country_distribution.png)
+- [`outputs/figures/quality_band_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/quality_band_distribution.png)
+- [`outputs/figures/predictor_outcome_heatmap.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/predictor_outcome_heatmap.png)
 
 These are the first files to inspect when asking “did the run work?”
 
@@ -126,6 +128,8 @@ If you want a quick inspection of corpus shape rather than operational health, i
 3. [`outputs/figures/year_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/year_distribution.png)
 4. [`outputs/figures/study_design_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/study_design_distribution.png)
 5. [`outputs/figures/country_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/country_distribution.png)
+6. [`outputs/figures/quality_band_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/quality_band_distribution.png)
+7. [`outputs/figures/predictor_outcome_heatmap.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/predictor_outcome_heatmap.png)
 
 ## Related Entry Points
 

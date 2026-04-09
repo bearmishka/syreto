@@ -49,6 +49,8 @@ Operational outputs include:
 - `outputs/figures/year_distribution.png`
 - `outputs/figures/study_design_distribution.png`
 - `outputs/figures/country_distribution.png`
+- `outputs/figures/quality_band_distribution.png`
+- `outputs/figures/predictor_outcome_heatmap.png`
 - `outputs/prisma_flow_diagram.svg`
 - `outputs/prisma_flow_diagram.tex`
 - `outputs/dedup_merge_summary.md`
@@ -204,6 +206,8 @@ Useful generated analytics artifacts:
 - `outputs/figures/year_distribution.png`
 - `outputs/figures/study_design_distribution.png`
 - `outputs/figures/country_distribution.png`
+- `outputs/figures/quality_band_distribution.png`
+- `outputs/figures/predictor_outcome_heatmap.png`
 
 ## Citation
 
