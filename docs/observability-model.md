@@ -258,3 +258,5 @@ The SyReTo Observability Model establishes:
 - a foundation for future observability improvements without platform drift
 
 It is a formalization of temporal honesty in execution.
+
+For the separate contract that explains how stale outputs, reruns, and rollback affect downstream trust, see [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).

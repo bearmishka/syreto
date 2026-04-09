@@ -247,6 +247,8 @@ The table below gives the intended default interpretation of the most important 
 
 This matrix is a default operational model, not a claim that every single failure instance has identical semantics.
 
+For the explicit contract around clean reruns, artifact reuse, stale state, and rollback interpretation, see [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
+
 ## Hard Fail vs Warning Only
 
 The most useful distinction in practice is this:

@@ -191,5 +191,6 @@ These non-guarantees are important. They prevent a false sense of certainty arou
 - [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md) defines how the system behaves when the contract is violated
 - [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md) defines how execution is recorded without controlling it
 - [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md) inventories the most important generated outputs
+- [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md) defines when rerun, reuse, rollback, and stale-state handling preserve trust
 
 Together, these documents define the external operational promises of SyReTo.
