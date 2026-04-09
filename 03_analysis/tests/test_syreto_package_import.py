@@ -186,6 +186,24 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("Environment", rendered)
         self.assertIn("Summary:", rendered)
 
+    def test_cli_doctor_reports_failure_classification_for_missing_optional_artifacts(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(
+            cli,
+            "DOCTOR_OPTIONAL_PATHS",
+            (("status summary", cli.PROJECT_ROOT / "outputs/definitely_missing_status.json"),),
+        ):
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("class=missing artifact", rendered)
+        self.assertIn("Failure classification", rendered)
+        self.assertIn("missing artifact: count=", rendered)
+
     def test_cli_doctor_strict_fails_on_warnings(self) -> None:
         from syreto import cli
 
@@ -200,6 +218,31 @@ class SyretoPackageImportTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
         self.assertIn("[warn] status summary", stdout.getvalue())
+
+    def test_cli_doctor_reports_failed_run_marker_as_partial_run_failure(self) -> None:
+        from syreto import cli
+
+        failed_marker = cli.PROJECT_ROOT / "outputs/daily_run_failed.marker"
+
+        existing = {
+            failed_marker.resolve(),
+            *(path.resolve() for _, path in cli.DOCTOR_REQUIRED_PATHS),
+            *(path.resolve() for _, path in cli.DOCTOR_OPTIONAL_PATHS),
+            (cli.PROJECT_ROOT / "outputs/run_events.jsonl").resolve(),
+        }
+
+        def fake_exists(self: Path) -> bool:
+            return self.resolve() in existing
+
+        stdout = StringIO()
+        with mock.patch.object(Path, "exists", fake_exists):
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 1)
+        rendered = stdout.getvalue()
+        self.assertIn("daily run failed marker", rendered)
+        self.assertIn("class=partial run or stale outputs", rendered)
 
     def test_cli_doctor_suggests_daily_run_when_status_artifacts_missing(self) -> None:
         from syreto import cli

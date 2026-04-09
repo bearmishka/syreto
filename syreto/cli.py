@@ -10,6 +10,37 @@ from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+FAILURE_SEMANTICS = {
+    "config error": {
+        "severity": "hard-fail",
+        "recovery": "manual intervention",
+    },
+    "missing artifact": {
+        "severity": "warning",
+        "recovery": "manual intervention",
+    },
+    "schema violation": {
+        "severity": "hard-fail",
+        "recovery": "manual intervention",
+    },
+    "environment problem": {
+        "severity": "warning",
+        "recovery": "manual intervention",
+    },
+    "integrity guard failure": {
+        "severity": "hard-fail",
+        "recovery": "manual intervention",
+    },
+    "partial run or stale outputs": {
+        "severity": "hard-fail",
+        "recovery": "clean rerun or manual investigation",
+    },
+    "rollback state": {
+        "severity": "hard-fail",
+        "recovery": "manual investigation",
+    },
+}
+
 ARTIFACT_GROUPS = {
     "operational": (
         "outputs/status_summary.json",
@@ -291,6 +322,23 @@ def _doctor_line(level: str, label: str, detail: str) -> str:
     return f"[{level}] {label}: {detail}"
 
 
+def _doctor_classified_line(
+    level: str,
+    label: str,
+    detail: str,
+    *,
+    failure_class: str | None = None,
+) -> str:
+    if failure_class is None:
+        return _doctor_line(level, label, detail)
+
+    semantics = FAILURE_SEMANTICS[failure_class]
+    return (
+        f"[{level}] {label}: {detail} "
+        f"[class={failure_class}; severity={semantics['severity']}; recovery={semantics['recovery']}]"
+    )
+
+
 def _module_available(module_name: str) -> bool:
     return find_spec(module_name) is not None
 
@@ -298,7 +346,11 @@ def _module_available(module_name: str) -> bool:
 def _run_doctor(*, strict: bool) -> int:
     errors = 0
     warnings = 0
+    failure_counts: dict[str, int] = {}
     lines = ["SyReTo doctor", ""]
+
+    def record_failure(failure_class: str) -> None:
+        failure_counts[failure_class] = failure_counts.get(failure_class, 0) + 1
 
     lines.append(f"Version: {getattr(sys.modules.get('syreto'), '__version__', 'unknown')}")
     lines.append(f"Project root: {PROJECT_ROOT}")
@@ -310,17 +362,27 @@ def _run_doctor(*, strict: bool) -> int:
         lines.append(_doctor_line("ok", "uv", uv_path.as_posix()))
     else:
         warnings += 1
-        lines.append(_doctor_line("warn", "uv", "not found at ~/.local/bin/uv"))
+        record_failure("environment problem")
+        lines.append(
+            _doctor_classified_line(
+                "warn",
+                "uv",
+                "not found at ~/.local/bin/uv",
+                failure_class="environment problem",
+            )
+        )
 
     if _module_available("pre_commit"):
         lines.append(_doctor_line("ok", "pre-commit", "available in Python environment"))
     else:
         warnings += 1
+        record_failure("environment problem")
         lines.append(
-            _doctor_line(
+            _doctor_classified_line(
                 "warn",
                 "pre-commit",
                 "not importable; use `uv sync --all-groups` or `uv run pre-commit ...`",
+                failure_class="environment problem",
             )
         )
 
@@ -328,7 +390,15 @@ def _run_doctor(*, strict: bool) -> int:
         lines.append(_doctor_line("ok", "pytest", "available in Python environment"))
     else:
         warnings += 1
-        lines.append(_doctor_line("warn", "pytest", "not importable in current Python environment"))
+        record_failure("environment problem")
+        lines.append(
+            _doctor_classified_line(
+                "warn",
+                "pytest",
+                "not importable in current Python environment",
+                failure_class="environment problem",
+            )
+        )
 
     lines.append("")
     lines.append("Required checks")
@@ -337,7 +407,15 @@ def _run_doctor(*, strict: bool) -> int:
             lines.append(_doctor_line("ok", label, path.as_posix()))
         else:
             errors += 1
-            lines.append(_doctor_line("error", label, f"missing at {path.as_posix()}"))
+            record_failure("missing artifact")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    label,
+                    f"missing at {path.as_posix()}",
+                    failure_class="missing artifact",
+                )
+            )
 
     lines.append("")
     lines.append("Optional checks")
@@ -346,7 +424,15 @@ def _run_doctor(*, strict: bool) -> int:
             lines.append(_doctor_line("ok", label, path.as_posix()))
         else:
             warnings += 1
-            lines.append(_doctor_line("warn", label, f"not present at {path.as_posix()}"))
+            record_failure("missing artifact")
+            lines.append(
+                _doctor_classified_line(
+                    "warn",
+                    label,
+                    f"not present at {path.as_posix()}",
+                    failure_class="missing artifact",
+                )
+            )
 
     lines.append("")
     lines.append("Registry checks")
@@ -355,7 +441,67 @@ def _run_doctor(*, strict: bool) -> int:
             lines.append(_doctor_line("ok", f"script `{script_name}`", "registered"))
         else:
             errors += 1
-            lines.append(_doctor_line("error", f"script `{script_name}`", "not registered"))
+            record_failure("config error")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    f"script `{script_name}`",
+                    "not registered",
+                    failure_class="config error",
+                )
+            )
+
+    run_failed_marker = PROJECT_ROOT / "outputs/daily_run_failed.marker"
+    run_events_path = PROJECT_ROOT / "outputs/run_events.jsonl"
+    lines.append("")
+    lines.append("Run-state checks")
+    if run_failed_marker.exists():
+        errors += 1
+        record_failure("partial run or stale outputs")
+        lines.append(
+            _doctor_classified_line(
+                "error",
+                "daily run failed marker",
+                f"present at {run_failed_marker.as_posix()}",
+                failure_class="partial run or stale outputs",
+            )
+        )
+    else:
+        lines.append(_doctor_line("ok", "daily run failed marker", "not present"))
+
+    if run_events_path.exists():
+        lines.append(_doctor_line("ok", "run events", run_events_path.as_posix()))
+    else:
+        warnings += 1
+        record_failure("partial run or stale outputs")
+        lines.append(
+            _doctor_classified_line(
+                "warn",
+                "run events",
+                f"not present at {run_events_path.as_posix()}",
+                failure_class="partial run or stale outputs",
+            )
+        )
+
+    if errors == 0 and (PROJECT_ROOT / "outputs/status_summary.json").exists():
+        lines.append(
+            _doctor_line(
+                "ok",
+                "status posture",
+                "repository surface is ready for `syreto status` interpretation",
+            )
+        )
+    elif (PROJECT_ROOT / "outputs/status_summary.json").exists():
+        lines.append(
+            _doctor_classified_line(
+                "warn",
+                "status posture",
+                "status artifacts exist, but doctor findings mean the run surface still needs review",
+                failure_class="partial run or stale outputs",
+            )
+        )
+        warnings += 1
+        record_failure("partial run or stale outputs")
 
     lines.append("")
     lines.append("Next steps")
@@ -373,8 +519,22 @@ def _run_doctor(*, strict: bool) -> int:
         lines.append(
             "- Repository is usable, but some optional operational signals are still missing."
         )
+    if failure_counts:
+        lines.append(
+            "- Use the failure classes above to decide whether to start with `syreto doctor`, "
+            "`syreto validate`, `syreto status`, or the run-state artifacts."
+        )
 
     lines.append("")
+    if failure_counts:
+        lines.append("Failure classification")
+        for failure_class in sorted(failure_counts):
+            semantics = FAILURE_SEMANTICS[failure_class]
+            lines.append(
+                f"- {failure_class}: count={failure_counts[failure_class]}, "
+                f"severity={semantics['severity']}, recovery={semantics['recovery']}"
+            )
+        lines.append("")
     lines.append(
         f"Summary: errors={errors}, warnings={warnings}, available_scripts={len(AVAILABLE_SCRIPTS)}"
     )

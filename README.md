@@ -160,6 +160,8 @@ If you are using production mode, the status gate and template-term guard should
 
 For a more explicit contract of hard failures, warnings, blocking conditions, and unusable runs, see [docs/failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md).
 
+For the explicit run-level contract around canonical inputs, canonical outputs, required stages, successful runs, invalid runs, and deterministic guarantees, see [docs/execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md).
+
 For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
 
 For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-analytics-model.md).
