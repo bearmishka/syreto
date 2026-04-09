@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib
+import json
 import sys
+import tempfile
 import tomllib
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -362,6 +364,138 @@ class SyretoPackageImportTests(unittest.TestCase):
         rendered = stdout.getvalue()
         self.assertIn("class=config error", rendered)
         self.assertIn("Review config not found", rendered)
+
+    def test_cli_observability_summarizes_run_events(self) -> None:
+        from syreto import cli
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            run_events_path = tmp_path / "run_events.jsonl"
+            run_events_path.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "run_id": "run-1",
+                                "review_mode": "template",
+                                "step_order": 1,
+                                "step": "validate_csv",
+                                "started_at": "2026-04-09T10:00:00Z",
+                                "finished_at": "2026-04-09T10:00:02Z",
+                                "duration": 2.0,
+                                "status": "success",
+                                "failure_reason": None,
+                                "outputs_touched": ["outputs/status_summary.json"],
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "run_id": "run-1",
+                                "review_mode": "template",
+                                "step_order": 2,
+                                "step": "synthesis",
+                                "started_at": "2026-04-09T10:00:03Z",
+                                "finished_at": "2026-04-09T10:00:07Z",
+                                "duration": 4.0,
+                                "status": "failed",
+                                "failure_reason": "missing inclusion criteria",
+                                "outputs_touched": ["outputs/results_summary_table.csv"],
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = cli.main(
+                    ["observability", "--input", str(run_events_path), "--last", "2"]
+                )
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("SyReTo observability", rendered)
+        self.assertIn("Events: 2", rendered)
+        self.assertIn("Last failed step: synthesis", rendered)
+        self.assertIn("missing inclusion criteria", rendered)
+
+    def test_cli_observability_uses_config_outputs_root(self) -> None:
+        from syreto import cli
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            review_root = tmp_path / "review"
+            outputs_root = review_root / "outputs"
+            outputs_root.mkdir(parents=True, exist_ok=True)
+            config_path = review_root / "review.toml"
+            config_path.write_text(
+                "\n".join(
+                    [
+                        "[review]",
+                        'id = "tmp-review"',
+                        'title = "Temporary Review"',
+                        "",
+                        "[paths]",
+                        'data_root = "data/"',
+                        'protocol_root = "protocol/"',
+                        'outputs_root = "outputs/"',
+                        'manuscript_root = "manuscript/"',
+                        "",
+                        "[mode]",
+                        'review_mode = "template"',
+                        "",
+                        "[stages]",
+                        "search = true",
+                        "deduplication = true",
+                        "screening = true",
+                        "extraction = true",
+                        "synthesis = true",
+                        "reporting = true",
+                        "",
+                        "[status]",
+                        'fail_on = "major"',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (outputs_root / "run_events.jsonl").write_text(
+                json.dumps(
+                    {
+                        "run_id": "run-2",
+                        "review_mode": "template",
+                        "step_order": 1,
+                        "step": "status_report",
+                        "started_at": "2026-04-09T11:00:00Z",
+                        "finished_at": "2026-04-09T11:00:01Z",
+                        "duration": 1.0,
+                        "status": "success",
+                        "failure_reason": None,
+                        "outputs_touched": ["outputs/status_report.md"],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["observability", "--config", str(config_path)])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Run id: run-2", stdout.getvalue())
+
+    def test_cli_observability_fails_when_run_events_missing(self) -> None:
+        from syreto import cli
+
+        stderr = StringIO()
+        with redirect_stderr(stderr):
+            exit_code = cli.main(["observability", "--input", "missing/run_events.jsonl"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("class=missing artifact", stderr.getvalue())
 
     def test_cli_analytics_descriptives_routes_to_builder(self) -> None:
         from syreto import cli

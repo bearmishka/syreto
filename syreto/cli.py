@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -189,6 +190,25 @@ def parser() -> argparse.ArgumentParser:
         help="Path to review.toml for review-instance-aware diagnostics.",
     )
 
+    observability_parser = subparsers.add_parser(
+        "observability",
+        help="Summarize run event observability artifacts.",
+    )
+    observability_parser.add_argument(
+        "--input",
+        help="Path to run_events.jsonl. Defaults to the current repository or selected review instance.",
+    )
+    observability_parser.add_argument(
+        "--config",
+        help="Path to review.toml for review-instance-aware observability lookup.",
+    )
+    observability_parser.add_argument(
+        "--last",
+        type=int,
+        default=5,
+        help="Number of most recent steps to show.",
+    )
+
     analytics_parser = subparsers.add_parser(
         "analytics",
         help="Run review analytics builders.",
@@ -352,6 +372,140 @@ def _run_status(status_args: list[str], *, config_path: str | None = None) -> in
     if not _has_passthrough_option(routed_args, "--auto-generate-missing"):
         routed_args.append("--no-auto-generate-missing")
     return _run_script("status_cli", routed_args)
+
+
+def _resolve_run_events_path(*, input_path: str | None, config_path: str | None) -> Path:
+    if input_path is not None:
+        return Path(input_path).resolve()
+    if config_path is not None:
+        review_config = load_review_config(config_path)
+        return review_config.outputs_root / "run_events.jsonl"
+    return PROJECT_ROOT / "03_analysis" / "outputs" / "run_events.jsonl"
+
+
+def _load_run_events(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        raise FileNotFoundError(f"Run events file not found: {path}")
+
+    events: list[dict[str, object]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            parsed = json.loads(stripped)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON in run events at line {line_number}: {exc}") from exc
+        if not isinstance(parsed, dict):
+            raise ValueError(f"Invalid run event at line {line_number}: expected JSON object.")
+        events.append(parsed)
+    return events
+
+
+def _run_observability(*, input_path: str | None, config_path: str | None, last: int) -> int:
+    if last <= 0:
+        print("`--last` must be a positive integer.", file=sys.stderr)
+        return 2
+
+    try:
+        events_path = _resolve_run_events_path(input_path=input_path, config_path=config_path)
+        events = _load_run_events(events_path)
+    except ReviewConfigError as exc:
+        print(
+            _doctor_classified_line(
+                "error",
+                "review config",
+                str(exc),
+                failure_class="config error",
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except FileNotFoundError as exc:
+        print(
+            _doctor_classified_line(
+                "error",
+                "run events",
+                str(exc),
+                failure_class="missing artifact",
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except ValueError as exc:
+        print(
+            _doctor_classified_line(
+                "error",
+                "run events",
+                str(exc),
+                failure_class="partial run or stale outputs",
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+    if not events:
+        print("SyReTo observability")
+        print("")
+        print(f"Run events: {events_path}")
+        print("Events: 0")
+        print("No recorded steps found.")
+        return 0
+
+    recent_events = events[-last:]
+    success_count = sum(1 for event in events if event.get("status") == "success")
+    failure_events = [event for event in events if event.get("status") != "success"]
+    total_duration = sum(
+        float(event.get("duration", 0.0))
+        for event in events
+        if isinstance(event.get("duration"), int | float)
+    )
+    last_event = events[-1]
+    last_failure = failure_events[-1] if failure_events else None
+
+    lines = [
+        "SyReTo observability",
+        "",
+        f"Run events: {events_path}",
+        f"Run id: {last_event.get('run_id', 'unknown')}",
+        f"Review mode: {last_event.get('review_mode', 'unknown')}",
+        f"Events: {len(events)}",
+        f"Successful steps: {success_count}",
+        f"Failed or non-success steps: {len(failure_events)}",
+        f"Total recorded duration: {total_duration:.2f}s",
+        "",
+        "Recent steps",
+    ]
+
+    for event in recent_events:
+        step = str(event.get("step", "unknown"))
+        status = str(event.get("status", "unknown"))
+        duration = event.get("duration", 0.0)
+        started_at = str(event.get("started_at", "unknown"))
+        failure_reason = event.get("failure_reason")
+        suffix = f" | failure_reason={failure_reason}" if failure_reason else ""
+        lines.append(
+            f"- step={step} | status={status} | duration={duration}s | started_at={started_at}{suffix}"
+        )
+
+    lines.append("")
+    lines.append("Postmortem")
+    if last_failure is None:
+        lines.append("- No failed steps recorded in the current event stream.")
+    else:
+        lines.append(
+            f"- Last failed step: {last_failure.get('step', 'unknown')} "
+            f"({last_failure.get('status', 'unknown')})"
+        )
+        lines.append(f"- Failure reason: {last_failure.get('failure_reason') or 'not provided'}")
+        outputs_touched = last_failure.get("outputs_touched")
+        if isinstance(outputs_touched, list) and outputs_touched:
+            lines.append(f"- Outputs touched: {', '.join(str(item) for item in outputs_touched)}")
+        else:
+            lines.append("- Outputs touched: none recorded")
+
+    print("\n".join(lines))
+    return 0
 
 
 def _validate_run_config_compatibility(review_config: ReviewConfig) -> None:
@@ -765,6 +919,12 @@ def main(argv: list[str] | None = None) -> int:
         return _run_validate(args.target, args.validate_args)
     if command == "doctor":
         return _run_doctor(strict=bool(args.strict), config_path=args.config)
+    if command == "observability":
+        return _run_observability(
+            input_path=getattr(args, "input", None),
+            config_path=getattr(args, "config", None),
+            last=int(getattr(args, "last", 5)),
+        )
     if command == "analytics":
         analytics_command = args.analytics_command or "descriptives"
         if analytics_command == "descriptives":
