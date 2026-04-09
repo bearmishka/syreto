@@ -6,6 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from .study_table import included_study_table, load_study_table
+except ImportError:
+    from study_table import included_study_table, load_study_table
+
 RESULT_COLUMNS = [
     "outcome",
     "studies",
@@ -24,6 +29,13 @@ CERTAINTY_ORDER = {
     "moderate": 2,
     "high": 3,
 }
+
+STUDY_TABLE_COLUMNS = [
+    "study_id",
+    "outcome_construct",
+    "sample_size",
+    "consensus_status",
+]
 
 
 def atomic_replace_bytes(path: Path, payload: bytes) -> None:
@@ -143,6 +155,13 @@ def extract_outcome_metadata(extraction_df: pd.DataFrame) -> tuple[dict[str, int
         outcome: len(study_ids) for outcome, study_ids in studies_by_outcome.items()
     }
     return participants_by_outcome, study_count_by_outcome
+
+
+def load_results_study_table(path: Path) -> pd.DataFrame:
+    study_df = load_study_table(path, STUDY_TABLE_COLUMNS)
+    if study_df.empty:
+        return study_df
+    return included_study_table(study_df, STUDY_TABLE_COLUMNS)
 
 
 def aggregate_certainty_by_outcome(grade_df: pd.DataFrame) -> dict[str, str]:
@@ -411,7 +430,10 @@ def main() -> None:
             "Meta-analysis input is missing or empty; effect/CI values fall back to `NR`."
         )
 
-    extraction_df = read_csv_or_empty(extraction_input)
+    try:
+        extraction_df = load_results_study_table(extraction_input)
+    except FileNotFoundError:
+        extraction_df = pd.DataFrame(columns=STUDY_TABLE_COLUMNS)
     if extraction_df.empty:
         warnings.append(
             "Extraction input is missing or empty; participant/study counts may be incomplete."

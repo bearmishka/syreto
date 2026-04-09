@@ -180,6 +180,78 @@ class ResultsSummaryTableBuilderTests(unittest.TestCase):
             self.assertIn("Meta-analysis input is missing or empty", summary_text)
             self.assertIn("Manuscript table output", summary_text)
 
+    def test_included_study_table_contract_filters_non_included_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            meta_path = tmp_path / "meta_analysis_results.csv"
+            extraction_path = tmp_path / "extraction_template.csv"
+            grade_path = tmp_path / "grade_evidence_profile.csv"
+            output_path = tmp_path / "results_summary_table.csv"
+            latex_path = tmp_path / "results_summary_table.tex"
+            summary_path = tmp_path / "results_summary_table_summary.md"
+
+            pd.DataFrame(
+                [
+                    {
+                        "outcome": "confidence",
+                        "k_studies": "",
+                        "pooled_effect": "",
+                        "ci_low": "",
+                        "ci_high": "",
+                    }
+                ]
+            ).to_csv(meta_path, index=False)
+
+            pd.DataFrame(
+                [
+                    {
+                        "study_id": "S1",
+                        "outcome_construct": "confidence",
+                        "sample_size": "40",
+                        "consensus_status": "include",
+                    },
+                    {
+                        "study_id": "S2",
+                        "outcome_construct": "confidence",
+                        "sample_size": "999",
+                        "consensus_status": "exclude",
+                    },
+                ]
+            ).to_csv(extraction_path, index=False)
+
+            pd.DataFrame(
+                [{"outcome_construct": "confidence", "overall_certainty": "moderate"}]
+            ).to_csv(grade_path, index=False)
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT_PATH),
+                    "--meta-input",
+                    str(meta_path),
+                    "--extraction-input",
+                    str(extraction_path),
+                    "--grade-input",
+                    str(grade_path),
+                    "--output",
+                    str(output_path),
+                    "--latex-output",
+                    str(latex_path),
+                    "--summary-output",
+                    str(summary_path),
+                ],
+                cwd=SCRIPT_PATH.parent,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+            output_df = pd.read_csv(output_path, dtype=str)
+            row = output_df.iloc[0]
+            self.assertEqual(row["studies"], "1")
+            self.assertEqual(row["participants"], "40")
+
 
 if __name__ == "__main__":
     unittest.main()
