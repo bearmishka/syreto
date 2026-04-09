@@ -143,6 +143,10 @@ cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 
 If you are using production mode, the status gate and template-term guard should also pass without blocker findings.
 
+For a more explicit contract of hard failures, warnings, blocking conditions, and unusable runs, see [docs/failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md).
+
+For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
+
 ## Main Entry Points
 
 - `syreto list`: list packaged analysis scripts

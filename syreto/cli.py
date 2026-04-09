@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from importlib.util import find_spec
 from pathlib import Path
 
 from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
@@ -233,6 +234,10 @@ def _doctor_line(level: str, label: str, detail: str) -> str:
     return f"[{level}] {label}: {detail}"
 
 
+def _module_available(module_name: str) -> bool:
+    return find_spec(module_name) is not None
+
+
 def _run_doctor(*, strict: bool) -> int:
     errors = 0
     warnings = 0
@@ -240,6 +245,34 @@ def _run_doctor(*, strict: bool) -> int:
 
     lines.append(f"Version: {getattr(sys.modules.get('syreto'), '__version__', 'unknown')}")
     lines.append(f"Project root: {PROJECT_ROOT}")
+    lines.append("")
+
+    lines.append("Environment")
+    uv_path = Path.home() / ".local/bin/uv"
+    if uv_path.exists():
+        lines.append(_doctor_line("ok", "uv", uv_path.as_posix()))
+    else:
+        warnings += 1
+        lines.append(_doctor_line("warn", "uv", "not found at ~/.local/bin/uv"))
+
+    if _module_available("pre_commit"):
+        lines.append(_doctor_line("ok", "pre-commit", "available in Python environment"))
+    else:
+        warnings += 1
+        lines.append(
+            _doctor_line(
+                "warn",
+                "pre-commit",
+                "not importable; use `uv sync --all-groups` or `uv run pre-commit ...`",
+            )
+        )
+
+    if _module_available("pytest"):
+        lines.append(_doctor_line("ok", "pytest", "available in Python environment"))
+    else:
+        warnings += 1
+        lines.append(_doctor_line("warn", "pytest", "not importable in current Python environment"))
+
     lines.append("")
     lines.append("Required checks")
     for label, path in DOCTOR_REQUIRED_PATHS:
@@ -266,6 +299,23 @@ def _run_doctor(*, strict: bool) -> int:
         else:
             errors += 1
             lines.append(_doctor_line("error", f"script `{script_name}`", "not registered"))
+
+    lines.append("")
+    lines.append("Next steps")
+    if errors > 0:
+        lines.append("- Fix missing required paths before trusting pipeline outputs.")
+    if not (PROJECT_ROOT / "outputs/status_summary.json").exists():
+        lines.append(
+            "- Run `cd 03_analysis && bash daily_run.sh` to generate core status artifacts."
+        )
+    if not _module_available("pre_commit"):
+        lines.append("- Run `uv sync --all-groups` to ensure development tools are installed.")
+    if errors == 0 and warnings == 0:
+        lines.append("- Environment and repository surface look healthy.")
+    elif errors == 0:
+        lines.append(
+            "- Repository is usable, but some optional operational signals are still missing."
+        )
 
     lines.append("")
     lines.append(

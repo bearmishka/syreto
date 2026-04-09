@@ -157,3 +157,4 @@ For normal usage, the pattern should be:
 - [pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
 - [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
 - [integrity-guards.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/integrity-guards.md)
+- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)

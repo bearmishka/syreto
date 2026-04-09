@@ -181,6 +181,7 @@ class SyretoPackageImportTests(unittest.TestCase):
         rendered = stdout.getvalue()
         self.assertIn("SyReTo doctor", rendered)
         self.assertIn("Version: 0.2.0", rendered)
+        self.assertIn("Environment", rendered)
         self.assertIn("Summary:", rendered)
 
     def test_cli_doctor_strict_fails_on_warnings(self) -> None:
@@ -197,6 +198,21 @@ class SyretoPackageImportTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
         self.assertIn("[warn] status summary", stdout.getvalue())
+
+    def test_cli_doctor_suggests_daily_run_when_status_artifacts_missing(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(
+            cli,
+            "DOCTOR_OPTIONAL_PATHS",
+            (("status summary", cli.PROJECT_ROOT / "outputs/definitely_missing_status.json"),),
+        ):
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Run `cd 03_analysis && bash daily_run.sh`", stdout.getvalue())
 
     def test_cli_alias_entrypoints_follow_explicit_allowlist(self) -> None:
         pyproject_path = PROJECT_ROOT / "pyproject.toml"

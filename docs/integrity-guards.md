@@ -148,3 +148,4 @@ This makes the guard contract explicit rather than purely documentary.
 - [pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
 - [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
 - [daily-operations.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/daily-operations.md)
+- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)

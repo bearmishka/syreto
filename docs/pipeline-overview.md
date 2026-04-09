@@ -187,3 +187,5 @@ For deeper inspection:
 cd 03_analysis
 python status_cli.py --input outputs/status_summary.json
 ```
+
+For the future review-aware configuration layer, see [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
