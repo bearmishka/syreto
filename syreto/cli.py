@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from importlib.util import find_spec
@@ -92,6 +93,10 @@ DOCTOR_OPTIONAL_PATHS = (
 )
 
 DAILY_RUN_SCRIPT = PROJECT_ROOT / "03_analysis" / "daily_run.sh"
+CURRENT_SPINE_DATA_ROOT = (PROJECT_ROOT / "02_data").resolve()
+CURRENT_SPINE_PROTOCOL_ROOT = (PROJECT_ROOT / "01_protocol").resolve()
+CURRENT_SPINE_OUTPUTS_ROOT = (PROJECT_ROOT / "03_analysis" / "outputs").resolve()
+CURRENT_SPINE_MANUSCRIPT_ROOT = (PROJECT_ROOT / "04_manuscript").resolve()
 
 
 def parser() -> argparse.ArgumentParser:
@@ -209,6 +214,10 @@ def parser() -> argparse.ArgumentParser:
     review_run_parser = review_subparsers.add_parser(
         "run",
         help="Run the full review pipeline via daily_run.sh.",
+    )
+    review_run_parser.add_argument(
+        "--config",
+        help="Path to review.toml for config-aware review execution.",
     )
     review_run_parser.add_argument(
         "review_args",
@@ -345,17 +354,75 @@ def _run_status(status_args: list[str], *, config_path: str | None = None) -> in
     return _run_script("status_cli", routed_args)
 
 
-def _run_review_pipeline(review_args: list[str]) -> int:
+def _validate_run_config_compatibility(review_config: ReviewConfig) -> None:
+    incompatible_paths: list[str] = []
+    if review_config.data_root != CURRENT_SPINE_DATA_ROOT:
+        incompatible_paths.append(
+            f"data_root={review_config.data_root} (expected {CURRENT_SPINE_DATA_ROOT})"
+        )
+    if review_config.protocol_root != CURRENT_SPINE_PROTOCOL_ROOT:
+        incompatible_paths.append(
+            f"protocol_root={review_config.protocol_root} (expected {CURRENT_SPINE_PROTOCOL_ROOT})"
+        )
+    if review_config.outputs_root != CURRENT_SPINE_OUTPUTS_ROOT:
+        incompatible_paths.append(
+            f"outputs_root={review_config.outputs_root} (expected {CURRENT_SPINE_OUTPUTS_ROOT})"
+        )
+    if review_config.manuscript_root != CURRENT_SPINE_MANUSCRIPT_ROOT:
+        incompatible_paths.append(
+            f"manuscript_root={review_config.manuscript_root} (expected {CURRENT_SPINE_MANUSCRIPT_ROOT})"
+        )
+
+    if incompatible_paths:
+        raise ReviewConfigError(
+            "Current daily_run.sh spine only supports repository-aligned paths; "
+            f"incompatible config paths: {'; '.join(incompatible_paths)}"
+        )
+
+    disabled_stages = [name for name, enabled in review_config.stages.items() if not enabled]
+    if disabled_stages:
+        raise ReviewConfigError(
+            "Current daily_run.sh spine does not yet support stage toggles in review.toml; "
+            f"disabled stages found: {', '.join(disabled_stages)}"
+        )
+
+
+def _run_review_pipeline(review_args: list[str], *, config_path: str | None = None) -> int:
     normalized_args = _normalize_passthrough_args(review_args)
     if not DAILY_RUN_SCRIPT.exists():
         print(f"Review runner not found: {DAILY_RUN_SCRIPT}", file=sys.stderr)
         return 2
+
+    env = None
+    if config_path is not None:
+        try:
+            review_config = load_review_config(config_path)
+            _validate_run_config_compatibility(review_config)
+        except ReviewConfigError as exc:
+            print(
+                _doctor_classified_line(
+                    "error",
+                    "review config",
+                    str(exc),
+                    failure_class="config error",
+                ),
+                file=sys.stderr,
+            )
+            return 1
+
+        env = os.environ.copy()
+        env["REVIEW_MODE"] = review_config.review_mode
+        env["STATUS_FAIL_ON"] = review_config.fail_on
+        if review_config.priority_policy:
+            env["STATUS_PRIORITY_POLICY"] = review_config.priority_policy
+        env["SYRETO_REVIEW_CONFIG"] = str(review_config.config_path)
 
     result = subprocess.run(
         ["bash", str(DAILY_RUN_SCRIPT), *normalized_args],
         cwd=str(DAILY_RUN_SCRIPT.parent),
         check=False,
         text=True,
+        env=env,
     )
     return int(result.returncode)
 
@@ -705,7 +772,10 @@ def main(argv: list[str] | None = None) -> int:
     if command == "review":
         review_command = args.review_command or "run"
         if review_command == "run":
-            return _run_review_pipeline(getattr(args, "review_args", []))
+            return _run_review_pipeline(
+                getattr(args, "review_args", []),
+                config_path=getattr(args, "config", None),
+            )
 
     raise SystemExit(f"Unknown command: {command}")
 

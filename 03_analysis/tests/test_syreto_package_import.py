@@ -399,6 +399,7 @@ class SyretoPackageImportTests(unittest.TestCase):
             cwd=str(cli.DAILY_RUN_SCRIPT.parent),
             check=False,
             text=True,
+            env=None,
         )
 
     def test_cli_review_defaults_to_run(self) -> None:
@@ -414,6 +415,7 @@ class SyretoPackageImportTests(unittest.TestCase):
             cwd=str(cli.DAILY_RUN_SCRIPT.parent),
             check=False,
             text=True,
+            env=None,
         )
 
     def test_cli_review_run_returns_code_2_when_daily_run_missing(self) -> None:
@@ -427,6 +429,48 @@ class SyretoPackageImportTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 2)
         self.assertIn("Review runner not found", stderr.getvalue())
+
+    def test_cli_review_run_with_config_sets_execution_env(self) -> None:
+        from syreto import cli
+
+        completed = mock.Mock(returncode=0)
+        with mock.patch.object(cli.subprocess, "run", return_value=completed) as patched:
+            exit_code = cli.main(["review", "run", "--config", "reviews/repo-default/review.toml"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once()
+        _, kwargs = patched.call_args
+        self.assertEqual(kwargs["cwd"], str(cli.DAILY_RUN_SCRIPT.parent))
+        self.assertEqual(kwargs["check"], False)
+        self.assertEqual(kwargs["text"], True)
+        env = kwargs["env"]
+        self.assertEqual(env["REVIEW_MODE"], "template")
+        self.assertEqual(env["STATUS_FAIL_ON"], "major")
+        self.assertEqual(env["STATUS_PRIORITY_POLICY"], "priority_policy.json")
+        self.assertTrue(env["SYRETO_REVIEW_CONFIG"].endswith("reviews/repo-default/review.toml"))
+
+    def test_cli_review_run_with_invalid_config_fails_as_config_error(self) -> None:
+        from syreto import cli
+
+        stderr = StringIO()
+        with redirect_stderr(stderr):
+            exit_code = cli.main(["review", "run", "--config", "reviews/example/missing.toml"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("class=config error", stderr.getvalue())
+
+    def test_cli_review_run_rejects_incompatible_review_layout(self) -> None:
+        from syreto import cli
+
+        stderr = StringIO()
+        with redirect_stderr(stderr):
+            exit_code = cli.main(["review", "run", "--config", "reviews/example/review.toml"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn(
+            "Current daily_run.sh spine only supports repository-aligned paths",
+            stderr.getvalue(),
+        )
 
     def test_cli_alias_entrypoints_follow_explicit_allowlist(self) -> None:
         pyproject_path = PROJECT_ROOT / "pyproject.toml"
