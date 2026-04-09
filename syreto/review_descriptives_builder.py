@@ -36,6 +36,7 @@ DEFAULT_FIGURE_OUTPUTS = {
     "year": Path("../outputs/figures/year_distribution.png"),
     "study_design": Path("../outputs/figures/study_design_distribution.png"),
     "country": Path("../outputs/figures/country_distribution.png"),
+    "quality_band": Path("../outputs/figures/quality_band_distribution.png"),
 }
 
 
@@ -173,6 +174,12 @@ def build_descriptives_payload(studies_df: pd.DataFrame) -> dict[str, object]:
     return payload
 
 
+def quality_band_distribution(quality_df: pd.DataFrame) -> dict[str, int]:
+    if quality_df.empty or "quality_band" not in quality_df.columns:
+        return {}
+    return normalized_counter(quality_df["quality_band"])
+
+
 def render_distribution_figure(
     distribution: dict[str, int], *, title: str, xlabel: str, output_path: Path
 ) -> bool:
@@ -216,6 +223,7 @@ def render_figures(
     year_output: Path,
     study_design_output: Path,
     country_output: Path,
+    quality_band_output: Path,
 ) -> dict[str, str]:
     distributions = payload["distributions"]
     rendered: dict[str, str] = {}
@@ -229,6 +237,12 @@ def render_figures(
             study_design_output,
         ),
         ("country", "Included Studies by Country", "Country", country_output),
+        (
+            "quality_band",
+            "Included Studies by Quality Band",
+            "Quality band",
+            quality_band_output,
+        ),
     )
 
     for key, title, xlabel, output_path in figure_specs:
@@ -351,17 +365,30 @@ def main() -> None:
         default=str(DEFAULT_FIGURE_OUTPUTS["country"]),
         help="Path to country-distribution PNG output.",
     )
+    parser.add_argument(
+        "--quality-input",
+        default="../outputs/quality_appraisal_scored.csv",
+        help="Path to scored quality appraisal CSV for optional quality-band descriptives.",
+    )
+    parser.add_argument(
+        "--quality-band-figure-output",
+        default=str(DEFAULT_FIGURE_OUTPUTS["quality_band"]),
+        help="Path to quality-band distribution PNG output.",
+    )
     args = parser.parse_args()
 
     extraction_path = Path(args.extraction_input)
     extraction_df = read_csv_or_empty(extraction_path)
     studies_df = build_study_view(extraction_df)
     payload = build_descriptives_payload(studies_df)
+    quality_df = read_csv_or_empty(Path(args.quality_input))
+    payload["distributions"]["quality_band"] = quality_band_distribution(quality_df)
     render_figures(
         payload,
         year_output=Path(args.year_figure_output),
         study_design_output=Path(args.study_design_figure_output),
         country_output=Path(args.country_figure_output),
+        quality_band_output=Path(args.quality_band_figure_output),
     )
     markdown = build_markdown(payload, extraction_path=extraction_path)
 

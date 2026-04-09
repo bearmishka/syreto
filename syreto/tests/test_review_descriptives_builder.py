@@ -67,6 +67,7 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
                 "year": {"2020": 2, "2021": 1},
                 "study_design": {"cohort": 2, "trial": 1},
                 "country": {"USA": 2, "Canada": 1},
+                "quality_band": {"high": 1, "moderate": 2},
             },
             "figure_outputs": {},
         }
@@ -78,11 +79,28 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
                 year_output=base / "year.png",
                 study_design_output=base / "design.png",
                 country_output=base / "country.png",
+                quality_band_output=base / "quality.png",
             )
 
-            self.assertSetEqual(set(rendered.keys()), {"year", "study_design", "country"})
+            self.assertSetEqual(
+                set(rendered.keys()),
+                {"year", "study_design", "country", "quality_band"},
+            )
             for figure_path in rendered.values():
                 self.assertTrue(Path(figure_path).exists())
+
+    def test_quality_band_distribution_reads_scored_appraisal(self) -> None:
+        quality_df = pd.DataFrame(
+            [
+                {"study_id": "S1", "quality_band": "high"},
+                {"study_id": "S2", "quality_band": "moderate"},
+                {"study_id": "S3", "quality_band": "moderate"},
+            ]
+        )
+
+        distribution = review_descriptives_builder.quality_band_distribution(quality_df)
+        self.assertEqual(distribution["moderate"], 2)
+        self.assertEqual(distribution["high"], 1)
 
     def test_main_writes_json_markdown_and_figure_outputs(self) -> None:
         extraction_df = pd.DataFrame(
@@ -109,7 +127,12 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
             year_output = base / "figures" / "year.png"
             design_output = base / "figures" / "design.png"
             country_output = base / "figures" / "country.png"
+            quality_output = base / "figures" / "quality.png"
+            quality_input = base / "quality.csv"
             extraction_df.to_csv(extraction_path, index=False)
+            pd.DataFrame([{"study_id": "S1", "quality_band": "high", "score_pct": "80.0"}]).to_csv(
+                quality_input, index=False
+            )
 
             argv = sys.argv[:]
             try:
@@ -127,6 +150,10 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
                     str(design_output),
                     "--country-figure-output",
                     str(country_output),
+                    "--quality-input",
+                    str(quality_input),
+                    "--quality-band-figure-output",
+                    str(quality_output),
                 ]
                 review_descriptives_builder.main()
             finally:
@@ -139,7 +166,7 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
         self.assertEqual(payload["distributions"]["predictor_construct"]["attachment"], 1)
         self.assertSetEqual(
             set(payload["figure_outputs"].keys()),
-            {"year", "study_design", "country"},
+            {"year", "study_design", "country", "quality_band"},
         )
         self.assertIn("Included studies: 1", markdown)
         self.assertIn("attachment x distress: 1", markdown)
