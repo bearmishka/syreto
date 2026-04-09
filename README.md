@@ -173,6 +173,8 @@ For the explicit run-level contract around canonical inputs, canonical outputs, 
 
 For the trust model around reruns, stale outputs, rollback, and what can safely be reused after failure, see [docs/recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
 
+For the separate reproducibility promise around identical config, identical inputs, canonical outputs, environment constraints, and controlled non-determinism, see [docs/reproducibility-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/reproducibility-contract.md).
+
 For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
 
 For the concrete `review.toml` schema and example review-instance configs, see [docs/review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).
