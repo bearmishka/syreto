@@ -8,23 +8,11 @@ import pandas as pd
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from latex_utils import render_table_block
+    from study_table import is_missing, load_study_table, normalize, sort_study_table
 else:
     from .latex_utils import render_table_block
+    from .study_table import is_missing, load_study_table, normalize, sort_study_table
 
-MISSING_CODES = {
-    "",
-    "nan",
-    "na",
-    "n/a",
-    "nr",
-    "none",
-    "unclear",
-    "missing",
-    "not reported",
-    "not_reported",
-    "not applicable",
-    "not_applicable",
-}
 MISSING_PLACEHOLDER = "---"
 
 TABLE_COLUMNS = [
@@ -62,15 +50,6 @@ EXTRACTION_COLUMNS = [
 ]
 
 
-def normalize(value: object) -> str:
-    text = str(value if value is not None else "").strip()
-    return "" if text.lower() == "nan" else text
-
-
-def is_missing(value: object) -> bool:
-    return normalize(value).lower() in MISSING_CODES
-
-
 def join_non_missing(parts: list[str], sep: str = "; ", fallback: str = MISSING_PLACEHOLDER) -> str:
     clean_parts = [normalize(part) for part in parts if not is_missing(part)]
     return sep.join(clean_parts) if clean_parts else fallback
@@ -84,52 +63,11 @@ def non_empty_rows(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def read_extraction(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        raise FileNotFoundError(f"Extraction file not found: {path}")
-
-    try:
-        extraction_df = pd.read_csv(path, dtype=str)
-    except pd.errors.EmptyDataError:
-        extraction_df = pd.DataFrame(columns=EXTRACTION_COLUMNS)
-
-    legacy_to_generic = {
-        "theoretical_orientation": "framework",
-        "bn_diagnostic_method": "condition_diagnostic_method",
-        "bn_dsm_icd_version": "condition_diagnostic_system",
-        "bn_definition": "condition_definition",
-        "object_relation_construct": "predictor_construct",
-        "object_relation_instrument_type": "predictor_instrument_type",
-        "object_relation_instrument_name": "predictor_instrument_name",
-        "object_relation_subscale": "predictor_subscale",
-        "object_relation_respondent_type": "predictor_respondent_type",
-        "identity_construct": "outcome_construct",
-        "identity_measure": "outcome_measure",
-    }
-    for legacy, generic in legacy_to_generic.items():
-        if generic not in extraction_df.columns and legacy in extraction_df.columns:
-            extraction_df[generic] = extraction_df[legacy]
-
-    for column in EXTRACTION_COLUMNS:
-        if column not in extraction_df.columns:
-            extraction_df[column] = ""
-
-    return extraction_df
+    return load_study_table(path, EXTRACTION_COLUMNS)
 
 
 def sort_extraction_rows(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df
-
-    sorted_df = df.copy()
-    sorted_df["_sort_year"] = pd.to_numeric(sorted_df["year"], errors="coerce")
-    sorted_df["_sort_year"] = sorted_df["_sort_year"].fillna(9999)
-    sorted_df["_sort_author"] = sorted_df["first_author"].fillna("").astype(str).str.lower()
-    sorted_df["_sort_study_id"] = sorted_df["study_id"].fillna("").astype(str).str.lower()
-
-    sorted_df = sorted_df.sort_values(
-        by=["_sort_year", "_sort_author", "_sort_study_id"], kind="stable"
-    )
-    return sorted_df.drop(columns=["_sort_year", "_sort_author", "_sort_study_id"])
+    return sort_study_table(df)
 
 
 def format_study_cell(row: pd.Series) -> str:

@@ -1,6 +1,6 @@
 # SyReTo
 
-SyReTo is a deterministic, git-native toolkit for running PRISMA-aligned systematic reviews as a reproducible pipeline rather than a loose collection of spreadsheets and one-off scripts.
+SyReTo is a deterministic, git-native toolkit for running PRISMA-aligned systematic reviews as a reproducible pipeline rather than a loose collection of spreadsheets and one-off scripts. The `syreto` CLI is the single user-facing entrypoint to the review system.
 
 ## What This Is
 
@@ -44,6 +44,8 @@ Operational outputs include:
 - `outputs/status_summary.json`
 - `outputs/status_report.md`
 - `outputs/todo_action_plan.md`
+- `outputs/review_descriptives.json`
+- `outputs/review_descriptives.md`
 - `outputs/prisma_flow_diagram.svg`
 - `outputs/prisma_flow_diagram.tex`
 - `outputs/dedup_merge_summary.md`
@@ -111,21 +113,22 @@ syreto doctor
 syreto status
 syreto artifacts --kind operational
 syreto validate all -- --fail-on error
+syreto analytics
+syreto review run
 syreto-draft --help
 ```
 
 If you want the full operational pipeline:
 
 ```bash
-cd 03_analysis
-bash daily_run.sh
+syreto review run
 ```
 
 ## How To Know A Run Succeeded
 
-A successful run is not just “the script finished.” You should expect the following signals:
+A successful run is not just “the script finished.” You should expect the following signals from `syreto review run`:
 
-1. `daily_run.sh` exits with code `0`.
+1. `syreto review run` exits with code `0`.
 2. `outputs/status_summary.json` is present and current.
 3. `outputs/status_report.md` is generated.
 4. `outputs/todo_action_plan.md` is generated.
@@ -147,6 +150,8 @@ For a more explicit contract of hard failures, warnings, blocking conditions, an
 
 For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
 
+For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-analytics-model.md).
+
 ## Main Entry Points
 
 - `syreto list`: list packaged analysis scripts
@@ -156,9 +161,11 @@ For the planned configuration model of review-specific execution, see [docs/revi
 - `syreto artifacts`: inspect key operational and manuscript-facing artifacts
 - `syreto validate`: run packaged validation checks
 - `syreto doctor`: run a quick repository readiness diagnostic
+- `syreto analytics`: build descriptive review-state analytics artifacts
+- `syreto review run`: run the full review pipeline through the current orchestration spine
 - `syreto-status`: print a concise operational summary from `status_summary.json`
 - `syreto-draft`: run the PROSPERO draft generation entrypoint
-- `03_analysis/daily_run.sh`: orchestrate the end-to-end review pipeline
+- `03_analysis/daily_run.sh`: current orchestration spine invoked by `syreto review run`
 
 ## Project Shape
 

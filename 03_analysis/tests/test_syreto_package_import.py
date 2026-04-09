@@ -214,6 +214,71 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("Run `cd 03_analysis && bash daily_run.sh`", stdout.getvalue())
 
+    def test_cli_analytics_descriptives_routes_to_builder(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(
+                ["analytics", "descriptives", "--", "--json-output", "outputs/x.json"]
+            )
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with(
+            "review_descriptives_builder",
+            ["--", "--json-output", "outputs/x.json"],
+        )
+
+    def test_cli_analytics_defaults_to_descriptives(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(["analytics"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with("review_descriptives_builder", [])
+
+    def test_cli_review_run_executes_daily_run(self) -> None:
+        from syreto import cli
+
+        completed = mock.Mock(returncode=0)
+        with mock.patch.object(cli.subprocess, "run", return_value=completed) as patched:
+            exit_code = cli.main(["review", "run", "--", "arg1"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with(
+            ["bash", str(cli.DAILY_RUN_SCRIPT), "arg1"],
+            cwd=str(cli.DAILY_RUN_SCRIPT.parent),
+            check=False,
+            text=True,
+        )
+
+    def test_cli_review_defaults_to_run(self) -> None:
+        from syreto import cli
+
+        completed = mock.Mock(returncode=0)
+        with mock.patch.object(cli.subprocess, "run", return_value=completed) as patched:
+            exit_code = cli.main(["review"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with(
+            ["bash", str(cli.DAILY_RUN_SCRIPT)],
+            cwd=str(cli.DAILY_RUN_SCRIPT.parent),
+            check=False,
+            text=True,
+        )
+
+    def test_cli_review_run_returns_code_2_when_daily_run_missing(self) -> None:
+        from syreto import cli
+
+        stderr = StringIO()
+        missing_path = cli.PROJECT_ROOT / "03_analysis" / "missing_daily_run.sh"
+        with mock.patch.object(cli, "DAILY_RUN_SCRIPT", missing_path):
+            with redirect_stderr(stderr):
+                exit_code = cli.main(["review", "run"])
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("Review runner not found", stderr.getvalue())
+
     def test_cli_alias_entrypoints_follow_explicit_allowlist(self) -> None:
         pyproject_path = PROJECT_ROOT / "pyproject.toml"
         config = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))

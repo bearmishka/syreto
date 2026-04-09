@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 from importlib.util import find_spec
 from pathlib import Path
@@ -50,6 +51,8 @@ DOCTOR_OPTIONAL_PATHS = (
     ("todo action plan", PROJECT_ROOT / "outputs/todo_action_plan.md"),
     ("manuscript dir", PROJECT_ROOT / "04_manuscript"),
 )
+
+DAILY_RUN_SCRIPT = PROJECT_ROOT / "03_analysis" / "daily_run.sh"
 
 
 def parser() -> argparse.ArgumentParser:
@@ -132,6 +135,38 @@ def parser() -> argparse.ArgumentParser:
         "--strict",
         action="store_true",
         help="Treat warnings as failures.",
+    )
+
+    analytics_parser = subparsers.add_parser(
+        "analytics",
+        help="Run review analytics builders.",
+    )
+    analytics_subparsers = analytics_parser.add_subparsers(dest="analytics_command")
+
+    analytics_descriptives_parser = analytics_subparsers.add_parser(
+        "descriptives",
+        help="Build review-state descriptive analytics artifacts.",
+    )
+    analytics_descriptives_parser.add_argument(
+        "analytics_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments passed through to review_descriptives_builder; use `--` before flags.",
+    )
+
+    review_parser = subparsers.add_parser(
+        "review",
+        help="Run review-level orchestration commands.",
+    )
+    review_subparsers = review_parser.add_subparsers(dest="review_command")
+
+    review_run_parser = review_subparsers.add_parser(
+        "run",
+        help="Run the full review pipeline via daily_run.sh.",
+    )
+    review_run_parser.add_argument(
+        "review_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments passed after `--` to the review runner.",
     )
 
     return cli_parser
@@ -228,6 +263,21 @@ def _run_validate(target: str, validate_args: list[str]) -> int:
             break
 
     return exit_code
+
+
+def _run_review_pipeline(review_args: list[str]) -> int:
+    normalized_args = _normalize_passthrough_args(review_args)
+    if not DAILY_RUN_SCRIPT.exists():
+        print(f"Review runner not found: {DAILY_RUN_SCRIPT}", file=sys.stderr)
+        return 2
+
+    result = subprocess.run(
+        ["bash", str(DAILY_RUN_SCRIPT), *normalized_args],
+        cwd=str(DAILY_RUN_SCRIPT.parent),
+        check=False,
+        text=True,
+    )
+    return int(result.returncode)
 
 
 def _doctor_line(level: str, label: str, detail: str) -> str:
@@ -362,6 +412,14 @@ def main(argv: list[str] | None = None) -> int:
         return _run_validate(args.target, args.validate_args)
     if command == "doctor":
         return _run_doctor(strict=bool(args.strict))
+    if command == "analytics":
+        analytics_command = args.analytics_command or "descriptives"
+        if analytics_command == "descriptives":
+            return _run_script("review_descriptives_builder", getattr(args, "analytics_args", []))
+    if command == "review":
+        review_command = args.review_command or "run"
+        if review_command == "run":
+            return _run_review_pipeline(getattr(args, "review_args", []))
 
     raise SystemExit(f"Unknown command: {command}")
 

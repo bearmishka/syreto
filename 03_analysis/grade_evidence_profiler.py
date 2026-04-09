@@ -9,8 +9,10 @@ import pandas as pd
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from latex_utils import render_table_block
+    from study_table import included_study_table
 else:
     from .latex_utils import render_table_block
+    from .study_table import included_study_table
 
 MISSING_VALUES = {
     "",
@@ -22,16 +24,6 @@ MISSING_VALUES = {
     "not reported",
     "not_reported",
     "unclear",
-}
-
-INCLUDE_CODES = {
-    "include",
-    "included",
-    "yes",
-    "y",
-    "1",
-    "final_include",
-    "consensus_include",
 }
 
 CERTAINTY_BY_POINTS = {
@@ -219,43 +211,7 @@ def normalize_group_value(value: object, fallback: str) -> str:
 
 
 def get_included_studies(extraction_df: pd.DataFrame) -> pd.DataFrame:
-    dataframe = extraction_df.copy()
-    for column in EXTRACTION_REQUIRED_COLUMNS:
-        if column not in dataframe.columns:
-            dataframe[column] = ""
-
-    if dataframe.empty:
-        return dataframe
-
-    dataframe["study_id"] = dataframe["study_id"].fillna("").astype(str).str.strip()
-    dataframe = dataframe[dataframe["study_id"].ne("")].copy()
-    if dataframe.empty:
-        return dataframe
-
-    non_empty_consensus = (
-        dataframe["consensus_status"]
-        .fillna("")
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .loc[lambda values: values.ne("")]
-    )
-
-    if not non_empty_consensus.empty:
-        if non_empty_consensus.isin(INCLUDE_CODES).any():
-            dataframe = dataframe[
-                dataframe["consensus_status"]
-                .fillna("")
-                .astype(str)
-                .str.strip()
-                .str.lower()
-                .isin(INCLUDE_CODES)
-            ].copy()
-
-    if dataframe.empty:
-        return dataframe
-
-    return dataframe.drop_duplicates(subset=["study_id"], keep="last")
+    return included_study_table(extraction_df, EXTRACTION_REQUIRED_COLUMNS)
 
 
 def quality_lookup(scored_df: pd.DataFrame) -> dict[str, dict[str, str]]:
