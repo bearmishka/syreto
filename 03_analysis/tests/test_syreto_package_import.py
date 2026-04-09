@@ -27,6 +27,9 @@ class SyretoPackageImportTests(unittest.TestCase):
         module = importlib.import_module("syreto.analysis.status_report")
         self.assertTrue(hasattr(module, "main"))
 
+    def test_package_version_matches_release(self) -> None:
+        self.assertEqual(syreto.__version__, "0.2.0")
+
     def test_submodule_import_handles_local_script_dependency(self) -> None:
         module = importlib.import_module("syreto.analysis.subgroup_analysis_builder")
         self.assertTrue(hasattr(module, "main"))
@@ -90,6 +93,110 @@ class SyretoPackageImportTests(unittest.TestCase):
             "prospero_submission_drafter",
             ["--output", "outputs/prospero_submission_prefill.md"],
         )
+
+    def test_cli_status_subcommand_routes_to_status_cli(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(["status", "--", "--fail-on", "major"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with("status_cli", ["--", "--fail-on", "major"])
+
+    def test_cli_artifacts_lists_selected_group(self) -> None:
+        from syreto import cli
+
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            exit_code = cli.main(["artifacts", "--kind", "operational"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("operational:", rendered)
+        self.assertIn("outputs/status_summary.json", rendered)
+        self.assertNotIn("manuscript:", rendered)
+
+    def test_cli_artifacts_missing_only_filters_present_items(self) -> None:
+        from syreto import cli
+
+        existing = {
+            (cli.PROJECT_ROOT / "outputs/status_summary.json").resolve(),
+        }
+
+        def fake_exists(self: Path) -> bool:
+            return self.resolve() in existing
+
+        stdout = StringIO()
+        with mock.patch.object(Path, "exists", fake_exists):
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["artifacts", "--kind", "operational", "--missing-only"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("operational:", rendered)
+        self.assertNotIn("outputs/status_summary.json", rendered)
+        self.assertIn("outputs/status_report.md", rendered)
+
+    def test_cli_validate_csv_routes_to_csv_validator(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(["validate", "csv", "--", "--fail-on", "warning"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with("validate_csv_inputs", ["--fail-on", "warning"])
+
+    def test_cli_validate_extraction_routes_to_extraction_validator(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(["validate", "extraction", "--", "--fail-on", "error"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with("validate_extraction", ["--fail-on", "error"])
+
+    def test_cli_validate_all_runs_both_validators_in_order(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(["validate", "all", "--", "--fail-on", "error"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(
+            patched.call_args_list,
+            [
+                mock.call("validate_csv_inputs", ["--fail-on", "error"]),
+                mock.call("validate_extraction", ["--fail-on", "error"]),
+            ],
+        )
+
+    def test_cli_doctor_reports_summary(self) -> None:
+        from syreto import cli
+
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("SyReTo doctor", rendered)
+        self.assertIn("Version: 0.2.0", rendered)
+        self.assertIn("Summary:", rendered)
+
+    def test_cli_doctor_strict_fails_on_warnings(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(
+            cli,
+            "DOCTOR_OPTIONAL_PATHS",
+            (("status summary", cli.PROJECT_ROOT / "outputs/definitely_missing_status.json"),),
+        ):
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["doctor", "--strict"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("[warn] status summary", stdout.getvalue())
 
     def test_cli_alias_entrypoints_follow_explicit_allowlist(self) -> None:
         pyproject_path = PROJECT_ROOT / "pyproject.toml"

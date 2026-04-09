@@ -1,32 +1,85 @@
-# SyReTo — Systematic Review Toolkit
+# SyReTo
 
-A deterministic, git-native toolkit for fully reproducible PRISMA-compliant systematic reviews — from search to manuscript.
+SyReTo is a deterministic, git-native toolkit for running PRISMA-aligned systematic reviews as a reproducible pipeline rather than a loose collection of spreadsheets and one-off scripts.
 
-## What is SyReTo?
+## What This Is
 
-Systematic reviews are often conducted using ad hoc spreadsheets, opaque commercial tools, and partially reproducible workflows. This makes auditability, replication, and protocol adherence difficult in practice.
+SyReTo packages a full review workflow around explicit CSV inputs, rule-based analysis scripts, integrity guards, operational status checks, and manuscript-ready outputs.
 
-SyReTo is an open-source pipeline for conducting reproducible systematic reviews with a full audit trail. It covers the complete review lifecycle: literature search, deduplication, screening, quality appraisal, data extraction, meta-analysis, and manuscript generation.
+It is designed to make a systematic review run like an auditable system:
 
-Every analytical decision is logged. Every state is replayable through git history. The pipeline avoids probabilistic inference and machine-learning classifiers, relying instead on explicit, rule-based logic with transparent thresholds.
+- inputs live in versioned files
+- transformations are scripted and replayable
+- outputs are regenerated rather than edited by hand
+- process failures are surfaced as status findings instead of being silently absorbed
 
-## Key Features
+## Who It Is For
 
-- **Full pipeline coverage.** 48 scripts spanning PubMed fetch -> deduplication -> title/abstract screening -> full-text screening -> quality appraisal (JBI & NOS with bidirectional conversion) -> data extraction validation -> effect size conversion -> meta-analysis -> forest plots -> sensitivity analysis -> subgroup analysis -> publication bias assessment -> PRISMA flow diagram -> PRISMA adherence check (27/27 items) -> PROSPERO submission drafting -> LaTeX manuscript generation.
-- **Deterministic by design.** Deduplication uses RapidFuzz (Levenshtein distance) with explicit thresholds. Screening decisions are recorded with reviewer initials and timestamps. No step depends on non-reproducible inference.
-- **Integrity guards.** Five dedicated guard scripts validate not just data but the research process itself:
-  - `audit_log_integrity_guard` verifies the audit log has not been tampered with
-  - `record_id_map_integrity_guard` ensures record identity stability across deduplication
-  - `epistemic_consistency_guard` checks that screening decisions are internally consistent
-  - `python_source_guard` validates source code structural integrity
-  - `template_term_guard` detects placeholder terms that should have been replaced
-- **Daily orchestration.** `daily_run.sh` runs the entire pipeline with atomic transactions, preflight checks, and manifest generation.
-- **Git-native audit trail.** CSV files are the single data format. `master_records.csv` is the current state; git history is the immutable ledger.
-- **Installable package.** CLI commands include `syreto`, `syreto-status`, and `syreto-draft`.
+SyReTo is for teams who want a systematic review workflow that is:
 
-## Installation
+- reproducible across reruns and collaborators
+- inspectable in plain files
+- compatible with Git-based review and audit trails
+- manuscript-oriented rather than notebook-oriented
 
-Requires Python >= 3.11.
+It is especially suited to review teams who are comfortable working with CSV, Markdown, LaTeX, and command-line tooling.
+
+## What Problem It Solves
+
+Many systematic reviews are operationally fragile:
+
+- search exports, screening decisions, appraisal sheets, and extraction tables drift apart
+- manuscript tables are updated manually and become inconsistent with underlying data
+- it is hard to tell whether a pipeline run succeeded cleanly or only partially
+- auditability depends on team memory rather than explicit artifacts
+
+SyReTo addresses that by treating the review as a deterministic production pipeline with explicit checkpoints, generated artifacts, and integrity guards.
+
+## What It Produces
+
+SyReTo produces both operational artifacts and manuscript-facing artifacts.
+
+Operational outputs include:
+
+- `outputs/status_summary.json`
+- `outputs/status_report.md`
+- `outputs/todo_action_plan.md`
+- `outputs/prisma_flow_diagram.svg`
+- `outputs/prisma_flow_diagram.tex`
+- `outputs/dedup_merge_summary.md`
+- `outputs/dedup_stats_summary.md`
+- `outputs/epistemic_consistency_report.md`
+- `outputs/progress_history.csv`
+- `outputs/progress_history_summary.md`
+
+Manuscript-facing outputs include:
+
+- `04_manuscript/tables/prisma_counts_table.tex`
+- `04_manuscript/tables/fulltext_exclusion_table.tex`
+- `04_manuscript/tables/study_characteristics_table.tex`
+- `04_manuscript/tables/grade_evidence_profile_table.tex`
+- `04_manuscript/tables/results_summary_table.tex`
+- `04_manuscript/tables/decision_trace_table.tex`
+- `04_manuscript/tables/analysis_trace_table.tex`
+- `04_manuscript/sections/03c_interpretation_auto.tex`
+
+Optional workflow outputs also include PROSPERO draft artifacts, citation tracking outputs, retraction checks, living-review scheduling artifacts, and keyword-network suggestions when those stages are enabled.
+
+## What Guarantees It Tries To Give
+
+SyReTo is built around operational guarantees rather than black-box convenience.
+
+- Deterministic processing: core steps rely on explicit rules and thresholds rather than opaque ML classifiers.
+- Replayability: generated artifacts can be rebuilt from repository state and scripted inputs.
+- Auditability: key review decisions are persisted in versioned files and summarized in status artifacts.
+- Integrity checks: dedicated guards validate the audit log, record identity stability, epistemic consistency, source integrity, and template leakage.
+- Manuscript synchronization: review-state summaries are turned into manuscript-ready tables and sections instead of being maintained separately by hand.
+
+These guarantees depend on keeping the repository inputs canonical and running the pipeline through the scripted entrypoints instead of ad hoc edits to downstream outputs.
+
+## Install In 5 Minutes
+
+Requires Python `>=3.11`.
 
 ```bash
 git clone https://github.com/bearmishka/syreto.git
@@ -34,69 +87,98 @@ cd syreto
 uv sync --all-groups
 ```
 
-If you prefer `pip`:
+Install git hooks:
 
 ```bash
-pip install .
-pip install pytest ruff pre-commit
-```
-
-### Development setup
-
-```bash
-uv run pytest
 uv run pre-commit install
-uv run pre-commit run --all-files
 ```
 
-## Quick Start
+Sanity-check the environment:
+
+```bash
+uv run pytest -q
+```
+
+Current release status: the full repository test suite passes at `485 passed`.
+
+## Fastest Way To Run It
+
+If you want the packaged entrypoints first:
 
 ```bash
 syreto list
-syreto-status
-syreto run prisma_tables
+syreto doctor
+syreto status
+syreto artifacts --kind operational
+syreto validate all -- --fail-on error
+syreto-draft --help
+```
+
+If you want the full operational pipeline:
+
+```bash
 cd 03_analysis
 bash daily_run.sh
 ```
 
-## Project Structure
+## How To Know A Run Succeeded
 
-```text
-syreto/                  # Installable Python package
-03_analysis/             # Analysis scripts
-pyproject.toml           # Build config, dependencies, tooling
-uv.lock                  # Locked dependency set for uv
-```
+A successful run is not just “the script finished.” You should expect the following signals:
 
-## Running Tests
+1. `daily_run.sh` exits with code `0`.
+2. `outputs/status_summary.json` is present and current.
+3. `outputs/status_report.md` is generated.
+4. `outputs/todo_action_plan.md` is generated.
+5. `syreto status` reports a clean or acceptable state for your configured fail threshold.
+6. Expected manuscript tables are regenerated under `04_manuscript/tables/`.
+
+The most useful quick checks are:
 
 ```bash
-uv run pytest
+syreto doctor
+syreto status
+syreto artifacts --kind operational
+cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 ```
 
-At the moment, the repository test suite is mostly green, with a few failures tied to missing repository data files under `02_data/`.
+If you are using production mode, the status gate and template-term guard should also pass without blocker findings.
 
-## Dependencies
+## Main Entry Points
 
-- Python >= 3.11
-- pandas >= 2.0
-- matplotlib >= 3.7
-- scipy >= 1.10
-- rapidfuzz >= 3.9
+- `syreto list`: list packaged analysis scripts
+- `syreto run <script>`: run a packaged script by name
+- `syreto path <script>`: resolve the filesystem path for a packaged script
+- `syreto status`: run the packaged status CLI
+- `syreto artifacts`: inspect key operational and manuscript-facing artifacts
+- `syreto validate`: run packaged validation checks
+- `syreto doctor`: run a quick repository readiness diagnostic
+- `syreto-status`: print a concise operational summary from `status_summary.json`
+- `syreto-draft`: run the PROSPERO draft generation entrypoint
+- `03_analysis/daily_run.sh`: orchestrate the end-to-end review pipeline
 
-## Contributing
+## Project Shape
 
-Contributions are welcome. Please open an issue first to discuss what you would like to change.
+```text
+syreto/                  installable Python package and packaged entrypoints
+03_analysis/             analysis and orchestration scripts
+02_data/                 canonical review inputs and processed CSVs
+04_manuscript/           manuscript-facing generated artifacts
+pyproject.toml           packaging, dependencies, tooling, test config
+uv.lock                  locked dependency set
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Run the tests (`uv run pytest`)
-4. Run the linter (`uv run ruff check .`)
-5. Open a pull request
+## Development
+
+Run checks locally with:
+
+```bash
+uv run pytest -q
+uv run pre-commit run --all-files
+```
 
 ## Citation
 
-If you use SyReTo in your research, please cite:
+If you use SyReTo in research, cite the software and pin the release you used.
 
 ```bibtex
 @software{profatilova2026syreto,
@@ -104,10 +186,10 @@ If you use SyReTo in your research, please cite:
   title        = {{SyReTo}: A Deterministic Toolkit for Reproducible Systematic Reviews},
   year         = {2026},
   url          = {https://github.com/bearmishka/syreto},
-  version      = {0.1.0}
+  version      = {0.2.0}
 }
 ```
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).

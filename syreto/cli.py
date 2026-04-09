@@ -2,8 +2,53 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+ARTIFACT_GROUPS = {
+    "operational": (
+        "outputs/status_summary.json",
+        "outputs/status_report.md",
+        "outputs/todo_action_plan.md",
+        "outputs/progress_history.csv",
+        "outputs/progress_history_summary.md",
+        "outputs/dedup_merge_summary.md",
+        "outputs/dedup_stats_summary.md",
+        "outputs/epistemic_consistency_report.md",
+        "outputs/prisma_flow_diagram.svg",
+        "outputs/prisma_flow_diagram.tex",
+    ),
+    "manuscript": (
+        "04_manuscript/tables/prisma_counts_table.tex",
+        "04_manuscript/tables/fulltext_exclusion_table.tex",
+        "04_manuscript/tables/study_characteristics_table.tex",
+        "04_manuscript/tables/grade_evidence_profile_table.tex",
+        "04_manuscript/tables/results_summary_table.tex",
+        "04_manuscript/tables/decision_trace_table.tex",
+        "04_manuscript/tables/analysis_trace_table.tex",
+        "04_manuscript/sections/03c_interpretation_auto.tex",
+    ),
+}
+
+DOCTOR_REQUIRED_PATHS = (
+    ("project root", PROJECT_ROOT),
+    ("analysis dir", PROJECT_ROOT / "03_analysis"),
+    ("data dir", PROJECT_ROOT / "02_data"),
+    ("daily run script", PROJECT_ROOT / "03_analysis/daily_run.sh"),
+    ("search log", PROJECT_ROOT / "02_data/processed/search_log.csv"),
+    ("master records", PROJECT_ROOT / "02_data/processed/master_records.csv"),
+    ("extraction template", PROJECT_ROOT / "02_data/codebook/extraction_template.csv"),
+)
+
+DOCTOR_OPTIONAL_PATHS = (
+    ("status summary", PROJECT_ROOT / "outputs/status_summary.json"),
+    ("status report", PROJECT_ROOT / "outputs/status_report.md"),
+    ("todo action plan", PROJECT_ROOT / "outputs/todo_action_plan.md"),
+    ("manuscript dir", PROJECT_ROOT / "04_manuscript"),
+)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -34,6 +79,59 @@ def parser() -> argparse.ArgumentParser:
         help="Print resolved filesystem path for a script.",
     )
     path_parser.add_argument("script", help="Script name (with or without .py)")
+
+    status_parser = subparsers.add_parser(
+        "status",
+        help="Run the packaged status CLI.",
+    )
+    status_parser.add_argument(
+        "status_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments passed through to status_cli; use `--` before status flags.",
+    )
+
+    artifacts_parser = subparsers.add_parser(
+        "artifacts",
+        help="List key operational and manuscript-facing artifacts.",
+    )
+    artifacts_parser.add_argument(
+        "--kind",
+        choices=["all", "operational", "manuscript"],
+        default="all",
+        help="Which artifact group to show.",
+    )
+    artifacts_parser.add_argument(
+        "--missing-only",
+        action="store_true",
+        help="Show only missing artifacts.",
+    )
+
+    validate_parser = subparsers.add_parser(
+        "validate",
+        help="Run packaged validation checks.",
+    )
+    validate_parser.add_argument(
+        "target",
+        nargs="?",
+        choices=["csv", "extraction", "all"],
+        default="all",
+        help="Which validation target to run.",
+    )
+    validate_parser.add_argument(
+        "validate_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments passed through to the validator; use `--` before validator flags.",
+    )
+
+    doctor_parser = subparsers.add_parser(
+        "doctor",
+        help="Run a quick repository and pipeline readiness diagnostic.",
+    )
+    doctor_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat warnings as failures.",
+    )
 
     return cli_parser
 
@@ -77,6 +175,111 @@ def _run_script(name: str, script_args: list[str]) -> int:
     return int(result.returncode)
 
 
+def _artifact_groups_for_kind(kind: str) -> list[tuple[str, tuple[str, ...]]]:
+    if kind == "all":
+        return [
+            ("operational", ARTIFACT_GROUPS["operational"]),
+            ("manuscript", ARTIFACT_GROUPS["manuscript"]),
+        ]
+    return [(kind, ARTIFACT_GROUPS[kind])]
+
+
+def _list_artifacts(kind: str, *, missing_only: bool) -> int:
+    printed_any = False
+    for group_name, relative_paths in _artifact_groups_for_kind(kind):
+        group_lines: list[str] = []
+        for relative_path in relative_paths:
+            path = PROJECT_ROOT / relative_path
+            exists = path.exists()
+            if missing_only and exists:
+                continue
+
+            status = "present" if exists else "missing"
+            group_lines.append(f"- [{status}] {relative_path}")
+
+        if not group_lines:
+            continue
+
+        printed_any = True
+        print(f"{group_name}:")
+        for line in group_lines:
+            print(line)
+
+    if not printed_any and missing_only:
+        print("No missing artifacts in the selected group.")
+
+    return 0
+
+
+def _run_validate(target: str, validate_args: list[str]) -> int:
+    normalized_args = _normalize_passthrough_args(validate_args)
+    targets = {
+        "csv": ("validate_csv_inputs",),
+        "extraction": ("validate_extraction",),
+        "all": ("validate_csv_inputs", "validate_extraction"),
+    }[target]
+
+    exit_code = 0
+    for script_name in targets:
+        result = _run_script(script_name, normalized_args)
+        if result != 0:
+            exit_code = result
+            break
+
+    return exit_code
+
+
+def _doctor_line(level: str, label: str, detail: str) -> str:
+    return f"[{level}] {label}: {detail}"
+
+
+def _run_doctor(*, strict: bool) -> int:
+    errors = 0
+    warnings = 0
+    lines = ["SyReTo doctor", ""]
+
+    lines.append(f"Version: {getattr(sys.modules.get('syreto'), '__version__', 'unknown')}")
+    lines.append(f"Project root: {PROJECT_ROOT}")
+    lines.append("")
+    lines.append("Required checks")
+    for label, path in DOCTOR_REQUIRED_PATHS:
+        if path.exists():
+            lines.append(_doctor_line("ok", label, path.as_posix()))
+        else:
+            errors += 1
+            lines.append(_doctor_line("error", label, f"missing at {path.as_posix()}"))
+
+    lines.append("")
+    lines.append("Optional checks")
+    for label, path in DOCTOR_OPTIONAL_PATHS:
+        if path.exists():
+            lines.append(_doctor_line("ok", label, path.as_posix()))
+        else:
+            warnings += 1
+            lines.append(_doctor_line("warn", label, f"not present at {path.as_posix()}"))
+
+    lines.append("")
+    lines.append("Registry checks")
+    for script_name in ("status_cli", "validate_csv_inputs", "validate_extraction"):
+        if script_name in AVAILABLE_SCRIPTS:
+            lines.append(_doctor_line("ok", f"script `{script_name}`", "registered"))
+        else:
+            errors += 1
+            lines.append(_doctor_line("error", f"script `{script_name}`", "not registered"))
+
+    lines.append("")
+    lines.append(
+        f"Summary: errors={errors}, warnings={warnings}, available_scripts={len(AVAILABLE_SCRIPTS)}"
+    )
+    print("\n".join(lines))
+
+    if errors > 0:
+        return 1
+    if strict and warnings > 0:
+        return 1
+    return 0
+
+
 def _alias_argv(argv: list[str] | None) -> list[str]:
     if argv is not None:
         return list(argv)
@@ -101,6 +304,14 @@ def main(argv: list[str] | None = None) -> int:
         return _script_path(args.script)
     if command == "run":
         return _run_script(args.script, args.script_args)
+    if command == "status":
+        return _run_script("status_cli", args.status_args)
+    if command == "artifacts":
+        return _list_artifacts(args.kind, missing_only=bool(args.missing_only))
+    if command == "validate":
+        return _run_validate(args.target, args.validate_args)
+    if command == "doctor":
+        return _run_doctor(strict=bool(args.strict))
 
     raise SystemExit(f"Unknown command: {command}")
 
