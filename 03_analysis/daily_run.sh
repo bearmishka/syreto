@@ -30,6 +30,7 @@ STATUS_FAIL_ON="${STATUS_FAIL_ON:-}"
 RUN_TEMPLATE_TERM_GUARD="${RUN_TEMPLATE_TERM_GUARD:-warn}"
 DAILY_RUN_MANIFEST="${DAILY_RUN_MANIFEST:-outputs/daily_run_manifest.json}"
 DAILY_RUN_FAILED_MARKER="${DAILY_RUN_FAILED_MARKER:-outputs/daily_run_failed.marker}"
+RUN_EVENTS_PATH="${RUN_EVENTS_PATH:-outputs/run_events.jsonl}"
 AUDIT_LOG_PATH="${AUDIT_LOG_PATH:-../02_data/processed/audit_log.csv}"
 DAILY_RUN_ID="${DAILY_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 export DAILY_RUN_ID
@@ -251,8 +252,22 @@ validate_enum_mode \
   "none critical major minor" \
   "none | critical | major | minor"
 
+RUN_EVENT_STEP_ORDER=0
+
 utc_now() {
   date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+resolve_python_bin() {
+  if command -v python3 >/dev/null 2>&1; then
+    echo "python3"
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    echo "python"
+    return 0
+  fi
+  return 1
 }
 
 write_atomic_file_from_stdin() {
@@ -567,16 +582,110 @@ update_daily_run_manifest "running" -1 -1 -1 "" false "$(transactional_mode_labe
 
 STATUS_CHECKPOINT_RAN=0
 
+append_run_event() {
+  local step="$1"
+  local status="$2"
+  local started_at="$3"
+  local finished_at="$4"
+  local duration="$5"
+  local failure_reason="$6"
+  local outputs_json="$7"
+
+  local python_bin=""
+  python_bin="$(resolve_python_bin)" || return 0
+
+  mkdir -p "$(dirname "$RUN_EVENTS_PATH")"
+  RUN_EVENT_STEP_ORDER=$((RUN_EVENT_STEP_ORDER + 1))
+
+  RUN_EVENT_STEP="$step" \
+  RUN_EVENT_STATUS="$status" \
+  RUN_EVENT_STARTED_AT="$started_at" \
+  RUN_EVENT_FINISHED_AT="$finished_at" \
+  RUN_EVENT_DURATION="$duration" \
+  RUN_EVENT_FAILURE_REASON="$failure_reason" \
+  RUN_EVENT_OUTPUTS_JSON="$outputs_json" \
+  RUN_EVENT_RUN_ID="$DAILY_RUN_ID" \
+  RUN_EVENT_REVIEW_MODE="$REVIEW_MODE" \
+  RUN_EVENT_STEP_ORDER="$RUN_EVENT_STEP_ORDER" \
+  "$python_bin" - >> "$RUN_EVENTS_PATH" <<'PY'
+import json
+import os
+
+
+def main() -> int:
+    failure_reason = os.environ["RUN_EVENT_FAILURE_REASON"]
+    outputs_json = os.environ["RUN_EVENT_OUTPUTS_JSON"]
+    try:
+        outputs = json.loads(outputs_json) if outputs_json else []
+    except json.JSONDecodeError:
+        outputs = []
+
+    payload = {
+        "run_id": os.environ["RUN_EVENT_RUN_ID"],
+        "review_mode": os.environ["RUN_EVENT_REVIEW_MODE"],
+        "step_order": int(os.environ["RUN_EVENT_STEP_ORDER"]),
+        "step": os.environ["RUN_EVENT_STEP"],
+        "started_at": os.environ["RUN_EVENT_STARTED_AT"],
+        "finished_at": os.environ["RUN_EVENT_FINISHED_AT"],
+        "duration": float(os.environ["RUN_EVENT_DURATION"]),
+        "status": os.environ["RUN_EVENT_STATUS"],
+        "failure_reason": failure_reason if failure_reason else None,
+        "outputs_touched": outputs,
+    }
+    print(json.dumps(payload, ensure_ascii=False))
+    return 0
+
+
+raise SystemExit(main())
+PY
+}
+
+run_logged_python_step() {
+  local step="$1"
+  local outputs_json="$2"
+  local script_name="$3"
+  shift 3
+
+  local started_at
+  started_at="$(utc_now)"
+  local started_epoch
+  started_epoch="$(date -u +%s)"
+
+  local rc=0
+  local status="success"
+  local failure_reason=""
+
+  if python "$script_name" "$@"; then
+    rc=0
+  else
+    rc=$?
+    status="failed"
+    failure_reason="python ${script_name} exited with status ${rc}"
+  fi
+
+  local finished_at
+  finished_at="$(utc_now)"
+  local finished_epoch
+  finished_epoch="$(date -u +%s)"
+  local duration
+  duration=$((finished_epoch - started_epoch))
+
+  append_run_event "$step" "$status" "$started_at" "$finished_at" "$duration" "$failure_reason" "$outputs_json"
+  return "$rc"
+}
+
 run_optional_python_step() {
   local enabled="$1"
   local run_message="$2"
   local script_name="$3"
   local skip_message="$4"
-  shift 4
+  local step_name="${5:-$script_name}"
+  local outputs_json="${6:-[]}"
+  shift 6
 
   if [[ "$enabled" == "1" ]]; then
     echo "[daily_run] $run_message"
-    python "$script_name" "$@"
+    run_logged_python_step "$step_name" "$outputs_json" "$script_name" "$@"
   else
     echo "[daily_run] $skip_message"
   fi
@@ -627,24 +736,24 @@ run_status_checkpoint() {
   local checkpoint_rc=0
 
   echo "[daily_run] Running consolidated status report (mandatory final checkpoint)..."
-  if ! python status_report.py; then
+  if ! run_logged_python_step "status_report" '["outputs/status_report.md","outputs/status_summary.json"]' "status_report.py"; then
     echo "[daily_run] ERROR: status_report.py failed during mandatory final checkpoint."
     checkpoint_rc=1
   fi
 
   echo "[daily_run] Building grouped TODO action plan (quick-fix hints)..."
-  if ! python todo_action_plan_builder.py --input outputs/status_summary.json --output outputs/todo_action_plan.md; then
+  if ! run_logged_python_step "todo_action_plan" '["outputs/todo_action_plan.md"]' "todo_action_plan_builder.py" --input outputs/status_summary.json --output outputs/todo_action_plan.md; then
     echo "[daily_run] WARNING: todo_action_plan_builder.py failed during mandatory final checkpoint."
   fi
 
   echo "[daily_run] Running epistemic consistency guard (mandatory final checkpoint)..."
   if [[ "$REVIEW_MODE" == "production" ]]; then
-    if ! python epistemic_consistency_guard.py --review-mode production --fail-on-risk; then
+    if ! run_logged_python_step "epistemic_consistency_guard" '["outputs/epistemic_consistency_report.md"]' "epistemic_consistency_guard.py" --review-mode production --fail-on-risk; then
       echo "[daily_run] ERROR: epistemic_consistency_guard.py failed during mandatory final checkpoint."
       checkpoint_rc=1
     fi
   else
-    if ! python epistemic_consistency_guard.py --review-mode template --no-fail-on-risk; then
+    if ! run_logged_python_step "epistemic_consistency_guard" '["outputs/epistemic_consistency_report.md"]' "epistemic_consistency_guard.py" --review-mode template --no-fail-on-risk; then
       echo "[daily_run] ERROR: epistemic_consistency_guard.py failed during mandatory final checkpoint."
       checkpoint_rc=1
     fi
@@ -652,7 +761,7 @@ run_status_checkpoint() {
 
   if [[ "$RUN_WEEKLY_RISK_DIGEST" == "1" ]]; then
     echo "[daily_run] Generating weekly risk digest for PI update..."
-    if ! python weekly_risk_digest.py; then
+    if ! run_logged_python_step "weekly_risk_digest" '["outputs/weekly_risk_digest.md"]' "weekly_risk_digest.py"; then
       echo "[daily_run] ERROR: weekly_risk_digest.py failed during mandatory final checkpoint."
       checkpoint_rc=1
     fi
@@ -668,17 +777,23 @@ run_status_checkpoint() {
   mkdir -p "$snapshot_dir"
   local snapshot_tmp
   snapshot_tmp="$(mktemp "${snapshot_dir}/.${snapshot_basename}.tmp.XXXXXX")"
+  local status_cli_started_at
+  status_cli_started_at="$(utc_now)"
+  local status_cli_started_epoch
+  status_cli_started_epoch="$(date -u +%s)"
   if python status_cli.py --priority-policy "$STATUS_PRIORITY_POLICY" | tee "$snapshot_tmp"; then
     mv "$snapshot_tmp" "$STATUS_CLI_SNAPSHOT"
+    append_run_event "status_cli_snapshot" "success" "$status_cli_started_at" "$(utc_now)" "$(( $(date -u +%s) - status_cli_started_epoch ))" "" "[\"${STATUS_CLI_SNAPSHOT}\"]"
   else
     rm -f "$snapshot_tmp"
+    append_run_event "status_cli_snapshot" "failed" "$status_cli_started_at" "$(utc_now)" "$(( $(date -u +%s) - status_cli_started_epoch ))" "status_cli.py snapshot render failed" "[\"${STATUS_CLI_SNAPSHOT}\"]"
     echo "[daily_run] ERROR: status_cli.py failed during mandatory final checkpoint."
     checkpoint_rc=1
   fi
 
   if [[ "$REVIEW_MODE" == "production" ]]; then
     echo "[daily_run] Enforcing production status gate (fail-on=$STATUS_FAIL_ON)..."
-    if ! python status_cli.py --fail-on "$STATUS_FAIL_ON" --todo-only --priority-policy "$STATUS_PRIORITY_POLICY"; then
+    if ! run_logged_python_step "status_gate" '[]' "status_cli.py" --fail-on "$STATUS_FAIL_ON" --todo-only --priority-policy "$STATUS_PRIORITY_POLICY"; then
       echo "[daily_run] ERROR: production status gate failed (status_cli --fail-on $STATUS_FAIL_ON --priority-policy $STATUS_PRIORITY_POLICY)."
       checkpoint_rc=1
     fi
@@ -758,113 +873,129 @@ trap 'on_exit "$?"' EXIT
 snapshot_transaction_state
 
 echo "[daily_run] Consolidating title/abstract dual-log consensus..."
-python consolidate_title_abstract_consensus.py
+run_logged_python_step "title_abstract_consensus" '[]' "consolidate_title_abstract_consensus.py"
 
 echo "[daily_run] Running CSV input validation..."
-python validate_csv_inputs.py
+run_logged_python_step "validate_csv_inputs" '["outputs/csv_input_validation_summary.md"]' "validate_csv_inputs.py"
 
 echo "[daily_run] Running audit log integrity guard..."
 ensure_audit_log_header
-python audit_log_integrity_guard.py --path "$AUDIT_LOG_PATH"
+run_logged_python_step "audit_log_integrity_guard" '[]' "audit_log_integrity_guard.py" --path "$AUDIT_LOG_PATH"
 
 echo "[daily_run] Running record-id map integrity guard..."
-python record_id_map_integrity_guard.py
+run_logged_python_step "record_id_map_integrity_guard" '[]' "record_id_map_integrity_guard.py"
 
 echo "[daily_run] Running screening metrics..."
-python screening_metrics.py
+run_logged_python_step "screening_metrics" '[]' "screening_metrics.py"
 
 run_optional_python_step \
   "$RUN_REVIEWER_WORKLOAD_BALANCER" \
   "Running reviewer workload balancer (non-blocking by default)..." \
   "reviewer_workload_balancer.py" \
-  "Skipping reviewer workload balancer (set RUN_REVIEWER_WORKLOAD_BALANCER=1 to enable)."
+  "Skipping reviewer workload balancer (set RUN_REVIEWER_WORKLOAD_BALANCER=1 to enable)." \
+  "reviewer_workload_balancer" \
+  '["outputs/reviewer_workload_balancer_summary.md","outputs/reviewer_workload_plan.csv"]'
 
 echo "[daily_run] Running screening disagreement analyzer..."
-python screening_disagreement_analyzer.py
+run_logged_python_step "screening_disagreement_analyzer" '[]' "screening_disagreement_analyzer.py"
 
 run_optional_python_step \
   "$RUN_MULTILANG_ABSTRACT_SCREENER" \
   "Running multilingual abstract screener (config-driven keyword rules)..." \
   "multilang_abstract_screener.py" \
-  "Skipping multilingual abstract screener (set RUN_MULTILANG_ABSTRACT_SCREENER=1 to enable)."
+  "Skipping multilingual abstract screener (set RUN_MULTILANG_ABSTRACT_SCREENER=1 to enable)." \
+  "multilang_abstract_screener" \
+  '[]'
 
 echo "[daily_run] Running extraction validation..."
-python validate_extraction.py
+run_logged_python_step "validate_extraction" '["outputs/extraction_validation_summary.md"]' "validate_extraction.py"
 
 echo "[daily_run] Running quality appraisal scoring (JBI)..."
-python quality_appraisal.py
+run_logged_python_step "quality_appraisal" '[]' "quality_appraisal.py"
 
 echo "[daily_run] Running GRADE evidence profiler..."
-python grade_evidence_profiler.py
+run_logged_python_step "grade_evidence_profiler" '["../04_manuscript/tables/grade_evidence_profile_table.tex"]' "grade_evidence_profiler.py"
 
 echo "[daily_run] Converting effect sizes for meta-analysis harmonization..."
-python effect_size_converter.py
+run_logged_python_step "effect_size_converter" '[]' "effect_size_converter.py"
 
 echo "[daily_run] Building optional meta-analysis aggregate table..."
-python meta_analysis_results_builder.py --fail-on none
+run_logged_python_step "meta_analysis_results_builder" '[]' "meta_analysis_results_builder.py" --fail-on none
 
 echo "[daily_run] Building final results summary table..."
-python results_summary_table_builder.py
+run_logged_python_step "results_summary_table_builder" '["../04_manuscript/tables/results_summary_table.tex"]' "results_summary_table_builder.py"
 
 echo "[daily_run] Generating forest plot from converted effect sizes..."
-python forest_plot_generator.py
+run_logged_python_step "forest_plot_generator" '[]' "forest_plot_generator.py"
 
 run_optional_python_step \
   "$RUN_PUBLICATION_BIAS" \
   "Running publication bias assessment (funnel + Egger)..." \
   "publication_bias_assessment.py" \
-  "Skipping publication-bias assessment (set RUN_PUBLICATION_BIAS=1 to enable)."
+  "Skipping publication-bias assessment (set RUN_PUBLICATION_BIAS=1 to enable)." \
+  "publication_bias_assessment" \
+  '[]'
 
 echo "[daily_run] Building manuscript-ready results interpretation narrative layer..."
-python results_interpretation_layer.py
+run_logged_python_step "results_interpretation_layer" '["../04_manuscript/sections/03c_interpretation_auto.tex"]' "results_interpretation_layer.py"
 
 echo "[daily_run] Building analysis lineage (per-outcome study IDs across synthesis artifacts)..."
-python analysis_lineage.py
+run_logged_python_step "analysis_lineage" '[]' "analysis_lineage.py"
 
 echo "[daily_run] Building study-level flow map (search -> screening -> inclusion -> analysis)..."
-python study_flow_map_builder.py
+run_logged_python_step "study_flow_map_builder" '[]' "study_flow_map_builder.py"
 
 run_optional_python_step \
   "$RUN_POLYGLOT_TRANSLATION" \
   "Running PubMed→Scopus/WoS/PsycINFO query translation..." \
   "polyglot_search.py" \
-  "Skipping polyglot translation (set RUN_POLYGLOT_TRANSLATION=1 to enable)."
+  "Skipping polyglot translation (set RUN_POLYGLOT_TRANSLATION=1 to enable)." \
+  "polyglot_search" \
+  '[]'
 
 run_optional_python_step \
   "$RUN_KEYWORD_ANALYSIS" \
   "Running keyword co-occurrence analysis (litsearchr-style)..." \
   "keyword_network.py" \
-  "Skipping keyword analysis (set RUN_KEYWORD_ANALYSIS=1 to enable)."
+  "Skipping keyword analysis (set RUN_KEYWORD_ANALYSIS=1 to enable)." \
+  "keyword_network" \
+  '[]'
 
 echo "[daily_run] Generating synthesis characteristics table (LaTeX)..."
-python synthesis_tables.py
+run_logged_python_step "synthesis_tables" '["../04_manuscript/tables/study_characteristics_table.tex"]' "synthesis_tables.py"
 
 echo "[daily_run] Running dedup merge (only if new exports)..."
-python dedup_merge.py --if-new-exports
+run_logged_python_step "dedup_merge" '["outputs/dedup_merge_summary.md","../02_data/processed/record_id_map.csv"]' "dedup_merge.py" --if-new-exports
 
 echo "[daily_run] Running dedup stats + PRISMA update (apply + explicit backup)..."
-python dedup_stats.py --flow-backend both --flow-style journal --flow-output outputs/prisma_flow_diagram.svg --apply --backup
+run_logged_python_step "dedup_stats" '["outputs/dedup_stats_summary.md","outputs/prisma_flow_diagram.svg","outputs/prisma_flow_diagram.tex","../02_data/processed/prisma_counts_template.csv"]' "dedup_stats.py" --flow-backend both --flow-style journal --flow-output outputs/prisma_flow_diagram.svg --apply --backup
 
 run_optional_python_step \
   "$RUN_CITATION_TRACKING" \
   "Running backward/forward citation chasing (OpenCitations)..." \
   "citation_tracker.py" \
-  "Skipping citation chasing (set RUN_CITATION_TRACKING=1 to enable)."
+  "Skipping citation chasing (set RUN_CITATION_TRACKING=1 to enable)." \
+  "citation_tracker" \
+  '[]'
 
 echo "[daily_run] Generating PRISMA manuscript tables (LaTeX)..."
-python prisma_tables.py
+run_logged_python_step "prisma_tables" '["../04_manuscript/tables/prisma_counts_table.tex","../04_manuscript/tables/fulltext_exclusion_table.tex"]' "prisma_tables.py"
 
 run_optional_python_step \
   "$RUN_PROSPERO_DRAFTER" \
   "Drafting pre-filled PROSPERO registration package..." \
   "prospero_submission_drafter.py" \
-  "Skipping PROSPERO drafter (set RUN_PROSPERO_DRAFTER=1 to enable)."
+  "Skipping PROSPERO drafter (set RUN_PROSPERO_DRAFTER=1 to enable)." \
+  "prospero_submission_drafter" \
+  '["outputs/prospero_registration_prefill.md","outputs/prospero_registration_prefill.xml","outputs/prospero_submission_drafter_summary.md"]'
 
 run_optional_python_step \
   "$RUN_RETRACTION_CHECKER" \
   "Running included-study retraction checker (single Retraction Watch DOI fetch)..." \
   "retraction_checker.py" \
-  "Skipping retraction checker (set RUN_RETRACTION_CHECKER=1 to enable)."
+  "Skipping retraction checker (set RUN_RETRACTION_CHECKER=1 to enable)." \
+  "retraction_checker" \
+  '[]'
 
 if [[ "$RUN_LIVING_REVIEW_SCHEDULER" == "1" ]]; then
   SCHEDULER_ARGS=(--review-mode auto)
@@ -874,17 +1005,17 @@ if [[ "$RUN_LIVING_REVIEW_SCHEDULER" == "1" ]]; then
   else
     echo "[daily_run] Running living-review scheduler (auto mode + session diffs)..."
   fi
-  python living_review_scheduler.py "${SCHEDULER_ARGS[@]}"
+  run_logged_python_step "living_review_scheduler" '[]' "living_review_scheduler.py" "${SCHEDULER_ARGS[@]}"
 else
   echo "[daily_run] Skipping living-review scheduler (set RUN_LIVING_REVIEW_SCHEDULER=1 to enable)."
 fi
 
 echo "[daily_run] Running PRISMA adherence checker..."
-python prisma_adherence_checker.py
+run_logged_python_step "prisma_adherence_checker" '["outputs/prisma_adherence_report.md"]' "prisma_adherence_checker.py"
 
 if [[ "$REVIEW_MODE" == "production" ]]; then
   echo "[daily_run] REVIEW_MODE=production: enforcing strict template leakage guard for ../04_manuscript/ ..."
-  python template_term_guard.py \
+  run_logged_python_step "template_term_guard" '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" \
     --scan-path ../04_manuscript \
     --check-placeholders \
     --no-check-banned-terms \
@@ -895,11 +1026,11 @@ else
   case "$RUN_TEMPLATE_TERM_GUARD" in
     fail)
       echo "[daily_run] Running template term guard in fail mode..."
-      python template_term_guard.py --fail-on-match || true
+      run_logged_python_step "template_term_guard" '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" --fail-on-match || true
       ;;
     warn)
       echo "[daily_run] Running template term guard in warn mode..."
-      python template_term_guard.py --no-fail-on-match
+      run_logged_python_step "template_term_guard" '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" --no-fail-on-match
       ;;
     skip)
       echo "[daily_run] Skipping template term guard (RUN_TEMPLATE_TERM_GUARD=skip)."
@@ -912,6 +1043,8 @@ run_optional_python_step \
   "Syncing decision trace into transparency appendix..." \
   "transparency_appendix_decision_trace.py" \
   "Skipping transparency appendix sync (set RUN_TRANSPARENCY_APPENDIX_SYNC=1 to enable)." \
+  "transparency_appendix_decision_trace" \
+  '["../04_manuscript/tables/decision_trace_table.tex","../04_manuscript/tables/analysis_trace_table.tex","../appendix_transparency.md"]' \
   --max-rows "$DECISION_TRACE_MARKDOWN_MAX_ROWS" \
   --latex-max-rows "$DECISION_TRACE_LATEX_MAX_ROWS" \
   --analysis-max-rows "$DECISION_TRACE_MARKDOWN_MAX_ROWS" \
