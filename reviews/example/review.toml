@@ -1,0 +1,27 @@
+[review]
+id = "example-review"
+title = "Example SyReTo Review Instance"
+
+[paths]
+data_root = "data/"
+protocol_root = "protocol/"
+outputs_root = "outputs/"
+manuscript_root = "manuscript/"
+
+[mode]
+review_mode = "template"
+
+[stages]
+search = true
+deduplication = true
+screening = true
+extraction = true
+synthesis = true
+reporting = true
+
+[status]
+fail_on = "major"
+priority_policy = "default"
+
+[output]
+profile = "default"

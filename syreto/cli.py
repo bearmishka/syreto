@@ -6,6 +6,7 @@ import sys
 from importlib.util import find_spec
 from pathlib import Path
 
+from .review_config import ReviewConfig, ReviewConfigError, load_review_config
 from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -173,6 +174,10 @@ def parser() -> argparse.ArgumentParser:
         "--strict",
         action="store_true",
         help="Treat warnings as failures.",
+    )
+    doctor_parser.add_argument(
+        "--config",
+        help="Path to review.toml for review-instance-aware diagnostics.",
     )
 
     analytics_parser = subparsers.add_parser(
@@ -343,7 +348,37 @@ def _module_available(module_name: str) -> bool:
     return find_spec(module_name) is not None
 
 
-def _run_doctor(*, strict: bool) -> int:
+def _doctor_required_paths(review_config: ReviewConfig | None) -> tuple[tuple[str, Path], ...]:
+    if review_config is None:
+        return DOCTOR_REQUIRED_PATHS
+
+    return (
+        ("project root", PROJECT_ROOT),
+        ("analysis dir", PROJECT_ROOT / "03_analysis"),
+        ("daily run script", PROJECT_ROOT / "03_analysis/daily_run.sh"),
+        ("review config", review_config.config_path),
+        ("review root", review_config.review_root),
+        ("data root", review_config.data_root),
+        ("protocol root", review_config.protocol_root),
+        ("outputs root", review_config.outputs_root),
+        ("manuscript root", review_config.manuscript_root),
+    )
+
+
+def _doctor_optional_paths(review_config: ReviewConfig | None) -> tuple[tuple[str, Path], ...]:
+    if review_config is None:
+        return DOCTOR_OPTIONAL_PATHS
+
+    return (
+        ("status summary", review_config.outputs_root / "status_summary.json"),
+        ("status report", review_config.outputs_root / "status_report.md"),
+        ("todo action plan", review_config.outputs_root / "todo_action_plan.md"),
+        ("run events", review_config.outputs_root / "run_events.jsonl"),
+        ("manuscript root", review_config.manuscript_root),
+    )
+
+
+def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
     errors = 0
     warnings = 0
     failure_counts: dict[str, int] = {}
@@ -355,6 +390,41 @@ def _run_doctor(*, strict: bool) -> int:
     lines.append(f"Version: {getattr(sys.modules.get('syreto'), '__version__', 'unknown')}")
     lines.append(f"Project root: {PROJECT_ROOT}")
     lines.append("")
+
+    review_config = None
+    if config_path is not None:
+        lines.append("Review config")
+        try:
+            review_config = load_review_config(config_path)
+        except ReviewConfigError as exc:
+            errors += 1
+            record_failure("config error")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    "review config",
+                    str(exc),
+                    failure_class="config error",
+                )
+            )
+            lines.append("")
+            lines.append(
+                f"Summary: errors={errors}, warnings={warnings}, available_scripts={len(AVAILABLE_SCRIPTS)}"
+            )
+            print("\n".join(lines))
+            return 1
+
+        lines.append(_doctor_line("ok", "review config", review_config.config_path.as_posix()))
+        lines.append(_doctor_line("ok", "review id", review_config.review_id))
+        lines.append(_doctor_line("ok", "title", review_config.title))
+        lines.append(_doctor_line("ok", "review root", review_config.review_root.as_posix()))
+        lines.append(_doctor_line("ok", "review mode", review_config.review_mode))
+        lines.append(_doctor_line("ok", "status fail_on", review_config.fail_on))
+        enabled_stages = (
+            ", ".join(name for name, enabled in review_config.stages.items() if enabled) or "none"
+        )
+        lines.append(_doctor_line("ok", "enabled stages", enabled_stages))
+        lines.append("")
 
     lines.append("Environment")
     uv_path = Path.home() / ".local/bin/uv"
@@ -402,7 +472,8 @@ def _run_doctor(*, strict: bool) -> int:
 
     lines.append("")
     lines.append("Required checks")
-    for label, path in DOCTOR_REQUIRED_PATHS:
+    required_paths = _doctor_required_paths(review_config)
+    for label, path in required_paths:
         if path.exists():
             lines.append(_doctor_line("ok", label, path.as_posix()))
         else:
@@ -419,7 +490,8 @@ def _run_doctor(*, strict: bool) -> int:
 
     lines.append("")
     lines.append("Optional checks")
-    for label, path in DOCTOR_OPTIONAL_PATHS:
+    optional_paths = _doctor_optional_paths(review_config)
+    for label, path in optional_paths:
         if path.exists():
             lines.append(_doctor_line("ok", label, path.as_posix()))
         else:
@@ -453,6 +525,11 @@ def _run_doctor(*, strict: bool) -> int:
 
     run_failed_marker = PROJECT_ROOT / "outputs/daily_run_failed.marker"
     run_events_path = PROJECT_ROOT / "outputs/run_events.jsonl"
+    status_summary_path = PROJECT_ROOT / "outputs/status_summary.json"
+    if review_config is not None:
+        run_failed_marker = review_config.outputs_root / "daily_run_failed.marker"
+        run_events_path = review_config.outputs_root / "run_events.jsonl"
+        status_summary_path = review_config.outputs_root / "status_summary.json"
     lines.append("")
     lines.append("Run-state checks")
     if run_failed_marker.exists():
@@ -483,7 +560,7 @@ def _run_doctor(*, strict: bool) -> int:
             )
         )
 
-    if errors == 0 and (PROJECT_ROOT / "outputs/status_summary.json").exists():
+    if errors == 0 and status_summary_path.exists():
         lines.append(
             _doctor_line(
                 "ok",
@@ -491,7 +568,7 @@ def _run_doctor(*, strict: bool) -> int:
                 "repository surface is ready for `syreto status` interpretation",
             )
         )
-    elif (PROJECT_ROOT / "outputs/status_summary.json").exists():
+    elif status_summary_path.exists():
         lines.append(
             _doctor_classified_line(
                 "warn",
@@ -507,10 +584,15 @@ def _run_doctor(*, strict: bool) -> int:
     lines.append("Next steps")
     if errors > 0:
         lines.append("- Fix missing required paths before trusting pipeline outputs.")
-    if not (PROJECT_ROOT / "outputs/status_summary.json").exists():
-        lines.append(
-            "- Run `cd 03_analysis && bash daily_run.sh` to generate core status artifacts."
-        )
+    if not status_summary_path.exists():
+        if review_config is None:
+            lines.append(
+                "- Run `cd 03_analysis && bash daily_run.sh` to generate core status artifacts."
+            )
+        else:
+            lines.append(
+                "- Generate review-instance outputs before expecting `syreto status` to report a complete posture for this config."
+            )
     if not _module_available("pre_commit"):
         lines.append("- Run `uv sync --all-groups` to ensure development tools are installed.")
     if errors == 0 and warnings == 0:
@@ -578,7 +660,7 @@ def main(argv: list[str] | None = None) -> int:
     if command == "validate":
         return _run_validate(args.target, args.validate_args)
     if command == "doctor":
-        return _run_doctor(strict=bool(args.strict))
+        return _run_doctor(strict=bool(args.strict), config_path=args.config)
     if command == "analytics":
         analytics_command = args.analytics_command or "descriptives"
         if analytics_command == "descriptives":
