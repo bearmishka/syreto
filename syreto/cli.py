@@ -1,3 +1,10 @@
+"""Thin operational CLI for SyReTo.
+
+The CLI is a user-facing shell over existing scripts, artifacts, and review
+configuration. It should select, invoke, and summarize system behavior without
+becoming the place where epistemic or methodological logic lives.
+"""
+
 from __future__ import annotations
 
 import argparse

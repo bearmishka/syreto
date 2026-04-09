@@ -2,6 +2,8 @@
 
 SyReTo is a deterministic, git-native toolkit for running PRISMA-aligned systematic reviews as a reproducible pipeline rather than a loose collection of spreadsheets and one-off scripts. The `syreto` CLI is the single user-facing entrypoint to the review system.
 
+That CLI is intentionally thin: it selects and invokes review operations, but it does not define the epistemic structure of a review. Configuration, execution logic, and artifact contracts remain outside the CLI itself.
+
 ## What This Is
 
 SyReTo packages a full review workflow around explicit CSV inputs, rule-based analysis scripts, integrity guards, operational status checks, and manuscript-ready outputs.

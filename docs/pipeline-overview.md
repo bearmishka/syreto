@@ -151,6 +151,7 @@ Important subcommands on `syreto` now include:
 
 These are useful for discovery, status checks, review-state analytics, and running packaged scripts.
 The `doctor`, `status`, and `review run` surfaces also support `--config` for the emerging review-instance model.
+The CLI is intentionally a thin operational shell: it exposes entrypoints and summaries, but it should not become the place where methodological or epistemic logic is defined.
 
 ### Full Orchestration
 
