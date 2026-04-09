@@ -243,6 +243,8 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("SyReTo doctor", rendered)
         self.assertIn("Version: 0.2.0", rendered)
         self.assertIn("Environment", rendered)
+        self.assertIn("Preflight question", rendered)
+        self.assertIn("Preflight verdict:", rendered)
         self.assertIn("Summary:", rendered)
 
     def test_cli_doctor_reports_failure_classification_for_missing_optional_artifacts(self) -> None:
@@ -318,23 +320,22 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("Run `cd 03_analysis && bash daily_run.sh`", stdout.getvalue())
 
-    def test_cli_doctor_reads_review_config(self) -> None:
+    def test_cli_doctor_reads_repo_default_review_config(self) -> None:
         from syreto import cli
 
-        review_config_path = (cli.PROJECT_ROOT / "reviews/example/review.toml").resolve()
-        run_events_path = (cli.PROJECT_ROOT / "reviews/example/outputs/run_events.jsonl").resolve()
+        review_config_path = (cli.PROJECT_ROOT / "reviews/repo-default/review.toml").resolve()
+        run_events_path = (cli.PROJECT_ROOT / "03_analysis/outputs/run_events.jsonl").resolve()
         status_summary_path = (
-            cli.PROJECT_ROOT / "reviews/example/outputs/status_summary.json"
+            cli.PROJECT_ROOT / "03_analysis/outputs/status_summary.json"
         ).resolve()
         allowed_existing = {
             review_config_path,
             *(path.resolve() for _, path in cli._doctor_required_paths(None)),
             *(path.resolve() for _, path in cli._doctor_optional_paths(None)),
-            (cli.PROJECT_ROOT / "reviews/example").resolve(),
-            (cli.PROJECT_ROOT / "reviews/example/data").resolve(),
-            (cli.PROJECT_ROOT / "reviews/example/protocol").resolve(),
-            (cli.PROJECT_ROOT / "reviews/example/outputs").resolve(),
-            (cli.PROJECT_ROOT / "reviews/example/manuscript").resolve(),
+            (cli.PROJECT_ROOT / "reviews/repo-default").resolve(),
+            (cli.PROJECT_ROOT / "01_protocol").resolve(),
+            (cli.PROJECT_ROOT / "03_analysis/outputs").resolve(),
+            (cli.PROJECT_ROOT / "04_manuscript").resolve(),
             run_events_path,
             status_summary_path,
         }
@@ -345,13 +346,27 @@ class SyretoPackageImportTests(unittest.TestCase):
         with mock.patch.object(Path, "exists", fake_exists):
             stdout = StringIO()
             with redirect_stdout(stdout):
-                exit_code = cli.main(["doctor", "--config", "reviews/example/review.toml"])
+                exit_code = cli.main(["doctor", "--config", "reviews/repo-default/review.toml"])
 
         self.assertEqual(exit_code, 0)
         rendered = stdout.getvalue()
         self.assertIn("Review config", rendered)
-        self.assertIn("review id: example-review", rendered)
+        self.assertIn("review id: repo-default", rendered)
         self.assertIn("review mode: template", rendered)
+        self.assertIn("config compatibility", rendered)
+
+    def test_cli_doctor_reports_incompatible_review_config_as_preflight_failure(self) -> None:
+        from syreto import cli
+
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            exit_code = cli.main(["doctor", "--config", "reviews/example/review.toml"])
+
+        self.assertEqual(exit_code, 1)
+        rendered = stdout.getvalue()
+        self.assertIn("config compatibility", rendered)
+        self.assertIn("class=config error", rendered)
+        self.assertIn("Preflight verdict: not ready for an honest run", rendered)
 
     def test_cli_doctor_fails_for_invalid_review_config(self) -> None:
         from syreto import cli

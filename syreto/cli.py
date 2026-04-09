@@ -8,8 +8,10 @@ becoming the place where epistemic or methodological logic lives.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
+import shutil
 import subprocess
 import sys
 from importlib.util import find_spec
@@ -91,6 +93,8 @@ DOCTOR_REQUIRED_PATHS = (
     ("search log", PROJECT_ROOT / "02_data/processed/search_log.csv"),
     ("master records", PROJECT_ROOT / "02_data/processed/master_records.csv"),
     ("extraction template", PROJECT_ROOT / "02_data/codebook/extraction_template.csv"),
+    ("audit log", PROJECT_ROOT / "02_data/processed/audit_log.csv"),
+    ("record id map", PROJECT_ROOT / "02_data/processed/record_id_map.csv"),
 )
 
 DOCTOR_OPTIONAL_PATHS = (
@@ -105,6 +109,11 @@ CURRENT_SPINE_DATA_ROOT = (PROJECT_ROOT / "02_data").resolve()
 CURRENT_SPINE_PROTOCOL_ROOT = (PROJECT_ROOT / "01_protocol").resolve()
 CURRENT_SPINE_OUTPUTS_ROOT = (PROJECT_ROOT / "03_analysis" / "outputs").resolve()
 CURRENT_SPINE_MANUSCRIPT_ROOT = (PROJECT_ROOT / "04_manuscript").resolve()
+MINIMAL_SCHEMA_COLUMNS = {
+    "search log": ("database", "date_searched", "results_total", "results_exported"),
+    "master records": ("record_id", "title", "authors", "year"),
+    "extraction template": (),
+}
 
 
 def parser() -> argparse.ArgumentParser:
@@ -613,6 +622,30 @@ def _module_available(module_name: str) -> bool:
     return find_spec(module_name) is not None
 
 
+def _command_available(command_name: str) -> bool:
+    return shutil.which(command_name) is not None
+
+
+def _csv_header(path: Path) -> set[str]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
+        try:
+            header = next(reader)
+        except StopIteration as exc:
+            raise ValueError("CSV file is empty.") from exc
+    normalized = {column.strip() for column in header if column.strip()}
+    if not normalized:
+        raise ValueError("CSV header row is empty.")
+    return normalized
+
+
+def _path_mtime(path: Path) -> float | None:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return None
+
+
 def _doctor_required_paths(review_config: ReviewConfig | None) -> tuple[tuple[str, Path], ...]:
     if review_config is None:
         return DOCTOR_REQUIRED_PATHS
@@ -655,6 +688,11 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
     lines.append(f"Version: {getattr(sys.modules.get('syreto'), '__version__', 'unknown')}")
     lines.append(f"Project root: {PROJECT_ROOT}")
     lines.append("")
+    lines.append("Preflight question")
+    lines.append(
+        "- Can this review be run honestly with the current environment, config, inputs, and outputs?"
+    )
+    lines.append("")
 
     review_config = None
     if config_path is not None:
@@ -690,6 +728,28 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
         )
         lines.append(_doctor_line("ok", "enabled stages", enabled_stages))
         lines.append("")
+        lines.append("Config preflight")
+        try:
+            _validate_run_config_compatibility(review_config)
+            lines.append(
+                _doctor_line(
+                    "ok",
+                    "config compatibility",
+                    "compatible with the current repository-aligned orchestration spine",
+                )
+            )
+        except ReviewConfigError as exc:
+            errors += 1
+            record_failure("config error")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    "config compatibility",
+                    str(exc),
+                    failure_class="config error",
+                )
+            )
+        lines.append("")
 
     lines.append("Environment")
     uv_path = Path.home() / ".local/bin/uv"
@@ -703,6 +763,20 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
                 "warn",
                 "uv",
                 "not found at ~/.local/bin/uv",
+                failure_class="environment problem",
+            )
+        )
+
+    if _command_available("bash"):
+        lines.append(_doctor_line("ok", "bash", "available on PATH"))
+    else:
+        errors += 1
+        record_failure("environment problem")
+        lines.append(
+            _doctor_classified_line(
+                "error",
+                "bash",
+                "not available on PATH",
                 failure_class="environment problem",
             )
         )
@@ -736,6 +810,9 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
         )
 
     lines.append("")
+    lines.append("Required tools")
+    lines.append(_doctor_line("ok", "tooling posture", "core runtime and developer tools checked"))
+    lines.append("")
     lines.append("Required checks")
     required_paths = _doctor_required_paths(review_config)
     for label, path in required_paths:
@@ -750,6 +827,59 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
                     label,
                     f"missing at {path.as_posix()}",
                     failure_class="missing artifact",
+                )
+            )
+
+    lines.append("")
+    lines.append("Schema presence")
+    schema_paths = {
+        "search log": PROJECT_ROOT / "02_data/processed/search_log.csv",
+        "master records": PROJECT_ROOT / "02_data/processed/master_records.csv",
+        "extraction template": PROJECT_ROOT / "02_data/codebook/extraction_template.csv",
+    }
+    if review_config is not None:
+        schema_paths = {
+            "search log": review_config.data_root / "processed/search_log.csv",
+            "master records": review_config.data_root / "processed/master_records.csv",
+            "extraction template": review_config.data_root / "codebook/extraction_template.csv",
+        }
+
+    for label, path in schema_paths.items():
+        if not path.exists():
+            continue
+        try:
+            header = _csv_header(path)
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            errors += 1
+            record_failure("schema violation")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    f"{label} schema",
+                    f"{exc} ({path.as_posix()})",
+                    failure_class="schema violation",
+                )
+            )
+            continue
+
+        missing_columns = sorted(set(MINIMAL_SCHEMA_COLUMNS[label]) - header)
+        if missing_columns:
+            errors += 1
+            record_failure("schema violation")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    f"{label} schema",
+                    f"missing required columns: {', '.join(missing_columns)}",
+                    failure_class="schema violation",
+                )
+            )
+        else:
+            lines.append(
+                _doctor_line(
+                    "ok",
+                    f"{label} schema",
+                    f"minimal header contract present in {path.as_posix()}",
                 )
             )
 
@@ -825,6 +955,80 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
             )
         )
 
+    lines.append("")
+    lines.append("Minimal review integrity")
+    audit_log_path = PROJECT_ROOT / "02_data/processed/audit_log.csv"
+    record_id_map_path = PROJECT_ROOT / "02_data/processed/record_id_map.csv"
+    if review_config is not None:
+        audit_log_path = review_config.data_root / "processed/audit_log.csv"
+        record_id_map_path = review_config.data_root / "processed/record_id_map.csv"
+
+    for label, path in (("audit log", audit_log_path), ("record id map", record_id_map_path)):
+        if path.exists():
+            lines.append(_doctor_line("ok", label, path.as_posix()))
+        else:
+            errors += 1
+            record_failure("integrity guard failure")
+            lines.append(
+                _doctor_classified_line(
+                    "error",
+                    label,
+                    f"missing at {path.as_posix()}",
+                    failure_class="integrity guard failure",
+                )
+            )
+
+    lines.append("")
+    lines.append("Stale or conflicting outputs")
+    input_candidates: list[tuple[Path, float]] = []
+    for _, path in required_paths:
+        if path.exists():
+            mtime = _path_mtime(path)
+            if mtime is not None:
+                input_candidates.append((path, mtime))
+
+    status_summary_mtime = (
+        _path_mtime(status_summary_path) if status_summary_path.exists() else None
+    )
+    run_events_mtime = _path_mtime(run_events_path) if run_events_path.exists() else None
+
+    if status_summary_mtime is not None and input_candidates:
+        newest_input_path, newest_input_mtime = max(input_candidates, key=lambda item: item[1])
+        if newest_input_mtime > status_summary_mtime:
+            warnings += 1
+            record_failure("partial run or stale outputs")
+            lines.append(
+                _doctor_classified_line(
+                    "warn",
+                    "status summary freshness",
+                    f"older than required input {newest_input_path.as_posix()}",
+                    failure_class="partial run or stale outputs",
+                )
+            )
+        else:
+            lines.append(
+                _doctor_line("ok", "status summary freshness", "not older than required inputs")
+            )
+
+    if run_events_mtime is not None and status_summary_mtime is not None:
+        if run_events_mtime < status_summary_mtime:
+            warnings += 1
+            record_failure("partial run or stale outputs")
+            lines.append(
+                _doctor_classified_line(
+                    "warn",
+                    "run events freshness",
+                    "older than status summary; execution history may be incomplete",
+                    failure_class="partial run or stale outputs",
+                )
+            )
+        else:
+            lines.append(
+                _doctor_line(
+                    "ok", "run events freshness", "consistent with current status artifacts"
+                )
+            )
+
     if errors == 0 and status_summary_path.exists():
         lines.append(
             _doctor_line(
@@ -885,6 +1089,13 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
     lines.append(
         f"Summary: errors={errors}, warnings={warnings}, available_scripts={len(AVAILABLE_SCRIPTS)}"
     )
+    if errors > 0:
+        verdict = "not ready for an honest run"
+    elif warnings > 0:
+        verdict = "ready with warnings"
+    else:
+        verdict = "ready for an honest run"
+    lines.append(f"Preflight verdict: {verdict}")
     print("\n".join(lines))
 
     if errors > 0:
