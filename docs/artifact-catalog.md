@@ -42,6 +42,8 @@ Common outputs under [`outputs/`](/Users/pigra/Documents/New%20project/syreto_cl
 - [`outputs/status_summary.json`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/status_summary.json)
 - [`outputs/status_report.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/status_report.md)
 - [`outputs/todo_action_plan.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/todo_action_plan.md)
+- [`outputs/review_descriptives.json`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/review_descriptives.json)
+- [`outputs/review_descriptives.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/review_descriptives.md)
 - [`outputs/progress_history.csv`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/progress_history.csv)
 - [`outputs/progress_history_summary.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/progress_history_summary.md)
 - [`outputs/dedup_merge_summary.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/dedup_merge_summary.md)
@@ -49,8 +51,15 @@ Common outputs under [`outputs/`](/Users/pigra/Documents/New%20project/syreto_cl
 - [`outputs/epistemic_consistency_report.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/epistemic_consistency_report.md)
 - [`outputs/prisma_flow_diagram.svg`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/prisma_flow_diagram.svg)
 - [`outputs/prisma_flow_diagram.tex`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/prisma_flow_diagram.tex)
+- [`outputs/figures/year_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/year_distribution.png)
+- [`outputs/figures/study_design_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/study_design_distribution.png)
+- [`outputs/figures/country_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/country_distribution.png)
 
 These are the first files to inspect when asking “did the run work?”
+
+The `review_descriptives.*` and `outputs/figures/` artifacts are specifically intended to answer a different question:
+
+- what does the current included-study corpus look like as a dataset?
 
 ## 3. Manuscript-Facing Generated Outputs
 
@@ -110,6 +119,14 @@ If you need to assess the state of a run quickly, inspect these first:
 4. [`outputs/prisma_flow_diagram.svg`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/prisma_flow_diagram.svg)
 5. the expected `.tex` outputs for the manuscript layer
 
+If you want a quick inspection of corpus shape rather than operational health, inspect:
+
+1. [`outputs/review_descriptives.json`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/review_descriptives.json)
+2. [`outputs/review_descriptives.md`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/review_descriptives.md)
+3. [`outputs/figures/year_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/year_distribution.png)
+4. [`outputs/figures/study_design_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/study_design_distribution.png)
+5. [`outputs/figures/country_distribution.png`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/figures/country_distribution.png)
+
 ## Related Entry Points
 
 Operational summaries are surfaced through:
@@ -118,3 +135,4 @@ Operational summaries are surfaced through:
 - [`03_analysis/status_cli.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/status_cli.py)
 - [`03_analysis/status_report.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/status_report.py)
 - [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh)
+- [`03_analysis/review_descriptives_builder.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/review_descriptives_builder.py)

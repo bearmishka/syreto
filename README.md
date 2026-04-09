@@ -46,6 +46,9 @@ Operational outputs include:
 - `outputs/todo_action_plan.md`
 - `outputs/review_descriptives.json`
 - `outputs/review_descriptives.md`
+- `outputs/figures/year_distribution.png`
+- `outputs/figures/study_design_distribution.png`
+- `outputs/figures/country_distribution.png`
 - `outputs/prisma_flow_diagram.svg`
 - `outputs/prisma_flow_diagram.tex`
 - `outputs/dedup_merge_summary.md`
@@ -124,6 +127,12 @@ If you want the full operational pipeline:
 syreto review run
 ```
 
+If you want a quick review-state analytics pass after inputs or pipeline outputs are in place:
+
+```bash
+syreto analytics
+```
+
 ## How To Know A Run Succeeded
 
 A successful run is not just “the script finished.” You should expect the following signals from `syreto review run`:
@@ -140,6 +149,7 @@ The most useful quick checks are:
 ```bash
 syreto doctor
 syreto status
+syreto analytics
 syreto artifacts --kind operational
 cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 ```
@@ -186,6 +196,14 @@ Run checks locally with:
 uv run pytest -q
 uv run pre-commit run --all-files
 ```
+
+Useful generated analytics artifacts:
+
+- `outputs/review_descriptives.json`
+- `outputs/review_descriptives.md`
+- `outputs/figures/year_distribution.png`
+- `outputs/figures/study_design_distribution.png`
+- `outputs/figures/country_distribution.png`
 
 ## Citation
 

@@ -139,19 +139,20 @@ Important subcommands on `syreto` now include:
 - `syreto artifacts`
 - `syreto validate`
 - `syreto doctor`
+- `syreto analytics`
+- `syreto review run`
 
-These are useful for discovery, status checks, and running packaged scripts.
+These are useful for discovery, status checks, review-state analytics, and running packaged scripts.
 
 ### Full Orchestration
 
 For a full pipeline run, the operational entrypoint is:
 
 ```bash
-cd 03_analysis
-bash daily_run.sh
+syreto review run
 ```
 
-This is the primary “system run” interface and the best representation of how the review is expected to be executed in practice.
+This invokes [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh) and is the primary “system run” interface.
 
 ## Source of Truth
 
@@ -179,6 +180,7 @@ The best quick operational check is:
 ```bash
 syreto doctor
 syreto status
+syreto analytics
 ```
 
 For deeper inspection:

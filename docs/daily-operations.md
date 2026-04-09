@@ -9,11 +9,10 @@ This page describes how SyReTo is intended to be operated day to day: how to run
 The main operational entry point is:
 
 ```bash
-cd 03_analysis
-bash daily_run.sh
+syreto review run
 ```
 
-This script is the closest thing SyReTo has to a production runbook. It is not just a convenience wrapper; it is the main orchestration layer for the review system.
+This command invokes the current orchestration spine in [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh). It is the closest thing SyReTo has to a production runbook.
 
 ## What `daily_run.sh` Does
 
@@ -68,9 +67,9 @@ The orchestration layer exposes many toggles, but these are the ones most worth 
 Examples:
 
 ```bash
-REVIEW_MODE=template bash daily_run.sh
-REVIEW_MODE=production STATUS_FAIL_ON=major bash daily_run.sh
-RUN_PROSPERO_DRAFTER=0 RUN_CITATION_TRACKING=0 bash daily_run.sh
+REVIEW_MODE=template syreto review run
+REVIEW_MODE=production STATUS_FAIL_ON=major syreto review run
+RUN_PROSPERO_DRAFTER=0 RUN_CITATION_TRACKING=0 syreto review run
 ```
 
 ## What To Check After A Run
@@ -103,7 +102,7 @@ python status_cli.py --input outputs/status_summary.json
 
 ## How To Interpret Failures
 
-When `daily_run.sh` fails, the important question is not just “which line failed?” but “which operational layer failed?”
+When `syreto review run` fails, the important question is not just “which line failed?” but “which operational layer failed?”
 
 Typical failure classes:
 
@@ -134,7 +133,10 @@ The most useful operational outputs are:
 - `outputs/status_summary.json`
 - `outputs/status_report.md`
 - `outputs/todo_action_plan.md`
+- `outputs/review_descriptives.json`
+- `outputs/review_descriptives.md`
 - `outputs/daily_run_manifest.json`
+- `outputs/run_events.jsonl`
 - `outputs/status_cli_snapshot.txt`
 - `outputs/template_term_guard_summary.md`
 - `outputs/epistemic_consistency_report.md`
@@ -148,9 +150,10 @@ For normal usage, the pattern should be:
 1. update canonical inputs under `02_data/`
 2. run `daily_run.sh`
 3. inspect `syreto doctor` and `syreto status`
-4. inspect `status_report.md` and `todo_action_plan.md`
-5. confirm expected manuscript-facing artifacts were regenerated
-6. commit the new review state and generated outputs together when appropriate
+4. run `syreto analytics` if you want a quick corpus-level inspection layer
+5. inspect `status_report.md`, `todo_action_plan.md`, and review descriptives
+6. confirm expected manuscript-facing artifacts were regenerated
+7. commit the new review state and generated outputs together when appropriate
 
 ## Related Docs
 
