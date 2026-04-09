@@ -5,6 +5,12 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from study_table import (
+    harmonize_study_columns,
+    included_study_table,
+    load_study_table,
+    sort_study_table,
+)
 
 MISSING_CODES = {
     "",
@@ -23,6 +29,26 @@ MISSING_CODES = {
 
 YES_VALUES = {"yes", "y", "1", "true"}
 YEAR_PATTERN = re.compile(r"(19|20)\d{2}")
+
+RIS_EXTRACTION_COLUMNS = [
+    "study_id",
+    "first_author",
+    "year",
+    "country",
+    "study_design",
+    "predictor_construct",
+    "outcome_construct",
+    "notes",
+    "consensus_status",
+    "title",
+    "abstract",
+    "authors",
+    "journal",
+    "doi",
+    "pmid",
+    "record_id",
+    "source_record_id",
+]
 
 
 def normalize(value: object) -> str:
@@ -132,37 +158,7 @@ def ris_line(tag: str, value: str) -> str:
 
 
 def load_extraction(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        raise FileNotFoundError(f"Extraction file not found: {path}")
-
-    try:
-        extraction_df = pd.read_csv(path, dtype=str)
-    except pd.errors.EmptyDataError:
-        extraction_df = pd.DataFrame()
-
-    legacy_to_generic = {
-        "object_relation_construct": "predictor_construct",
-        "identity_construct": "outcome_construct",
-    }
-    for legacy, generic in legacy_to_generic.items():
-        if generic not in extraction_df.columns and legacy in extraction_df.columns:
-            extraction_df[generic] = extraction_df[legacy]
-
-    required = [
-        "study_id",
-        "first_author",
-        "year",
-        "country",
-        "study_design",
-        "predictor_construct",
-        "outcome_construct",
-        "notes",
-    ]
-    for column in required:
-        if column not in extraction_df.columns:
-            extraction_df[column] = ""
-
-    return extraction_df
+    return load_study_table(path, RIS_EXTRACTION_COLUMNS)
 
 
 def load_master(path: Path, include_duplicates: bool) -> pd.DataFrame:
@@ -295,25 +291,17 @@ def pick_master_match(
 
 
 def select_included_extraction_rows(extraction_df: pd.DataFrame) -> pd.DataFrame:
+    if extraction_df.empty:
+        return extraction_df
     non_empty_df = non_empty_rows(extraction_df)
     if non_empty_df.empty:
         return non_empty_df
-    mask = ~non_empty_df["study_id"].apply(is_missing)
-    return non_empty_df.loc[mask].copy()
+    harmonized = harmonize_study_columns(non_empty_df, RIS_EXTRACTION_COLUMNS)
+    return included_study_table(harmonized, RIS_EXTRACTION_COLUMNS)
 
 
 def sort_included_rows(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df
-
-    sorted_df = df.copy()
-    sorted_df["_sort_year"] = pd.to_numeric(sorted_df["year"], errors="coerce").fillna(9999)
-    sorted_df["_sort_author"] = sorted_df["first_author"].fillna("").astype(str).str.lower()
-    sorted_df["_sort_study_id"] = sorted_df["study_id"].fillna("").astype(str).str.lower()
-    sorted_df = sorted_df.sort_values(
-        by=["_sort_year", "_sort_author", "_sort_study_id"], kind="stable"
-    )
-    return sorted_df.drop(columns=["_sort_year", "_sort_author", "_sort_study_id"])
+    return sort_study_table(df)
 
 
 def render_ris_records(
@@ -448,7 +436,7 @@ def render_summary(
     lines.append("## Row Counts")
     lines.append("")
     lines.append(f"- Extraction rows (raw): {total_extraction_rows}")
-    lines.append(f"- Included rows (non-empty `study_id`): {included_rows}")
+    lines.append(f"- Included rows (StudyTable contract): {included_rows}")
     lines.append(f"- Exported RIS records: {exported_rows}")
     lines.append(f"- Non-duplicate master rows available for matching: {master_rows_used}")
     lines.append("")
@@ -468,7 +456,7 @@ def render_summary(
     lines.append("## Notes")
     lines.append("")
     lines.append(
-        "- Selection rule for included studies follows synthesis workflow: non-empty `study_id` rows in extraction table."
+        "- Selection rule for included studies follows the StudyTable contract: included rows with stable `study_id` values."
     )
     lines.append(
         "- Bibliographic enrichment uses `master_records.csv` when a reliable match is available."
