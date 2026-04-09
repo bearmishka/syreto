@@ -132,6 +132,10 @@ def parser() -> argparse.ArgumentParser:
         nargs=argparse.REMAINDER,
         help="Arguments passed through to status_cli; use `--` before status flags.",
     )
+    status_parser.add_argument(
+        "--config",
+        help="Path to review.toml for review-instance-aware status checks.",
+    )
 
     artifacts_parser = subparsers.add_parser(
         "artifacts",
@@ -254,6 +258,10 @@ def _run_script(name: str, script_args: list[str]) -> int:
     return int(result.returncode)
 
 
+def _has_passthrough_option(args: list[str], option: str) -> bool:
+    return any(value == option or value.startswith(f"{option}=") for value in args)
+
+
 def _artifact_groups_for_kind(kind: str) -> list[tuple[str, tuple[str, ...]]]:
     if kind == "all":
         return [
@@ -306,6 +314,35 @@ def _run_validate(target: str, validate_args: list[str]) -> int:
             break
 
     return exit_code
+
+
+def _run_status(status_args: list[str], *, config_path: str | None = None) -> int:
+    normalized_args = _normalize_passthrough_args(status_args)
+    if config_path is None:
+        return _run_script("status_cli", normalized_args)
+
+    try:
+        review_config = load_review_config(config_path)
+    except ReviewConfigError as exc:
+        print(
+            _doctor_classified_line(
+                "error",
+                "review config",
+                str(exc),
+                failure_class="config error",
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+    routed_args = list(normalized_args)
+    if not _has_passthrough_option(routed_args, "--input"):
+        routed_args.extend(["--input", str(review_config.outputs_root / "status_summary.json")])
+    if not _has_passthrough_option(routed_args, "--fail-on"):
+        routed_args.extend(["--fail-on", review_config.fail_on])
+    if not _has_passthrough_option(routed_args, "--auto-generate-missing"):
+        routed_args.append("--no-auto-generate-missing")
+    return _run_script("status_cli", routed_args)
 
 
 def _run_review_pipeline(review_args: list[str]) -> int:
@@ -636,7 +673,7 @@ def _alias_argv(argv: list[str] | None) -> list[str]:
 
 
 def main_status(argv: list[str] | None = None) -> int:
-    return _run_script("status_cli", _alias_argv(argv))
+    return _run_status(_alias_argv(argv))
 
 
 def main_draft(argv: list[str] | None = None) -> int:
@@ -654,7 +691,7 @@ def main(argv: list[str] | None = None) -> int:
     if command == "run":
         return _run_script(args.script, args.script_args)
     if command == "status":
-        return _run_script("status_cli", args.status_args)
+        return _run_status(args.status_args, config_path=args.config)
     if command == "artifacts":
         return _list_artifacts(args.kind, missing_only=bool(args.missing_only))
     if command == "validate":

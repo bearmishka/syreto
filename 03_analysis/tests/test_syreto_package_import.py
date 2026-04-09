@@ -101,7 +101,64 @@ class SyretoPackageImportTests(unittest.TestCase):
             exit_code = cli.main(["status", "--", "--fail-on", "major"])
 
         self.assertEqual(exit_code, 0)
-        patched.assert_called_once_with("status_cli", ["--", "--fail-on", "major"])
+        patched.assert_called_once_with("status_cli", ["--fail-on", "major"])
+
+    def test_cli_status_with_config_routes_to_review_outputs(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(["status", "--config", "reviews/example/review.toml"])
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with(
+            "status_cli",
+            [
+                "--input",
+                str(cli.PROJECT_ROOT / "reviews/example/outputs/status_summary.json"),
+                "--fail-on",
+                "major",
+                "--no-auto-generate-missing",
+            ],
+        )
+
+    def test_cli_status_with_config_preserves_explicit_fail_on_and_input(self) -> None:
+        from syreto import cli
+
+        with mock.patch.object(cli, "_run_script", return_value=0) as patched:
+            exit_code = cli.main(
+                [
+                    "status",
+                    "--config",
+                    "reviews/example/review.toml",
+                    "--",
+                    "--input",
+                    "custom/status.json",
+                    "--fail-on",
+                    "critical",
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        patched.assert_called_once_with(
+            "status_cli",
+            [
+                "--input",
+                "custom/status.json",
+                "--fail-on",
+                "critical",
+                "--no-auto-generate-missing",
+            ],
+        )
+
+    def test_cli_status_with_invalid_config_fails_as_config_error(self) -> None:
+        from syreto import cli
+
+        stderr = StringIO()
+        with redirect_stderr(stderr):
+            exit_code = cli.main(["status", "--config", "reviews/example/missing.toml"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("class=config error", stderr.getvalue())
 
     def test_cli_artifacts_lists_selected_group(self) -> None:
         from syreto import cli
