@@ -13,6 +13,8 @@ It is designed to make a systematic review run like an auditable system:
 - outputs are regenerated rather than edited by hand
 - process failures are surfaced as status findings instead of being silently absorbed
 
+Internally, key downstream stages increasingly share a common StudyTable-style contract for study-level transitions, while files remain the canonical source of truth.
+
 ## Who It Is For
 
 SyReTo is for teams who want a systematic review workflow that is:
@@ -167,6 +169,8 @@ For the planned configuration model of review-specific execution, see [docs/revi
 For the concrete `review.toml` schema and example review-instance config, see [docs/review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md) and [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml).
 
 For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-analytics-model.md).
+
+For the internal study-level contract that now backs several downstream synthesis, plotting, summary, and export steps, see [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md).
 
 ## Main Entry Points
 

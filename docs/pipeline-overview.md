@@ -22,6 +22,8 @@ The pipeline is built around a simple contract:
 
 In practice, this means SyReTo is closer to a build system for systematic reviews than to a notebook collection.
 
+Several downstream stages now share a common study-level internal contract through the [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md), rather than each maintaining separate extraction harmonization logic.
+
 ## Main Stages
 
 The end-to-end orchestration entrypoint is [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh).
@@ -74,6 +76,8 @@ Representative scripts:
 - `forest_plot_generator.py`
 - `results_interpretation_layer.py`
 
+The `results_summary_table_builder.py` and `forest_plot_generator.py` paths now consume a shared StudyTable-style internal contract for study-level inputs.
+
 ### 5. Study and Review Traceability
 
 This stage creates lineage and transparency artifacts that help connect upstream decisions to downstream outputs.
@@ -107,6 +111,8 @@ Representative scripts:
 - `grade_evidence_profiler.py`
 - `results_summary_table_builder.py`
 - `results_interpretation_layer.py`
+
+This layer increasingly depends on shared study-level contracts instead of repeated one-off extraction parsing.
 
 ### 8. Optional Operational Extensions
 

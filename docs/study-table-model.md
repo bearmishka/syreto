@@ -227,20 +227,31 @@ Those concerns should remain in separate artifacts and contracts.
 
 ---
 
-## 10. Early Adoption Targets
+## 10. Current Adoption Surface
 
-The first modules that can benefit from STM adoption are:
+The STM is no longer only a design target. It is already used in several downstream modules.
+
+Current adoption includes:
+
+1. [synthesis_tables.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/synthesis_tables.py)
+2. [grade_evidence_profiler.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/grade_evidence_profiler.py)
+3. [results_summary_table_builder.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/results_summary_table_builder.py)
+4. [forest_plot_generator.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/forest_plot_generator.py)
+5. [export_to_ris.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/export_to_ris.py)
+
+These modules now rely on a shared internal study-level contract instead of each maintaining its own selection, harmonization, and sorting logic.
+
+## 11. Remaining Adoption Targets
+
+The next likely adoption targets are:
 
 1. [validate_extraction.py](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/validate_extraction.py)
-2. [synthesis_tables.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/synthesis_tables.py)
-3. [grade_evidence_profiler.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/grade_evidence_profiler.py)
-4. [forest_plot_generator.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/forest_plot_generator.py)
-
-These modules already depend on overlapping study-level assumptions and would benefit from one shared contract.
+2. modules that still duplicate study-level alias handling or inclusion semantics
+3. future analytics builders that need stable study-level inputs
 
 ---
 
-## 11. Relationship to Other Models
+## 12. Relationship to Other Models
 
 The STM sits below the review-level architecture documents.
 
@@ -254,7 +265,7 @@ The STM answers a narrower question:
 
 ---
 
-## 12. Summary
+## 13. Summary
 
 The Study Table Model is a minimal internal contract for repeated study-level transitions in SyReTo.
 
