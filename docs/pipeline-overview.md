@@ -145,10 +145,12 @@ Important subcommands on `syreto` now include:
 - `syreto artifacts`
 - `syreto validate`
 - `syreto doctor`
+- `syreto observability`
 - `syreto analytics`
 - `syreto review run`
 
 These are useful for discovery, status checks, review-state analytics, and running packaged scripts.
+The `doctor`, `status`, and `review run` surfaces also support `--config` for the emerging review-instance model.
 
 ### Full Orchestration
 
@@ -186,6 +188,7 @@ The best quick operational check is:
 ```bash
 syreto doctor
 syreto status
+syreto observability
 syreto analytics
 ```
 
@@ -196,4 +199,4 @@ cd 03_analysis
 python status_cli.py --input outputs/status_summary.json
 ```
 
-For the future review-aware configuration layer, see [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
+For the review-aware configuration layer, see [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md), [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).

@@ -35,6 +35,23 @@ The review root is the directory that contains this file.
 
 All relative paths in the config are resolved relative to that review root.
 
+## Current Repository Examples
+
+Two configs are currently useful to read side by side:
+
+- [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml): conceptual example with review-local paths
+- [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml): runnable repository-aligned config for the current orchestration spine
+
+The `repo-default` config is the practical starting point for:
+
+```bash
+syreto doctor --config reviews/repo-default/review.toml
+syreto status --config reviews/repo-default/review.toml
+syreto review run --config reviews/repo-default/review.toml
+```
+
+This does not yet mean the pipeline is fully path-decoupled. It means the current spine can be invoked through an explicit, versioned review-instance config when that config remains compatible with the repository-aligned layout.
+
 ## Minimal Schema
 
 ### `[review]`

@@ -14,6 +14,16 @@ syreto review run
 
 This command invokes the current orchestration spine in [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh). It is the closest thing SyReTo has to a production runbook.
 
+SyReTo also exposes a config-aware path over this same spine:
+
+```bash
+syreto doctor --config reviews/repo-default/review.toml
+syreto status --config reviews/repo-default/review.toml
+syreto review run --config reviews/repo-default/review.toml
+```
+
+This is a transitional review-instance surface, not a second independent orchestrator.
+
 ## What `daily_run.sh` Does
 
 At a high level, `daily_run.sh`:
@@ -89,6 +99,7 @@ Fast checks:
 ```bash
 syreto doctor
 syreto status
+syreto observability
 ```
 
 ```bash
@@ -148,12 +159,13 @@ If `daily_run.sh` creates `outputs/daily_run_failed.marker`, treat the run as in
 For normal usage, the pattern should be:
 
 1. update canonical inputs under `02_data/`
-2. run `daily_run.sh`
+2. run `syreto review run`
 3. inspect `syreto doctor` and `syreto status`
-4. run `syreto analytics` if you want a quick corpus-level inspection layer
-5. inspect `status_report.md`, `todo_action_plan.md`, and review descriptives
-6. confirm expected manuscript-facing artifacts were regenerated
-7. commit the new review state and generated outputs together when appropriate
+4. inspect `syreto observability` if you want a quick execution-history and postmortem view
+5. run `syreto analytics` if you want a quick corpus-level inspection layer
+6. inspect `status_report.md`, `todo_action_plan.md`, and review descriptives
+7. confirm expected manuscript-facing artifacts were regenerated
+8. commit the new review state and generated outputs together when appropriate
 
 ## Related Docs
 
@@ -162,3 +174,5 @@ For normal usage, the pattern should be:
 - [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
 - [integrity-guards.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/integrity-guards.md)
 - [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
+- [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md)
+- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)

@@ -117,11 +117,15 @@ If you want the packaged entrypoints first:
 ```bash
 syreto list
 syreto doctor
+syreto doctor --config reviews/repo-default/review.toml
 syreto status
+syreto status --config reviews/repo-default/review.toml
 syreto artifacts --kind operational
 syreto validate all -- --fail-on error
 syreto analytics
+syreto observability
 syreto review run
+syreto review run --config reviews/repo-default/review.toml
 syreto-draft --help
 ```
 
@@ -154,6 +158,7 @@ The most useful quick checks are:
 syreto doctor
 syreto status
 syreto analytics
+syreto observability
 syreto artifacts --kind operational
 cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 ```
@@ -166,7 +171,7 @@ For the explicit run-level contract around canonical inputs, canonical outputs, 
 
 For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
 
-For the concrete `review.toml` schema and example review-instance config, see [docs/review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md) and [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml).
+For the concrete `review.toml` schema and example review-instance configs, see [docs/review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).
 
 For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-analytics-model.md).
 
@@ -181,8 +186,10 @@ For the internal study-level contract that now backs several downstream synthesi
 - `syreto artifacts`: inspect key operational and manuscript-facing artifacts
 - `syreto validate`: run packaged validation checks
 - `syreto doctor`: run a quick repository readiness diagnostic
+- `syreto observability`: inspect recorded run events and postmortem signals
 - `syreto analytics`: build descriptive review-state analytics artifacts
 - `syreto review run`: run the full review pipeline through the current orchestration spine
+- `syreto doctor --config`, `syreto status --config`, `syreto review run --config`: use the config-aware review-instance surface
 - `syreto-status`: print a concise operational summary from `status_summary.json`
 - `syreto-draft`: run the PROSPERO draft generation entrypoint
 - `03_analysis/daily_run.sh`: current orchestration spine invoked by `syreto review run`
