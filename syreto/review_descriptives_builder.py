@@ -37,6 +37,7 @@ DEFAULT_FIGURE_OUTPUTS = {
     "study_design": Path("../outputs/figures/study_design_distribution.png"),
     "country": Path("../outputs/figures/country_distribution.png"),
     "quality_band": Path("../outputs/figures/quality_band_distribution.png"),
+    "predictor_outcome_heatmap": Path("../outputs/figures/predictor_outcome_heatmap.png"),
 }
 
 
@@ -103,6 +104,33 @@ def top_pair_counter(frame: pd.DataFrame, left: str, right: str) -> list[dict[st
         {"predictor_construct": predictor, "outcome_construct": outcome, "count": count}
         for (predictor, outcome), count in ranked
     ]
+
+
+def predictor_outcome_matrix(
+    studies_df: pd.DataFrame, *, top_n_predictors: int = 8, top_n_outcomes: int = 8
+) -> tuple[list[str], list[str], list[list[int]]]:
+    pairs = top_pair_counter(studies_df, "predictor_construct", "outcome_construct")
+    if not pairs:
+        return [], [], []
+
+    predictor_totals = normalized_counter(
+        studies_df.get("predictor_construct", pd.Series(dtype=str))
+    )
+    outcome_totals = normalized_counter(studies_df.get("outcome_construct", pd.Series(dtype=str)))
+    predictors = list(predictor_totals.keys())[:top_n_predictors]
+    outcomes = list(outcome_totals.keys())[:top_n_outcomes]
+    if not predictors or not outcomes:
+        return [], [], []
+
+    pair_lookup = {
+        (item["predictor_construct"], item["outcome_construct"]): int(item["count"])
+        for item in pairs
+    }
+    matrix = [
+        [pair_lookup.get((predictor, outcome), 0) for outcome in outcomes]
+        for predictor in predictors
+    ]
+    return predictors, outcomes, matrix
 
 
 def sample_size_summary(studies_df: pd.DataFrame) -> dict[str, int | float | None]:
@@ -217,6 +245,51 @@ def render_distribution_figure(
     return True
 
 
+def render_heatmap_figure(
+    *,
+    predictors: list[str],
+    outcomes: list[str],
+    matrix: list[list[int]],
+    output_path: Path,
+) -> bool:
+    if not predictors or not outcomes or not matrix:
+        return False
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig_width = max(7.5, min(13.0, 1.0 * len(outcomes) + 3.5))
+    fig_height = max(5.5, min(12.0, 0.7 * len(predictors) + 3.0))
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+
+    image = ax.imshow(matrix, cmap="YlGnBu", aspect="auto")
+    ax.set_title("Predictor x Outcome Co-occurrence")
+    ax.set_xlabel("Outcome construct")
+    ax.set_ylabel("Predictor construct")
+    ax.set_xticks(range(len(outcomes)))
+    ax.set_xticklabels(outcomes, rotation=35, ha="right")
+    ax.set_yticks(range(len(predictors)))
+    ax.set_yticklabels(predictors)
+
+    for row_index, row in enumerate(matrix):
+        for col_index, value in enumerate(row):
+            if value <= 0:
+                continue
+            ax.text(
+                col_index,
+                row_index,
+                str(value),
+                ha="center",
+                va="center",
+                fontsize=9,
+                color="#102a43",
+            )
+
+    fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04, label="Studies")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    return True
+
+
 def render_figures(
     payload: dict[str, object],
     *,
@@ -224,6 +297,8 @@ def render_figures(
     study_design_output: Path,
     country_output: Path,
     quality_band_output: Path,
+    predictor_outcome_heatmap_output: Path,
+    studies_df: pd.DataFrame,
 ) -> dict[str, str]:
     distributions = payload["distributions"]
     rendered: dict[str, str] = {}
@@ -251,6 +326,15 @@ def render_figures(
             distribution, title=title, xlabel=xlabel, output_path=output_path
         ):
             rendered[key] = output_path.as_posix()
+
+    predictors, outcomes, matrix = predictor_outcome_matrix(studies_df)
+    if render_heatmap_figure(
+        predictors=predictors,
+        outcomes=outcomes,
+        matrix=matrix,
+        output_path=predictor_outcome_heatmap_output,
+    ):
+        rendered["predictor_outcome_heatmap"] = predictor_outcome_heatmap_output.as_posix()
 
     payload["figure_outputs"] = rendered
     return rendered
@@ -375,6 +459,11 @@ def main() -> None:
         default=str(DEFAULT_FIGURE_OUTPUTS["quality_band"]),
         help="Path to quality-band distribution PNG output.",
     )
+    parser.add_argument(
+        "--predictor-outcome-heatmap-output",
+        default=str(DEFAULT_FIGURE_OUTPUTS["predictor_outcome_heatmap"]),
+        help="Path to predictor-outcome heatmap PNG output.",
+    )
     args = parser.parse_args()
 
     extraction_path = Path(args.extraction_input)
@@ -389,6 +478,8 @@ def main() -> None:
         study_design_output=Path(args.study_design_figure_output),
         country_output=Path(args.country_figure_output),
         quality_band_output=Path(args.quality_band_figure_output),
+        predictor_outcome_heatmap_output=Path(args.predictor_outcome_heatmap_output),
+        studies_df=studies_df,
     )
     markdown = build_markdown(payload, extraction_path=extraction_path)
 

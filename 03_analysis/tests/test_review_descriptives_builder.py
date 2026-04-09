@@ -62,6 +62,13 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
         self.assertEqual(payload["figure_outputs"], {})
 
     def test_render_figures_writes_png_outputs(self) -> None:
+        studies_df = pd.DataFrame(
+            [
+                {"predictor_construct": "attachment", "outcome_construct": "distress"},
+                {"predictor_construct": "attachment", "outcome_construct": "distress"},
+                {"predictor_construct": "identity", "outcome_construct": "functioning"},
+            ]
+        )
         payload = {
             "distributions": {
                 "year": {"2020": 2, "2021": 1},
@@ -80,14 +87,35 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
                 study_design_output=base / "design.png",
                 country_output=base / "country.png",
                 quality_band_output=base / "quality.png",
+                predictor_outcome_heatmap_output=base / "heatmap.png",
+                studies_df=studies_df,
             )
 
             self.assertSetEqual(
                 set(rendered.keys()),
-                {"year", "study_design", "country", "quality_band"},
+                {"year", "study_design", "country", "quality_band", "predictor_outcome_heatmap"},
             )
             for figure_path in rendered.values():
                 self.assertTrue(Path(figure_path).exists())
+
+    def test_predictor_outcome_matrix_builds_cooccurrence_grid(self) -> None:
+        studies_df = pd.DataFrame(
+            [
+                {"predictor_construct": "attachment", "outcome_construct": "distress"},
+                {"predictor_construct": "attachment", "outcome_construct": "distress"},
+                {"predictor_construct": "attachment", "outcome_construct": "functioning"},
+                {"predictor_construct": "identity", "outcome_construct": "distress"},
+            ]
+        )
+
+        predictors, outcomes, matrix = review_descriptives_builder.predictor_outcome_matrix(
+            studies_df
+        )
+
+        self.assertEqual(predictors[:2], ["attachment", "identity"])
+        self.assertEqual(outcomes[:2], ["distress", "functioning"])
+        self.assertEqual(matrix[0][0], 2)
+        self.assertEqual(matrix[0][1], 1)
 
     def test_quality_band_distribution_reads_scored_appraisal(self) -> None:
         quality_df = pd.DataFrame(
@@ -128,6 +156,7 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
             design_output = base / "figures" / "design.png"
             country_output = base / "figures" / "country.png"
             quality_output = base / "figures" / "quality.png"
+            heatmap_output = base / "figures" / "heatmap.png"
             quality_input = base / "quality.csv"
             extraction_df.to_csv(extraction_path, index=False)
             pd.DataFrame([{"study_id": "S1", "quality_band": "high", "score_pct": "80.0"}]).to_csv(
@@ -154,6 +183,8 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
                     str(quality_input),
                     "--quality-band-figure-output",
                     str(quality_output),
+                    "--predictor-outcome-heatmap-output",
+                    str(heatmap_output),
                 ]
                 review_descriptives_builder.main()
             finally:
@@ -166,7 +197,7 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
         self.assertEqual(payload["distributions"]["predictor_construct"]["attachment"], 1)
         self.assertSetEqual(
             set(payload["figure_outputs"].keys()),
-            {"year", "study_design", "country", "quality_band"},
+            {"year", "study_design", "country", "quality_band", "predictor_outcome_heatmap"},
         )
         self.assertIn("Included studies: 1", markdown)
         self.assertIn("attachment x distress: 1", markdown)
