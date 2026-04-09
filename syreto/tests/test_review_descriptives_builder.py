@@ -59,8 +59,32 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
         self.assertEqual(payload["sample_size_summary"]["studies_with_sample_size"], 2)
         self.assertEqual(payload["sample_size_summary"]["total_reported_participants"], 200)
         self.assertEqual(payload["predictor_outcome_pairs"][0]["count"], 1)
+        self.assertEqual(payload["figure_outputs"], {})
 
-    def test_main_writes_json_and_markdown_outputs(self) -> None:
+    def test_render_figures_writes_png_outputs(self) -> None:
+        payload = {
+            "distributions": {
+                "year": {"2020": 2, "2021": 1},
+                "study_design": {"cohort": 2, "trial": 1},
+                "country": {"USA": 2, "Canada": 1},
+            },
+            "figure_outputs": {},
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base = Path(tmpdir)
+            rendered = review_descriptives_builder.render_figures(
+                payload,
+                year_output=base / "year.png",
+                study_design_output=base / "design.png",
+                country_output=base / "country.png",
+            )
+
+            self.assertSetEqual(set(rendered.keys()), {"year", "study_design", "country"})
+            for figure_path in rendered.values():
+                self.assertTrue(Path(figure_path).exists())
+
+    def test_main_writes_json_markdown_and_figure_outputs(self) -> None:
         extraction_df = pd.DataFrame(
             [
                 {
@@ -82,6 +106,9 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
             extraction_path = base / "extraction.csv"
             json_output = base / "review_descriptives.json"
             markdown_output = base / "review_descriptives.md"
+            year_output = base / "figures" / "year.png"
+            design_output = base / "figures" / "design.png"
+            country_output = base / "figures" / "country.png"
             extraction_df.to_csv(extraction_path, index=False)
 
             argv = sys.argv[:]
@@ -94,6 +121,12 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
                     str(json_output),
                     "--markdown-output",
                     str(markdown_output),
+                    "--year-figure-output",
+                    str(year_output),
+                    "--study-design-figure-output",
+                    str(design_output),
+                    "--country-figure-output",
+                    str(country_output),
                 ]
                 review_descriptives_builder.main()
             finally:
@@ -104,8 +137,13 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
 
         self.assertEqual(payload["included_study_count"], 1)
         self.assertEqual(payload["distributions"]["predictor_construct"]["attachment"], 1)
+        self.assertSetEqual(
+            set(payload["figure_outputs"].keys()),
+            {"year", "study_design", "country"},
+        )
         self.assertIn("Included studies: 1", markdown)
         self.assertIn("attachment x distress: 1", markdown)
+        self.assertIn("year:", markdown)
 
 
 if __name__ == "__main__":

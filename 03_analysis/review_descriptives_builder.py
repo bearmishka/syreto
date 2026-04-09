@@ -6,7 +6,11 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+import matplotlib
 import pandas as pd
+
+matplotlib.use("Agg")
+from matplotlib import pyplot as plt
 
 if __package__ in {None, ""}:
     import sys
@@ -27,6 +31,12 @@ STUDY_COLUMNS = [
     "outcome_construct",
     "consensus_status",
 ]
+
+DEFAULT_FIGURE_OUTPUTS = {
+    "year": Path("../outputs/figures/year_distribution.png"),
+    "study_design": Path("../outputs/figures/study_design_distribution.png"),
+    "country": Path("../outputs/figures/country_distribution.png"),
+}
 
 
 def atomic_replace_bytes(path: Path, payload: bytes) -> None:
@@ -158,8 +168,78 @@ def build_descriptives_payload(studies_df: pd.DataFrame) -> dict[str, object]:
         "predictor_outcome_pairs": top_pair_counter(
             studies_df, "predictor_construct", "outcome_construct"
         )[:10],
+        "figure_outputs": {},
     }
     return payload
+
+
+def render_distribution_figure(
+    distribution: dict[str, int], *, title: str, xlabel: str, output_path: Path
+) -> bool:
+    if not distribution:
+        return False
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    labels = list(distribution.keys())
+    counts = list(distribution.values())
+
+    fig_width = max(6.5, min(12.0, 1.1 * len(labels)))
+    fig, ax = plt.subplots(figsize=(fig_width, 4.5))
+    bars = ax.bar(range(len(labels)), counts, color="#355070", edgecolor="#1f2a44")
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Studies")
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=35, ha="right")
+    ax.grid(axis="y", alpha=0.25, linestyle="--")
+    ax.set_axisbelow(True)
+
+    for bar, count in zip(bars, counts, strict=False):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            str(count),
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    return True
+
+
+def render_figures(
+    payload: dict[str, object],
+    *,
+    year_output: Path,
+    study_design_output: Path,
+    country_output: Path,
+) -> dict[str, str]:
+    distributions = payload["distributions"]
+    rendered: dict[str, str] = {}
+
+    figure_specs = (
+        ("year", "Included Studies by Publication Year", "Publication year", year_output),
+        (
+            "study_design",
+            "Included Studies by Design",
+            "Study design",
+            study_design_output,
+        ),
+        ("country", "Included Studies by Country", "Country", country_output),
+    )
+
+    for key, title, xlabel, output_path in figure_specs:
+        distribution = distributions.get(key, {})
+        if render_distribution_figure(
+            distribution, title=title, xlabel=xlabel, output_path=output_path
+        ):
+            rendered[key] = output_path.as_posix()
+
+    payload["figure_outputs"] = rendered
+    return rendered
 
 
 def build_markdown(payload: dict[str, object], *, extraction_path: Path) -> str:
@@ -220,6 +300,16 @@ def build_markdown(payload: dict[str, object], *, extraction_path: Path) -> str:
                 f"- {pair['predictor_construct']} x {pair['outcome_construct']}: {pair['count']}"
             )
     lines.append("")
+
+    lines.append("## Figures")
+    lines.append("")
+    figure_outputs = payload.get("figure_outputs", {})
+    if not figure_outputs:
+        lines.append("- No figures were generated from the current review state.")
+    else:
+        for figure_name, figure_path in figure_outputs.items():
+            lines.append(f"- {figure_name}: `{figure_path}`")
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -246,12 +336,33 @@ def main() -> None:
         default="../outputs/review_descriptives.md",
         help="Path to markdown descriptives summary output.",
     )
+    parser.add_argument(
+        "--year-figure-output",
+        default=str(DEFAULT_FIGURE_OUTPUTS["year"]),
+        help="Path to year-distribution PNG output.",
+    )
+    parser.add_argument(
+        "--study-design-figure-output",
+        default=str(DEFAULT_FIGURE_OUTPUTS["study_design"]),
+        help="Path to study-design distribution PNG output.",
+    )
+    parser.add_argument(
+        "--country-figure-output",
+        default=str(DEFAULT_FIGURE_OUTPUTS["country"]),
+        help="Path to country-distribution PNG output.",
+    )
     args = parser.parse_args()
 
     extraction_path = Path(args.extraction_input)
     extraction_df = read_csv_or_empty(extraction_path)
     studies_df = build_study_view(extraction_df)
     payload = build_descriptives_payload(studies_df)
+    render_figures(
+        payload,
+        year_output=Path(args.year_figure_output),
+        study_design_output=Path(args.study_design_figure_output),
+        country_output=Path(args.country_figure_output),
+    )
     markdown = build_markdown(payload, extraction_path=extraction_path)
 
     atomic_write_text(
@@ -261,6 +372,8 @@ def main() -> None:
 
     print(f"Wrote: {Path(args.json_output)}")
     print(f"Wrote: {Path(args.markdown_output)}")
+    for figure_path in payload["figure_outputs"].values():
+        print(f"Wrote: {figure_path}")
     print(f"Included studies: {payload['included_study_count']}")
 
 
