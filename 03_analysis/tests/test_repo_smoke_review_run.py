@@ -14,6 +14,11 @@ if str(PROJECT_ROOT) not in os.sys.path:
 
 from syreto import cli  # noqa: E402
 
+FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke"
+EXPECTED_MANIFEST_PATH = FIXTURE_ROOT / "expected/manifest_expected.json"
+EXPECTED_STATUS_SUMMARY_PATH = FIXTURE_ROOT / "expected/status_summary_expected.json"
+EXPECTED_RUN_EVENTS_PATH = FIXTURE_ROOT / "expected/run_events_expected.json"
+
 
 class _PathBackup:
     def __init__(self, path: Path) -> None:
@@ -146,20 +151,42 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                 self.assertTrue((outputs_root / "status_summary.json").exists())
 
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                self.assertEqual(manifest.get("state"), "success")
-                self.assertEqual(manifest.get("final_exit_code"), 0)
-                self.assertFalse(manifest.get("rollback_applied"))
+                expected_manifest = json.loads(EXPECTED_MANIFEST_PATH.read_text(encoding="utf-8"))
+                manifest_subset = {
+                    "state": manifest.get("state"),
+                    "final_exit_code": manifest.get("final_exit_code"),
+                    "pipeline_exit_code": manifest.get("pipeline_exit_code"),
+                    "status_checkpoint_exit_code": manifest.get("status_checkpoint_exit_code"),
+                    "rollback_applied": manifest.get("rollback_applied"),
+                    "failure_phase": manifest.get("failure_phase"),
+                    "transactional_mode": manifest.get("transactional_mode"),
+                    "review_mode": manifest.get("review_mode"),
+                }
+                self.assertEqual(manifest_subset, expected_manifest)
+
+                status_summary = json.loads(
+                    (outputs_root / "status_summary.json").read_text(encoding="utf-8")
+                )
+                expected_status_summary = json.loads(
+                    EXPECTED_STATUS_SUMMARY_PATH.read_text(encoding="utf-8")
+                )
+                self.assertEqual(status_summary, expected_status_summary)
 
                 run_events = [
                     json.loads(line)
                     for line in run_events_path.read_text(encoding="utf-8").splitlines()
                     if line.strip()
                 ]
+                expected_run_events = json.loads(
+                    EXPECTED_RUN_EVENTS_PATH.read_text(encoding="utf-8")
+                )
+                successful_steps = {
+                    str(event.get("step"))
+                    for event in run_events
+                    if event.get("status") == "success"
+                }
                 self.assertTrue(
-                    any(
-                        event.get("step") == "status_report" and event.get("status") == "success"
-                        for event in run_events
-                    )
+                    set(expected_run_events["required_success_steps"]).issubset(successful_steps)
                 )
 
                 calls = calls_log.read_text(encoding="utf-8")

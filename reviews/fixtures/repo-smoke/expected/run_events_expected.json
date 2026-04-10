@@ -1,0 +1,8 @@
+{
+  "required_success_steps": [
+    "status_report",
+    "todo_action_plan",
+    "epistemic_consistency_guard",
+    "status_cli_snapshot"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "state": "success",
+  "final_exit_code": 0,
+  "pipeline_exit_code": 0,
+  "status_checkpoint_exit_code": 0,
+  "rollback_applied": false,
+  "failure_phase": "",
+  "transactional_mode": "enabled",
+  "review_mode": null
+}

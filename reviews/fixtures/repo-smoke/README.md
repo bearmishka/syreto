@@ -15,3 +15,9 @@ It is meant for:
 - execution-surface regression checks
 - manifest and observability checks
 - failed-marker and success-marker semantics
+
+The fixture also stores a small normalized golden subset under `expected/` for:
+
+- manifest semantics
+- status summary semantics
+- required successful run-event steps
