@@ -1,0 +1,3 @@
+reviewer,current_records,load_share_percent,equal_share_target,delta_to_equal_share,suggested_next_batch
+reviewer_a,12,60.0,10,-2,0
+reviewer_b,8,40.0,10,2,2

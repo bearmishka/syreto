@@ -18,8 +18,18 @@ FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke"
 EXPECTED_MANIFEST_PATH = FIXTURE_ROOT / "expected/manifest_expected.json"
 EXPECTED_STATUS_SUMMARY_PATH = FIXTURE_ROOT / "expected/status_summary_expected.json"
 EXPECTED_RUN_EVENTS_PATH = FIXTURE_ROOT / "expected/run_events_expected.json"
+EXPECTED_WORKLOAD_PLAN_PATH = FIXTURE_ROOT / "expected/reviewer_workload_plan_expected.csv"
+EXPECTED_WORKLOAD_SUMMARY_PATH = (
+    FIXTURE_ROOT / "expected/reviewer_workload_balancer_summary_expected.md"
+)
 PRODUCTION_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-production"
 PRODUCTION_EXPECTED_RUN_EVENTS_PATH = PRODUCTION_FIXTURE_ROOT / "expected/run_events_expected.json"
+PRODUCTION_EXPECTED_WORKLOAD_PLAN_PATH = (
+    PRODUCTION_FIXTURE_ROOT / "expected/reviewer_workload_plan_expected.csv"
+)
+PRODUCTION_EXPECTED_WORKLOAD_SUMMARY_PATH = (
+    PRODUCTION_FIXTURE_ROOT / "expected/reviewer_workload_balancer_summary_expected.md"
+)
 BROKEN_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-broken"
 BROKEN_EXPECTED_MANIFEST_PATH = BROKEN_FIXTURE_ROOT / "expected/manifest_expected.json"
 BROKEN_EXPECTED_FAILED_MARKER_PATH = BROKEN_FIXTURE_ROOT / "expected/failed_marker_expected.json"
@@ -40,6 +50,10 @@ class _PathBackup:
         elif self.path.exists():
             if self.path.is_file():
                 self.path.unlink()
+
+
+def _normalize_text_artifact(text: str) -> str:
+    return "\n".join(line.strip() for line in text.strip().splitlines()) + "\n"
 
 
 def make_fake_python(binary_path: Path, log_path: Path, *, fail_script: str | None = None) -> None:
@@ -73,6 +87,18 @@ def make_fake_python(binary_path: Path, log_path: Path, *, fail_script: str | No
         "  # Review Descriptives\n"
         "EOF\n"
         "fi\n"
+        'if [[ "$*" == *"reviewer_workload_balancer.py"* ]]; then\n'
+        "  cat > outputs/reviewer_workload_plan.csv <<'EOF'\n"
+        "  reviewer,current_records,load_share_percent,equal_share_target,delta_to_equal_share,suggested_next_batch\n"
+        "  reviewer_a,12,60.0,10,-2,0\n"
+        "  reviewer_b,8,40.0,10,2,2\n"
+        "EOF\n"
+        "  cat > outputs/reviewer_workload_balancer_summary.md <<'EOF'\n"
+        "  # Reviewer Workload Balancer Summary\n"
+        "\n"
+        "  Balanced plan generated for 2 reviewers.\n"
+        "EOF\n"
+        "fi\n"
         'if [[ "$*" == *"epistemic_consistency_guard.py"* ]]; then\n'
         "  cat > outputs/epistemic_consistency_report.md <<'EOF'\n"
         "  # Epistemic Consistency Report\n"
@@ -101,6 +127,8 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         expected_run_events_path: Path,
         expected_manifest_path: Path = EXPECTED_MANIFEST_PATH,
         expected_status_summary_path: Path = EXPECTED_STATUS_SUMMARY_PATH,
+        expected_workload_plan_path: Path | None = None,
+        expected_workload_summary_path: Path | None = None,
         fail_script: str | None = None,
         expected_exit_code: int = 0,
         expect_failed_marker: bool = False,
@@ -114,6 +142,8 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
             outputs_root / "todo_action_plan.md",
             outputs_root / "review_descriptives.json",
             outputs_root / "review_descriptives.md",
+            outputs_root / "reviewer_workload_plan.csv",
+            outputs_root / "reviewer_workload_balancer_summary.md",
             outputs_root / "template_term_guard_summary.md",
             outputs_root / "epistemic_consistency_report.md",
         ]
@@ -146,7 +176,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                 "RUN_MULTILANG_ABSTRACT_SCREENER": "0",
                 "RUN_RETRACTION_CHECKER": "0",
                 "RUN_LIVING_REVIEW_SCHEDULER": "0",
-                "RUN_REVIEWER_WORKLOAD_BALANCER": "0",
+                "RUN_REVIEWER_WORKLOAD_BALANCER": "1",
                 "RUN_WEEKLY_RISK_DIGEST": "0",
                 "STATUS_CLI_SNAPSHOT": status_cli_snapshot.as_posix(),
                 "DAILY_RUN_TRANSACTION_PATHS": transaction_target.as_posix(),
@@ -210,6 +240,28 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                     }
                     self.assertEqual(failed_marker_subset, expected_failed_marker)
 
+                if expected_workload_plan_path is not None:
+                    workload_plan = (outputs_root / "reviewer_workload_plan.csv").read_text(
+                        encoding="utf-8"
+                    )
+                    expected_workload_plan = expected_workload_plan_path.read_text(encoding="utf-8")
+                    self.assertEqual(
+                        _normalize_text_artifact(workload_plan),
+                        _normalize_text_artifact(expected_workload_plan),
+                    )
+
+                if expected_workload_summary_path is not None:
+                    workload_summary = (
+                        outputs_root / "reviewer_workload_balancer_summary.md"
+                    ).read_text(encoding="utf-8")
+                    expected_workload_summary = expected_workload_summary_path.read_text(
+                        encoding="utf-8"
+                    )
+                    self.assertEqual(
+                        _normalize_text_artifact(workload_summary),
+                        _normalize_text_artifact(expected_workload_summary),
+                    )
+
                 run_events = [
                     json.loads(line)
                     for line in run_events_path.read_text(encoding="utf-8").splitlines()
@@ -253,6 +305,8 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         run_events, calls = self._run_repo_smoke_fixture(
             fixture_config=(FIXTURE_ROOT / "review.toml").as_posix(),
             expected_run_events_path=EXPECTED_RUN_EVENTS_PATH,
+            expected_workload_plan_path=EXPECTED_WORKLOAD_PLAN_PATH,
+            expected_workload_summary_path=EXPECTED_WORKLOAD_SUMMARY_PATH,
         )
         successful_steps = {
             str(event.get("step")) for event in run_events if event.get("status") == "success"
@@ -266,6 +320,8 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         run_events, calls = self._run_repo_smoke_fixture(
             fixture_config=(PRODUCTION_FIXTURE_ROOT / "review.toml").as_posix(),
             expected_run_events_path=PRODUCTION_EXPECTED_RUN_EVENTS_PATH,
+            expected_workload_plan_path=PRODUCTION_EXPECTED_WORKLOAD_PLAN_PATH,
+            expected_workload_summary_path=PRODUCTION_EXPECTED_WORKLOAD_SUMMARY_PATH,
         )
         successful_steps = {
             str(event.get("step")) for event in run_events if event.get("status") == "success"

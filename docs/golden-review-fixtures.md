@@ -50,6 +50,8 @@ The `repo-smoke` fixture currently covers:
 - run-event stream creation
 - failed-marker absence on successful smoke runs
 - core status artifact smoke generation through the current orchestration spine
+- one stable tabular artifact (`reviewer_workload_plan.csv`)
+- one stable human-facing report (`reviewer_workload_balancer_summary.md`)
 
 The `repo-smoke-production` fixture adds a small mode-matrix check:
 

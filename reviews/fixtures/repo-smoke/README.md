@@ -21,3 +21,5 @@ The fixture also stores a small normalized golden subset under `expected/` for:
 - manifest semantics
 - status summary semantics
 - required successful run-event steps
+- one canonical tabular artifact (`reviewer_workload_plan.csv`)
+- one human-facing report (`reviewer_workload_balancer_summary.md`)
