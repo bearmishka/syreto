@@ -33,6 +33,7 @@ The current first golden fixture is:
 - [reviews/fixtures/minimal-golden](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/minimal-golden)
 - [reviews/fixtures/repo-smoke](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke)
 - [reviews/fixtures/repo-smoke-production](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-production)
+- [reviews/fixtures/repo-smoke-broken](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-broken)
 
 It currently covers:
 
@@ -55,6 +56,12 @@ The `repo-smoke-production` fixture adds a small mode-matrix check:
 - the same repository-aligned smoke surface
 - but with `review_mode = "production"`
 - and regression checks that strict production-only guard posture is actually exercised
+
+The `repo-smoke-broken` fixture adds an honest-failure smoke path:
+
+- the same repository-aligned smoke surface
+- but with one required pipeline step forced to fail
+- and regression checks for failed manifest semantics, failed-marker creation, and failed run-event capture
 
 ## Why Start Small
 
@@ -82,6 +89,7 @@ Over time, SyReTo can grow toward:
 - one slightly richer fixture with more outputs
 - one repository-aligned end-to-end smoke fixture
 - one repository-aligned mode matrix over `template` and `production`
+- one repository-aligned broken smoke fixture for failure semantics
 - and later one stricter end-to-end golden run with stronger output expectations
 
 ## Relationship To Other Contracts

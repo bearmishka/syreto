@@ -1,0 +1,9 @@
+{
+  "required_success_steps": [
+    "status_cli_snapshot"
+  ],
+  "required_failed_steps": [
+    "validate_csv_inputs"
+  ],
+  "required_review_mode": "template"
+}

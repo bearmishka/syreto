@@ -1,0 +1,10 @@
+{
+  "state": "failed",
+  "final_exit_code": 42,
+  "pipeline_exit_code": 42,
+  "status_checkpoint_exit_code": 0,
+  "rollback_applied": true,
+  "failure_phase": "pipeline",
+  "transactional_mode": "enabled",
+  "review_mode": null
+}

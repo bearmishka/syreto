@@ -1,0 +1,6 @@
+{
+  "pipeline_exit_code": 42,
+  "status_checkpoint_exit_code": 0,
+  "final_exit_code": 42,
+  "failure_phase": "pipeline"
+}

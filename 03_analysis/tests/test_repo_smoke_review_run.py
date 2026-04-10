@@ -20,6 +20,10 @@ EXPECTED_STATUS_SUMMARY_PATH = FIXTURE_ROOT / "expected/status_summary_expected.
 EXPECTED_RUN_EVENTS_PATH = FIXTURE_ROOT / "expected/run_events_expected.json"
 PRODUCTION_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-production"
 PRODUCTION_EXPECTED_RUN_EVENTS_PATH = PRODUCTION_FIXTURE_ROOT / "expected/run_events_expected.json"
+BROKEN_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-broken"
+BROKEN_EXPECTED_MANIFEST_PATH = BROKEN_FIXTURE_ROOT / "expected/manifest_expected.json"
+BROKEN_EXPECTED_FAILED_MARKER_PATH = BROKEN_FIXTURE_ROOT / "expected/failed_marker_expected.json"
+BROKEN_EXPECTED_RUN_EVENTS_PATH = BROKEN_FIXTURE_ROOT / "expected/run_events_expected.json"
 
 
 class _PathBackup:
@@ -38,7 +42,11 @@ class _PathBackup:
                 self.path.unlink()
 
 
-def make_fake_python(binary_path: Path, log_path: Path) -> None:
+def make_fake_python(binary_path: Path, log_path: Path, *, fail_script: str | None = None) -> None:
+    fail_clause = ""
+    if fail_script is not None:
+        fail_clause = f'if [[ "$*" == *"{fail_script}"* ]]; then\n  exit 42\nfi\n'
+
     binary_path.write_text(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
@@ -78,6 +86,7 @@ def make_fake_python(binary_path: Path, log_path: Path) -> None:
         'if [[ "$*" == *"status_cli.py"* ]]; then\n'
         "  echo 'status_cli_checkpoint_ok'\n"
         "fi\n"
+        f"{fail_clause}"
         "exit 0\n",
         encoding="utf-8",
     )
@@ -90,6 +99,13 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         *,
         fixture_config: str,
         expected_run_events_path: Path,
+        expected_manifest_path: Path = EXPECTED_MANIFEST_PATH,
+        expected_status_summary_path: Path = EXPECTED_STATUS_SUMMARY_PATH,
+        fail_script: str | None = None,
+        expected_exit_code: int = 0,
+        expect_failed_marker: bool = False,
+        expected_failed_marker_path: Path | None = None,
+        expect_audit_log: bool = True,
     ) -> tuple[list[dict[str, object]], str]:
         outputs_root = PROJECT_ROOT / "03_analysis" / "outputs"
         backed_up_paths = [
@@ -108,7 +124,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
             fake_bin.mkdir(parents=True, exist_ok=True)
             calls_log = tmp_path / "python_calls.log"
             fake_python = fake_bin / "python"
-            make_fake_python(fake_python, calls_log)
+            make_fake_python(fake_python, calls_log, fail_script=fail_script)
 
             manifest_path = tmp_path / "daily_run_manifest.json"
             failed_marker_path = tmp_path / "daily_run_failed.marker"
@@ -148,16 +164,15 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
 
                 exit_code = cli.main(["review", "run", "--config", fixture_config])
 
-                self.assertEqual(exit_code, 0)
+                self.assertEqual(exit_code, expected_exit_code)
                 self.assertTrue(manifest_path.exists())
                 self.assertTrue(run_events_path.exists())
-                self.assertFalse(failed_marker_path.exists())
+                self.assertEqual(failed_marker_path.exists(), expect_failed_marker)
                 self.assertTrue(status_cli_snapshot.exists())
-                self.assertTrue(audit_log_path.exists())
-                self.assertTrue((outputs_root / "status_summary.json").exists())
+                self.assertEqual(audit_log_path.exists(), expect_audit_log)
 
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                expected_manifest = json.loads(EXPECTED_MANIFEST_PATH.read_text(encoding="utf-8"))
+                expected_manifest = json.loads(expected_manifest_path.read_text(encoding="utf-8"))
                 manifest_subset = {
                     "state": manifest.get("state"),
                     "final_exit_code": manifest.get("final_exit_code"),
@@ -170,13 +185,30 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                 }
                 self.assertEqual(manifest_subset, expected_manifest)
 
-                status_summary = json.loads(
-                    (outputs_root / "status_summary.json").read_text(encoding="utf-8")
-                )
-                expected_status_summary = json.loads(
-                    EXPECTED_STATUS_SUMMARY_PATH.read_text(encoding="utf-8")
-                )
-                self.assertEqual(status_summary, expected_status_summary)
+                if expected_status_summary_path is not None:
+                    self.assertTrue((outputs_root / "status_summary.json").exists())
+                    status_summary = json.loads(
+                        (outputs_root / "status_summary.json").read_text(encoding="utf-8")
+                    )
+                    expected_status_summary = json.loads(
+                        expected_status_summary_path.read_text(encoding="utf-8")
+                    )
+                    self.assertEqual(status_summary, expected_status_summary)
+
+                if expected_failed_marker_path is not None:
+                    failed_marker = json.loads(failed_marker_path.read_text(encoding="utf-8"))
+                    expected_failed_marker = json.loads(
+                        expected_failed_marker_path.read_text(encoding="utf-8")
+                    )
+                    failed_marker_subset = {
+                        "pipeline_exit_code": failed_marker.get("pipeline_exit_code"),
+                        "status_checkpoint_exit_code": failed_marker.get(
+                            "status_checkpoint_exit_code"
+                        ),
+                        "final_exit_code": failed_marker.get("final_exit_code"),
+                        "failure_phase": failed_marker.get("failure_phase"),
+                    }
+                    self.assertEqual(failed_marker_subset, expected_failed_marker)
 
                 run_events = [
                     json.loads(line)
@@ -193,6 +225,14 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                 }
                 self.assertTrue(
                     set(expected_run_events["required_success_steps"]).issubset(successful_steps)
+                )
+                failed_steps = {
+                    str(event.get("step"))
+                    for event in run_events
+                    if event.get("status") == "failed"
+                }
+                self.assertTrue(
+                    set(expected_run_events.get("required_failed_steps", [])).issubset(failed_steps)
                 )
                 review_modes = {
                     str(event.get("review_mode"))
@@ -232,6 +272,24 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         }
         self.assertIn("template_term_guard", successful_steps)
         self.assertIn("template_term_guard.py", calls)
+
+    def test_cli_review_run_with_repo_smoke_broken_fixture_reports_honest_failure(self) -> None:
+        run_events, calls = self._run_repo_smoke_fixture(
+            fixture_config=(BROKEN_FIXTURE_ROOT / "review.toml").as_posix(),
+            expected_run_events_path=BROKEN_EXPECTED_RUN_EVENTS_PATH,
+            expected_manifest_path=BROKEN_EXPECTED_MANIFEST_PATH,
+            fail_script="validate_csv_inputs.py",
+            expected_exit_code=42,
+            expect_failed_marker=True,
+            expected_failed_marker_path=BROKEN_EXPECTED_FAILED_MARKER_PATH,
+            expect_audit_log=False,
+        )
+        failed_steps = {
+            str(event.get("step")) for event in run_events if event.get("status") == "failed"
+        }
+        self.assertIn("validate_csv_inputs", failed_steps)
+        status_report_calls = [call for call in calls.splitlines() if "status_report.py" in call]
+        self.assertGreaterEqual(len(status_report_calls), 2)
 
 
 if __name__ == "__main__":
