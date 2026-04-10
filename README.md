@@ -224,6 +224,11 @@ uv run pytest -q
 uv run pre-commit run --all-files
 ```
 
+The GitHub Actions workflow also checks two higher-level system surfaces on every push and pull request:
+
+- the golden and smoke fixture trio
+- the config-aware CLI smoke surface for `doctor`, `status`, and `review run`
+
 Useful generated analytics artifacts:
 
 - `outputs/review_descriptives.json`
