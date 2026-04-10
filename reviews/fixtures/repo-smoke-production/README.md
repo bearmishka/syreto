@@ -9,3 +9,6 @@ Its current purpose is mode-matrix regression, not full golden output comparison
 It also reuses the same workload-plan CSV and markdown summary expectations as
 the template-mode `repo-smoke` fixture so that production smoke still covers
 execution truth, data truth, and reporting truth.
+
+It also keeps one tiny manuscript-facing `.tex` artifact in the golden subset
+so the production-mode smoke still checks a minimal reporting-to-manuscript contract.

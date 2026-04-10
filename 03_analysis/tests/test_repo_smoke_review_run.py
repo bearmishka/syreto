@@ -22,6 +22,7 @@ EXPECTED_WORKLOAD_PLAN_PATH = FIXTURE_ROOT / "expected/reviewer_workload_plan_ex
 EXPECTED_WORKLOAD_SUMMARY_PATH = (
     FIXTURE_ROOT / "expected/reviewer_workload_balancer_summary_expected.md"
 )
+EXPECTED_PRISMA_TABLE_PATH = FIXTURE_ROOT / "expected/prisma_counts_table_expected.tex"
 PRODUCTION_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-production"
 PRODUCTION_EXPECTED_RUN_EVENTS_PATH = PRODUCTION_FIXTURE_ROOT / "expected/run_events_expected.json"
 PRODUCTION_EXPECTED_WORKLOAD_PLAN_PATH = (
@@ -29,6 +30,9 @@ PRODUCTION_EXPECTED_WORKLOAD_PLAN_PATH = (
 )
 PRODUCTION_EXPECTED_WORKLOAD_SUMMARY_PATH = (
     PRODUCTION_FIXTURE_ROOT / "expected/reviewer_workload_balancer_summary_expected.md"
+)
+PRODUCTION_EXPECTED_PRISMA_TABLE_PATH = (
+    PRODUCTION_FIXTURE_ROOT / "expected/prisma_counts_table_expected.tex"
 )
 BROKEN_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-broken"
 BROKEN_EXPECTED_MANIFEST_PATH = BROKEN_FIXTURE_ROOT / "expected/manifest_expected.json"
@@ -99,6 +103,16 @@ def make_fake_python(binary_path: Path, log_path: Path, *, fail_script: str | No
         "  Balanced plan generated for 2 reviewers.\n"
         "EOF\n"
         "fi\n"
+        'if [[ "$*" == *"prisma_tables.py"* ]]; then\n'
+        "  mkdir -p ../04_manuscript/tables\n"
+        "  cat > ../04_manuscript/tables/prisma_counts_table.tex <<'EOF'\n"
+        "  % repo-smoke fixture manuscript artifact\n"
+        "  \\begin{tabular}{lr}\n"
+        "  Flow item & n \\\\\n"
+        "  Records screened (title/abstract) & 12 \\\\\n"
+        "  \\end{tabular}\n"
+        "EOF\n"
+        "fi\n"
         'if [[ "$*" == *"epistemic_consistency_guard.py"* ]]; then\n'
         "  cat > outputs/epistemic_consistency_report.md <<'EOF'\n"
         "  # Epistemic Consistency Report\n"
@@ -129,6 +143,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         expected_status_summary_path: Path = EXPECTED_STATUS_SUMMARY_PATH,
         expected_workload_plan_path: Path | None = None,
         expected_workload_summary_path: Path | None = None,
+        expected_prisma_table_path: Path | None = None,
         fail_script: str | None = None,
         expected_exit_code: int = 0,
         expect_failed_marker: bool = False,
@@ -136,6 +151,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         expect_audit_log: bool = True,
     ) -> tuple[list[dict[str, object]], str]:
         outputs_root = PROJECT_ROOT / "03_analysis" / "outputs"
+        manuscript_tables_root = PROJECT_ROOT / "04_manuscript" / "tables"
         backed_up_paths = [
             outputs_root / "status_summary.json",
             outputs_root / "status_report.md",
@@ -146,6 +162,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
             outputs_root / "reviewer_workload_balancer_summary.md",
             outputs_root / "template_term_guard_summary.md",
             outputs_root / "epistemic_consistency_report.md",
+            manuscript_tables_root / "prisma_counts_table.tex",
         ]
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -262,6 +279,16 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                         _normalize_text_artifact(expected_workload_summary),
                     )
 
+                if expected_prisma_table_path is not None:
+                    prisma_table = (manuscript_tables_root / "prisma_counts_table.tex").read_text(
+                        encoding="utf-8"
+                    )
+                    expected_prisma_table = expected_prisma_table_path.read_text(encoding="utf-8")
+                    self.assertEqual(
+                        _normalize_text_artifact(prisma_table),
+                        _normalize_text_artifact(expected_prisma_table),
+                    )
+
                 run_events = [
                     json.loads(line)
                     for line in run_events_path.read_text(encoding="utf-8").splitlines()
@@ -307,6 +334,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
             expected_run_events_path=EXPECTED_RUN_EVENTS_PATH,
             expected_workload_plan_path=EXPECTED_WORKLOAD_PLAN_PATH,
             expected_workload_summary_path=EXPECTED_WORKLOAD_SUMMARY_PATH,
+            expected_prisma_table_path=EXPECTED_PRISMA_TABLE_PATH,
         )
         successful_steps = {
             str(event.get("step")) for event in run_events if event.get("status") == "success"
@@ -322,6 +350,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
             expected_run_events_path=PRODUCTION_EXPECTED_RUN_EVENTS_PATH,
             expected_workload_plan_path=PRODUCTION_EXPECTED_WORKLOAD_PLAN_PATH,
             expected_workload_summary_path=PRODUCTION_EXPECTED_WORKLOAD_SUMMARY_PATH,
+            expected_prisma_table_path=PRODUCTION_EXPECTED_PRISMA_TABLE_PATH,
         )
         successful_steps = {
             str(event.get("step")) for event in run_events if event.get("status") == "success"
