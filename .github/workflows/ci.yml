@@ -33,4 +33,12 @@ jobs:
         # 4 integration tests require project data files (02_data/) not shipped in the public repo.
         # They pass in a fully populated project directory. See README for details.
         run: python -m pytest tests/ -v --tb=short -k "not (test_guard_passes_for_repository_audit_log or test_extraction_template_contains_required_metadata_columns or test_record_id_map_guard_passes_for_repository_file or test_cli_uses_script_relative_paths_when_called_outside_analysis_dir)"
+
+      - name: Run golden and smoke fixture regressions
+        run: |
+          python -m pytest \
+            syreto/tests/test_golden_review_fixture.py \
+            03_analysis/tests/test_golden_review_fixture.py \
+            03_analysis/tests/test_repo_smoke_review_run.py \
+            -q
 Ключевое: -k "not (...)" — это pytest фильтр по имени теста. Одна строка, без backslash, без deselect. Commit.

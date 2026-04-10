@@ -87,6 +87,17 @@ Examples:
 - pipeline or shell changes: run affected tests plus syntax checks
 - data-contract changes: run tests for impacted downstream consumers
 - docs-only changes: run the relevant docs-only `pre-commit` checks
+- fixture or orchestration changes: run the golden/smoke fixture trio
+
+Fixture regression trio:
+
+```bash
+python -m pytest \
+  syreto/tests/test_golden_review_fixture.py \
+  03_analysis/tests/test_golden_review_fixture.py \
+  03_analysis/tests/test_repo_smoke_review_run.py \
+  -q
+```
 
 When in doubt, run:
 
