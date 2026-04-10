@@ -41,4 +41,11 @@ jobs:
             03_analysis/tests/test_golden_review_fixture.py \
             03_analysis/tests/test_repo_smoke_review_run.py \
             -q
+
+      - name: Run config-aware CLI smoke
+        run: |
+          python -m pytest \
+            03_analysis/tests/test_syreto_package_import.py \
+            -q \
+            -k "test_cli_doctor_reads_repo_default_review_config or test_cli_doctor_reports_incompatible_review_config_as_preflight_failure or test_cli_status_with_config_routes_to_review_outputs or test_cli_review_run_with_config_sets_execution_env"
 Ключевое: -k "not (...)" — это pytest фильтр по имени теста. Одна строка, без backslash, без deselect. Commit.
