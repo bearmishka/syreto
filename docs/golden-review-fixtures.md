@@ -35,6 +35,13 @@ The current first golden fixture is:
 - [reviews/fixtures/repo-smoke-production](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-production)
 - [reviews/fixtures/repo-smoke-broken](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-broken)
 
+| Fixture | Scenario | Main truth layers | Primary purpose |
+| --- | --- | --- | --- |
+| `minimal-golden` | tiny stable review-sized sample | data truth, reporting truth | analytics determinism and stable builder outputs |
+| `repo-smoke` | baseline config-aware end-to-end smoke | execution truth, data truth, reporting truth, manuscript truth | repository-aligned orchestration regression |
+| `repo-smoke-production` | production-mode smoke | execution truth, data truth, reporting truth, manuscript truth | mode-matrix regression for strict production posture |
+| `repo-smoke-broken` | honest failure path | execution truth | failed-run semantics, failed marker, and postmortem signals |
+
 It currently covers:
 
 - minimal review config
