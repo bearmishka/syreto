@@ -32,6 +32,7 @@ The current first golden fixture is:
 
 - [reviews/fixtures/minimal-golden](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/minimal-golden)
 - [reviews/fixtures/repo-smoke](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke)
+- [reviews/fixtures/repo-smoke-production](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-production)
 
 It currently covers:
 
@@ -49,7 +50,11 @@ The `repo-smoke` fixture currently covers:
 - failed-marker absence on successful smoke runs
 - core status artifact smoke generation through the current orchestration spine
 
-Its current focus is the `StudyTable` and review-analytics surface rather than the full repository-aligned `daily_run.sh` orchestration spine.
+The `repo-smoke-production` fixture adds a small mode-matrix check:
+
+- the same repository-aligned smoke surface
+- but with `review_mode = "production"`
+- and regression checks that strict production-only guard posture is actually exercised
 
 ## Why Start Small
 
@@ -76,6 +81,7 @@ Over time, SyReTo can grow toward:
 - one tiny golden review fixture
 - one slightly richer fixture with more outputs
 - one repository-aligned end-to-end smoke fixture
+- one repository-aligned mode matrix over `template` and `production`
 - and later one stricter end-to-end golden run with stronger output expectations
 
 ## Relationship To Other Contracts

@@ -1,0 +1,27 @@
+[review]
+id = "repo-smoke-production"
+title = "Repository-Aligned Production Smoke Review Fixture"
+
+[paths]
+data_root = "../../../02_data/"
+protocol_root = "../../../01_protocol/"
+outputs_root = "../../../03_analysis/outputs/"
+manuscript_root = "../../../04_manuscript/"
+
+[mode]
+review_mode = "production"
+
+[stages]
+search = true
+deduplication = true
+screening = true
+extraction = true
+synthesis = true
+reporting = true
+
+[status]
+fail_on = "major"
+priority_policy = "priority_policy.json"
+
+[output]
+profile = "default"

@@ -18,6 +18,8 @@ FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke"
 EXPECTED_MANIFEST_PATH = FIXTURE_ROOT / "expected/manifest_expected.json"
 EXPECTED_STATUS_SUMMARY_PATH = FIXTURE_ROOT / "expected/status_summary_expected.json"
 EXPECTED_RUN_EVENTS_PATH = FIXTURE_ROOT / "expected/run_events_expected.json"
+PRODUCTION_FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke-production"
+PRODUCTION_EXPECTED_RUN_EVENTS_PATH = PRODUCTION_FIXTURE_ROOT / "expected/run_events_expected.json"
 
 
 class _PathBackup:
@@ -83,8 +85,12 @@ def make_fake_python(binary_path: Path, log_path: Path) -> None:
 
 
 class RepoSmokeReviewRunTests(unittest.TestCase):
-    def test_cli_review_run_with_repo_smoke_fixture_produces_core_run_artifacts(self) -> None:
-        fixture_config = "reviews/fixtures/repo-smoke/review.toml"
+    def _run_repo_smoke_fixture(
+        self,
+        *,
+        fixture_config: str,
+        expected_run_events_path: Path,
+    ) -> tuple[list[dict[str, object]], str]:
         outputs_root = PROJECT_ROOT / "03_analysis" / "outputs"
         backed_up_paths = [
             outputs_root / "status_summary.json",
@@ -178,7 +184,7 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                     if line.strip()
                 ]
                 expected_run_events = json.loads(
-                    EXPECTED_RUN_EVENTS_PATH.read_text(encoding="utf-8")
+                    expected_run_events_path.read_text(encoding="utf-8")
                 )
                 successful_steps = {
                     str(event.get("step"))
@@ -188,11 +194,44 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                 self.assertTrue(
                     set(expected_run_events["required_success_steps"]).issubset(successful_steps)
                 )
+                review_modes = {
+                    str(event.get("review_mode"))
+                    for event in run_events
+                    if event.get("review_mode") is not None
+                }
+                self.assertEqual(review_modes, {expected_run_events["required_review_mode"]})
 
                 calls = calls_log.read_text(encoding="utf-8")
                 self.assertIn("status_report.py", calls)
                 self.assertIn("todo_action_plan_builder.py", calls)
                 self.assertIn("status_cli.py", calls)
+                return run_events, calls
+
+        raise AssertionError("Fixture run did not produce a result.")
+
+    def test_cli_review_run_with_repo_smoke_fixture_produces_core_run_artifacts(self) -> None:
+        run_events, calls = self._run_repo_smoke_fixture(
+            fixture_config=(FIXTURE_ROOT / "review.toml").as_posix(),
+            expected_run_events_path=EXPECTED_RUN_EVENTS_PATH,
+        )
+        successful_steps = {
+            str(event.get("step")) for event in run_events if event.get("status") == "success"
+        }
+        self.assertNotIn("template_term_guard", successful_steps)
+        self.assertNotIn("template_term_guard.py", calls)
+
+    def test_cli_review_run_with_repo_smoke_production_fixture_enforces_production_guard_path(
+        self,
+    ) -> None:
+        run_events, calls = self._run_repo_smoke_fixture(
+            fixture_config=(PRODUCTION_FIXTURE_ROOT / "review.toml").as_posix(),
+            expected_run_events_path=PRODUCTION_EXPECTED_RUN_EVENTS_PATH,
+        )
+        successful_steps = {
+            str(event.get("step")) for event in run_events if event.get("status") == "success"
+        }
+        self.assertIn("template_term_guard", successful_steps)
+        self.assertIn("template_term_guard.py", calls)
 
 
 if __name__ == "__main__":

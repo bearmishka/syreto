@@ -1,9 +1,10 @@
 {
   "required_success_steps": [
+    "template_term_guard",
     "status_report",
     "todo_action_plan",
     "epistemic_consistency_guard",
     "status_cli_snapshot"
   ],
-  "required_review_mode": "template"
+  "required_review_mode": "production"
 }
