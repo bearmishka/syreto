@@ -113,19 +113,31 @@ uv run pytest -q
 
 Current release status: the full repository test suite passes at `485 passed`.
 
-## Fastest Way To Run It
+## Start Here
 
-If you want the packaged entrypoints first:
+If you want the thinnest operational surface first, start with these three commands:
 
 ```bash
-syreto list
 syreto doctor
 syreto doctor --config reviews/repo-default/review.toml
 syreto status
 syreto status --config reviews/repo-default/review.toml
 syreto artifacts --kind operational
+```
+
+They answer three different questions:
+
+- `syreto doctor`: can this review be run honestly with the current environment, config, inputs, and outputs?
+- `syreto status`: what is the current operational state of the review?
+- `syreto artifacts`: which trust-bearing artifacts exist, which are missing, and which provenance or contract signals need attention?
+
+If you want the broader packaged entrypoints after that:
+
+```bash
+syreto list
 syreto artifacts --kind operational --provenance-missing-only
 syreto artifacts --kind operational --provenance-invalid-only
+syreto artifacts --sync-catalog
 syreto validate all -- --fail-on error
 syreto analytics
 syreto observability
@@ -162,13 +174,18 @@ The most useful quick checks are:
 ```bash
 syreto doctor
 syreto status
+syreto artifacts --kind operational
+```
+
+Then, if you need deeper inspection:
+
+```bash
 syreto analytics
 syreto observability
-syreto artifacts --kind operational
 cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 ```
 
-`syreto artifacts` now reports provenance availability for tracked generated artifacts and can filter to missing or invalid provenance sidecars. `syreto doctor` checks both provenance coverage and minimal sidecar validity for the current trust-bearing output surface and reports a small provenance summary. `syreto observability` adds a provenance snapshot plus a small provenance summary for outputs touched in the recent event slice.
+`syreto artifacts` now reports provenance availability for tracked generated artifacts, can filter to missing or invalid provenance sidecars, and can sync the catalog surfaces via `--sync-catalog`. `syreto doctor` checks both provenance coverage and minimal sidecar validity for the current trust-bearing output surface and reports a small provenance summary. `syreto observability` adds a provenance snapshot plus a small provenance summary for outputs touched in the recent event slice.
 
 If you are using production mode, the status gate and template-term guard should also pass without blocker findings.
 
@@ -213,13 +230,14 @@ The main human-facing operational docs are:
 
 ## Main Entry Points
 
+Core operational triage:
+- `syreto doctor`: run the preflight diagnostic surface
+- `syreto status`: inspect current review status
+- `syreto artifacts`: inspect artifact contracts and trust-bearing outputs
 - `syreto list`: list packaged analysis scripts
 - `syreto run <script>`: run a packaged script by name
 - `syreto path <script>`: resolve the filesystem path for a packaged script
-- `syreto status`: run the packaged status CLI
-- `syreto artifacts`: inspect key operational and manuscript-facing artifacts
 - `syreto validate`: run packaged validation checks
-- `syreto doctor`: run a quick repository readiness diagnostic
 - `syreto observability`: inspect recorded run events and postmortem signals
 - `syreto analytics`: build descriptive review-state analytics artifacts
 - `syreto review run`: run the full review pipeline through the current orchestration spine

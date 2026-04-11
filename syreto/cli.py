@@ -122,7 +122,7 @@ def parser() -> argparse.ArgumentParser:
 
     status_parser = subparsers.add_parser(
         "status",
-        help="Run the packaged status CLI.",
+        help="Inspect the current review status through the packaged status surface.",
     )
     status_parser.add_argument(
         "status_args",
@@ -136,7 +136,7 @@ def parser() -> argparse.ArgumentParser:
 
     artifacts_parser = subparsers.add_parser(
         "artifacts",
-        help="List key operational and manuscript-facing artifacts.",
+        help="Inspect artifact contracts and trust-bearing operational outputs.",
     )
     artifacts_parser.add_argument(
         "--kind",
@@ -189,7 +189,7 @@ def parser() -> argparse.ArgumentParser:
 
     doctor_parser = subparsers.add_parser(
         "doctor",
-        help="Run a quick repository and pipeline readiness diagnostic.",
+        help="Run the preflight diagnostic for environment, inputs, and trust-bearing outputs.",
     )
     doctor_parser.add_argument(
         "--strict",
