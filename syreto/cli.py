@@ -8,7 +8,6 @@ becoming the place where epistemic or methodological logic lives.
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import os
 import shutil
@@ -17,6 +16,7 @@ import sys
 from importlib.util import find_spec
 from pathlib import Path
 
+from .csv_schema import schema_contract_paths, validate_csv_schema_contract
 from .review_config import ReviewConfig, ReviewConfigError, load_review_config
 from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
 
@@ -128,11 +128,6 @@ CURRENT_SPINE_DATA_ROOT = (PROJECT_ROOT / "02_data").resolve()
 CURRENT_SPINE_PROTOCOL_ROOT = (PROJECT_ROOT / "01_protocol").resolve()
 CURRENT_SPINE_OUTPUTS_ROOT = (PROJECT_ROOT / "03_analysis" / "outputs").resolve()
 CURRENT_SPINE_MANUSCRIPT_ROOT = (PROJECT_ROOT / "04_manuscript").resolve()
-MINIMAL_SCHEMA_COLUMNS = {
-    "search log": ("database", "date_searched", "results_total", "results_exported"),
-    "master records": ("record_id", "title", "authors", "year"),
-    "extraction template": (),
-}
 
 
 def parser() -> argparse.ArgumentParser:
@@ -828,17 +823,13 @@ def _command_available(command_name: str) -> bool:
     return shutil.which(command_name) is not None
 
 
-def _csv_header(path: Path) -> set[str]:
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle)
-        try:
-            header = next(reader)
-        except StopIteration as exc:
-            raise ValueError("CSV file is empty.") from exc
-    normalized = {column.strip() for column in header if column.strip()}
-    if not normalized:
-        raise ValueError("CSV header row is empty.")
-    return normalized
+def _doctor_schema_contract_paths(
+    review_config: ReviewConfig | None,
+) -> tuple[tuple[object, Path], ...]:
+    data_root = PROJECT_ROOT / "02_data"
+    if review_config is not None:
+        data_root = review_config.data_root
+    return schema_contract_paths(data_root)
 
 
 def _path_mtime(path: Path) -> float | None:
@@ -1079,55 +1070,33 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
             )
 
     lines.append("")
-    lines.append("Schema presence")
-    schema_paths = {
-        "search log": PROJECT_ROOT / "02_data/processed/search_log.csv",
-        "master records": PROJECT_ROOT / "02_data/processed/master_records.csv",
-        "extraction template": PROJECT_ROOT / "02_data/codebook/extraction_template.csv",
-    }
-    if review_config is not None:
-        schema_paths = {
-            "search log": review_config.data_root / "processed/search_log.csv",
-            "master records": review_config.data_root / "processed/master_records.csv",
-            "extraction template": review_config.data_root / "codebook/extraction_template.csv",
-        }
-
-    for label, path in schema_paths.items():
+    lines.append("Schema contract")
+    for contract, path in _doctor_schema_contract_paths(review_config):
         if not path.exists():
             continue
-        try:
-            header = _csv_header(path)
-        except (OSError, UnicodeDecodeError, ValueError) as exc:
-            errors += 1
-            record_failure("schema violation")
-            lines.append(
-                _doctor_classified_line(
-                    "error",
-                    f"{label} schema",
-                    f"{exc} ({path.as_posix()})",
-                    failure_class="schema violation",
-                )
-            )
-            continue
-
-        missing_columns = sorted(set(MINIMAL_SCHEMA_COLUMNS[label]) - header)
-        if missing_columns:
-            errors += 1
-            record_failure("schema violation")
-            lines.append(
-                _doctor_classified_line(
-                    "error",
-                    f"{label} schema",
-                    f"missing required columns: {', '.join(missing_columns)}",
-                    failure_class="schema violation",
-                )
-            )
-        else:
+        findings = validate_csv_schema_contract(path, contract)
+        if not findings:
             lines.append(
                 _doctor_line(
                     "ok",
-                    f"{label} schema",
-                    f"minimal header contract present in {path.as_posix()}",
+                    f"{contract.label} schema",
+                    f"contract checks passed in {path.as_posix()}",
+                )
+            )
+            continue
+
+        for finding in findings:
+            if finding.level == "error":
+                errors += 1
+            else:
+                warnings += 1
+            record_failure("schema violation")
+            lines.append(
+                _doctor_classified_line(
+                    "error" if finding.level == "error" else "warn",
+                    f"{contract.label} schema",
+                    f"{finding.detail} ({path.as_posix()})",
+                    failure_class="schema violation",
                 )
             )
 

@@ -165,6 +165,10 @@ class StatusReportCliOutputsTests(unittest.TestCase):
             self.assertEqual(summary_provenance["review_mode"], "template")
             self.assertIn(str(search_log), summary_provenance["upstream_inputs"])
             self.assertEqual(report_provenance["artifact_path"], str(output))
+            summary_payload = json.loads(json_output.read_text(encoding="utf-8"))
+            self.assertIn("direct_csv_schema", summary_payload)
+            self.assertTrue(summary_payload["direct_csv_schema"]["ok"])
+            self.assertEqual(summary_payload["direct_csv_schema"]["error_count"], 0)
 
 
 if __name__ == "__main__":

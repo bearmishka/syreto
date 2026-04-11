@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from csv_schema import schema_contract_paths, validate_csv_schema_contract
 from provenance import write_provenance_sidecar
 
 EMPTY_VALUES = {"", "nan", "none"}
@@ -383,6 +384,38 @@ def parse_csv_input_validation_summary(path: Path) -> dict:
     summary["errors"] = int(errors_match.group(1))
     summary["warnings"] = int(warnings_match.group(1))
     summary["message"] = "Parsed validation counters successfully."
+    return summary
+
+
+def direct_csv_schema_posture(base_data_root: Path) -> dict:
+    summary = {
+        "checked_files": 0,
+        "error_count": 0,
+        "warning_count": 0,
+        "ok": False,
+        "details": [],
+    }
+
+    for contract, path in schema_contract_paths(base_data_root):
+        if not path.exists():
+            continue
+        summary["checked_files"] += 1
+        findings = validate_csv_schema_contract(path, contract)
+        for finding in findings:
+            if finding.level == "error":
+                summary["error_count"] += 1
+            else:
+                summary["warning_count"] += 1
+            summary["details"].append(
+                {
+                    "file": contract.label,
+                    "path": path.as_posix(),
+                    "level": finding.level,
+                    "detail": finding.detail,
+                }
+            )
+
+    summary["ok"] = summary["error_count"] == 0 and summary["warning_count"] == 0
     return summary
 
 
@@ -775,6 +808,7 @@ def build_status_report(
     kappa_stats = cohen_kappa_from_screening_log(screening_records_non_empty)
     master_structure = master_column_structure(master_df)
     csv_input_validation = parse_csv_input_validation_summary(csv_input_validation_summary_path)
+    direct_schema = direct_csv_schema_posture(Path("../02_data"))
     extraction_validation = parse_extraction_validation_summary(extraction_validation_summary_path)
     if reviewer_workload_summary_path is None:
         reviewer_workload_summary_path = (
@@ -949,6 +983,30 @@ def build_status_report(
 
     csv_input_validation_ok = False
     csv_input_validation_detail = "Validation summary not found."
+    direct_schema_detail = (
+        f"errors={direct_schema['error_count']}; warnings={direct_schema['warning_count']}; "
+        f"checked_files={direct_schema['checked_files']}"
+    )
+    if direct_schema["error_count"] > 0:
+        add_health(
+            "error",
+            f"Direct CSV schema checks report {direct_schema['error_count']} error(s) and "
+            f"{direct_schema['warning_count']} warning(s).",
+        )
+        warnings.append(
+            "Resolve direct CSV schema violations in canonical processed files before trusting current review status."
+        )
+    elif direct_schema["warning_count"] > 0:
+        add_health(
+            "warning",
+            f"Direct CSV schema checks report {direct_schema['warning_count']} warning(s) (errors: 0).",
+        )
+        warnings.append(
+            "Review direct CSV schema warnings in canonical processed files and clear legacy or structural drift where possible."
+        )
+    else:
+        add_health("ok", "Direct CSV schema checks passed for canonical inputs.")
+
     if not csv_input_validation["present"]:
         add_health("error", "CSV input validation summary is missing.")
         warnings.append(
@@ -1410,6 +1468,14 @@ def build_status_report(
             "hint": "Run `python 03_analysis/validate_csv_inputs.py` and resolve reported schema/value issues in processed CSV files.",
         },
         {
+            "id": "direct_csv_schema",
+            "title": "Keep direct CSV schema contract clean",
+            "file": "02_data/processed/*.csv",
+            "done": direct_schema["ok"],
+            "details": checklist_details(direct_schema_detail),
+            "hint": "Resolve required-column, required-field, and unique-key violations in canonical processed CSV inputs.",
+        },
+        {
             "id": "extraction_validation",
             "title": "Keep extraction validation clean",
             "file": "03_analysis/outputs/extraction_validation_summary.md",
@@ -1700,6 +1766,7 @@ def build_status_report(
             "cohen_kappa": kappa_stats,
         },
         "reviewer_workload_balancer": reviewer_workload_balancer,
+        "direct_csv_schema": direct_schema,
         "csv_input_validation": csv_input_validation,
         "extraction_validation": extraction_validation,
         "quality_appraisal": {

@@ -555,6 +555,123 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("class=config error", rendered)
         self.assertIn("Review config not found", rendered)
 
+    def test_cli_doctor_reports_duplicate_master_record_key_as_schema_violation(self) -> None:
+        from syreto import cli
+        from syreto.csv_schema import CsvSchemaContract
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            master_records = tmp_path / "master_records.csv"
+            master_records.write_text(
+                "\n".join(
+                    [
+                        "record_id,source_database,source_record_id,title,abstract,authors,year,journal,doi,pmid,normalized_title,normalized_first_author,is_duplicate,duplicate_of_record_id,dedup_reason,notes",
+                        "MR001,pubmed,1,Title A,,Author A,2020,Journal,,,title a,author a,no,,,",
+                        "MR001,pubmed,2,Title B,,Author B,2021,Journal,,,title b,author b,no,,,",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+            with mock.patch.object(
+                cli,
+                "_doctor_schema_contract_paths",
+                return_value=(
+                    (
+                        CsvSchemaContract(
+                            label="master records",
+                            relative_path="processed/master_records.csv",
+                            required_columns=(
+                                "record_id",
+                                "source_database",
+                                "source_record_id",
+                                "title",
+                                "abstract",
+                                "authors",
+                                "year",
+                                "journal",
+                                "doi",
+                                "pmid",
+                                "normalized_title",
+                                "normalized_first_author",
+                                "is_duplicate",
+                                "duplicate_of_record_id",
+                                "dedup_reason",
+                                "notes",
+                            ),
+                            required_non_empty=("record_id", "title", "authors", "year"),
+                            unique_key_columns=("record_id",),
+                        ),
+                        master_records,
+                    ),
+                ),
+            ):
+                with mock.patch.object(cli, "DOCTOR_OPTIONAL_PATHS", ()):
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 1)
+        rendered = stdout.getvalue()
+        self.assertIn("master records schema", rendered)
+        self.assertIn("duplicate key for record_id", rendered)
+        self.assertIn("class=schema violation", rendered)
+
+    def test_cli_doctor_reports_empty_required_field_as_schema_violation(self) -> None:
+        from syreto import cli
+        from syreto.csv_schema import CsvSchemaContract
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            screening_results = tmp_path / "screening_title_abstract_results.csv"
+            screening_results.write_text(
+                "\n".join(
+                    [
+                        "record_id,reviewer1_decision,reviewer2_decision,conflict,conflict_resolver,resolution_decision,final_decision,exclusion_reason",
+                        "MR001,include,include,no,,,,",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+            with mock.patch.object(
+                cli,
+                "_doctor_schema_contract_paths",
+                return_value=(
+                    (
+                        CsvSchemaContract(
+                            label="screening title/abstract results",
+                            relative_path="processed/screening_title_abstract_results.csv",
+                            required_columns=(
+                                "record_id",
+                                "reviewer1_decision",
+                                "reviewer2_decision",
+                                "conflict",
+                                "conflict_resolver",
+                                "resolution_decision",
+                                "final_decision",
+                                "exclusion_reason",
+                            ),
+                            required_non_empty=("record_id", "final_decision", "conflict"),
+                            unique_key_columns=("record_id",),
+                        ),
+                        screening_results,
+                    ),
+                ),
+            ):
+                with mock.patch.object(cli, "DOCTOR_OPTIONAL_PATHS", ()):
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 1)
+        rendered = stdout.getvalue()
+        self.assertIn("screening title/abstract results schema", rendered)
+        self.assertIn("required field is empty: final_decision", rendered)
+        self.assertIn("class=schema violation", rendered)
+
     def test_cli_observability_summarizes_run_events(self) -> None:
         from syreto import cli
 
