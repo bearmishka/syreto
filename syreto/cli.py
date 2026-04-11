@@ -85,6 +85,22 @@ ARTIFACT_GROUPS = {
     ),
 }
 
+PROVENANCE_TRACKED_ARTIFACTS = {
+    "outputs/status_summary.json",
+    "outputs/status_report.md",
+    "outputs/todo_action_plan.md",
+    "outputs/review_descriptives.json",
+    "outputs/review_descriptives.md",
+    "outputs/reviewer_workload_plan.csv",
+    "outputs/reviewer_workload_balancer_summary.md",
+    "outputs/results_summary_table.csv",
+    "outputs/results_summary_table_summary.md",
+    "04_manuscript/tables/results_summary_table.tex",
+    "04_manuscript/tables/prisma_counts_table.tex",
+    "04_manuscript/tables/fulltext_exclusion_table.tex",
+    "outputs/prisma_tables_summary.md",
+}
+
 DOCTOR_REQUIRED_PATHS = (
     ("project root", PROJECT_ROOT),
     ("analysis dir", PROJECT_ROOT / "03_analysis"),
@@ -173,6 +189,16 @@ def parser() -> argparse.ArgumentParser:
         "--missing-only",
         action="store_true",
         help="Show only missing artifacts.",
+    )
+    artifacts_parser.add_argument(
+        "--provenance-missing-only",
+        action="store_true",
+        help="Show only tracked generated artifacts whose provenance sidecar is missing.",
+    )
+    artifacts_parser.add_argument(
+        "--provenance-invalid-only",
+        action="store_true",
+        help="Show only tracked generated artifacts whose provenance sidecar exists but fails minimal validation.",
     )
 
     validate_parser = subparsers.add_parser(
@@ -316,7 +342,103 @@ def _artifact_groups_for_kind(kind: str) -> list[tuple[str, tuple[str, ...]]]:
     return [(kind, ARTIFACT_GROUPS[kind])]
 
 
-def _list_artifacts(kind: str, *, missing_only: bool) -> int:
+def _provenance_sidecar_path(path: Path) -> Path:
+    return path.with_name(f"{path.name}.provenance.json")
+
+
+def _load_json_object(path: Path) -> dict[str, object]:
+    try:
+        parsed = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid JSON at {path.as_posix()}: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError(f"expected JSON object at {path.as_posix()}")
+    return parsed
+
+
+def _validate_provenance_payload(payload: dict[str, object], *, artifact_path: Path) -> None:
+    required_string_fields = (
+        "artifact_path",
+        "generated_at_utc",
+        "generated_by",
+        "review_mode",
+    )
+    for field_name in required_string_fields:
+        value = payload.get(field_name)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"missing or invalid `{field_name}`")
+
+    upstream_inputs = payload.get("upstream_inputs")
+    if not isinstance(upstream_inputs, list) or any(
+        not isinstance(item, str) or not item.strip() for item in upstream_inputs
+    ):
+        raise ValueError("missing or invalid `upstream_inputs`")
+
+    recorded_artifact = Path(str(payload["artifact_path"]).strip())
+    try:
+        expected_artifact = artifact_path.resolve()
+    except OSError:
+        expected_artifact = artifact_path.absolute()
+    try:
+        recorded_resolved = recorded_artifact.resolve()
+    except OSError:
+        recorded_resolved = recorded_artifact.absolute()
+
+    if expected_artifact != recorded_resolved:
+        raise ValueError(
+            "artifact_path does not match tracked artifact "
+            f"({payload['artifact_path']} != {artifact_path.as_posix()})"
+        )
+
+
+def _artifact_line(relative_path: str, *, exists: bool) -> str:
+    status = "present" if exists else "missing"
+    if relative_path not in PROVENANCE_TRACKED_ARTIFACTS:
+        return f"- [{status}] {relative_path}"
+
+    path = PROJECT_ROOT / relative_path
+    if not exists:
+        return f"- [{status}] {relative_path} | provenance=n/a"
+
+    provenance_exists = _provenance_sidecar_path(path).exists()
+    provenance_status = "present" if provenance_exists else "missing"
+    return f"- [{status}] {relative_path} | provenance={provenance_status}"
+
+
+def _artifact_provenance_problem(relative_path: str) -> str | None:
+    if relative_path not in PROVENANCE_TRACKED_ARTIFACTS:
+        return None
+
+    artifact_path = PROJECT_ROOT / relative_path
+    if not artifact_path.exists():
+        return None
+
+    provenance_path = _provenance_sidecar_path(artifact_path)
+    if not provenance_path.exists():
+        return "missing"
+
+    try:
+        payload = _load_json_object(provenance_path)
+        _validate_provenance_payload(payload, artifact_path=artifact_path)
+    except ValueError:
+        return "invalid"
+    return None
+
+
+def _list_artifacts(
+    kind: str,
+    *,
+    missing_only: bool,
+    provenance_missing_only: bool,
+    provenance_invalid_only: bool,
+) -> int:
+    if provenance_missing_only and provenance_invalid_only:
+        print(
+            "`--provenance-missing-only` and `--provenance-invalid-only` cannot be combined.",
+            file=sys.stderr,
+        )
+        return 2
+
     printed_any = False
     for group_name, relative_paths in _artifact_groups_for_kind(kind):
         group_lines: list[str] = []
@@ -325,9 +447,14 @@ def _list_artifacts(kind: str, *, missing_only: bool) -> int:
             exists = path.exists()
             if missing_only and exists:
                 continue
+            if provenance_missing_only:
+                if _artifact_provenance_problem(relative_path) != "missing":
+                    continue
+            if provenance_invalid_only:
+                if _artifact_provenance_problem(relative_path) != "invalid":
+                    continue
 
-            status = "present" if exists else "missing"
-            group_lines.append(f"- [{status}] {relative_path}")
+            group_lines.append(_artifact_line(relative_path, exists=exists))
 
         if not group_lines:
             continue
@@ -337,8 +464,13 @@ def _list_artifacts(kind: str, *, missing_only: bool) -> int:
         for line in group_lines:
             print(line)
 
-    if not printed_any and missing_only:
-        print("No missing artifacts in the selected group.")
+    if not printed_any:
+        if missing_only:
+            print("No missing artifacts in the selected group.")
+        elif provenance_missing_only:
+            print("No tracked artifacts with missing provenance in the selected group.")
+        elif provenance_invalid_only:
+            print("No tracked artifacts with invalid provenance in the selected group.")
 
     return 0
 
@@ -397,6 +529,42 @@ def _resolve_run_events_path(*, input_path: str | None, config_path: str | None)
         review_config = load_review_config(config_path)
         return review_config.outputs_root / "run_events.jsonl"
     return PROJECT_ROOT / "03_analysis" / "outputs" / "run_events.jsonl"
+
+
+def _observability_run_root(events_path: Path) -> Path:
+    if events_path.parent.name == "outputs":
+        return events_path.parent.parent
+    return events_path.parent
+
+
+def _resolve_observability_artifact_path(events_path: Path, output_ref: str) -> Path:
+    candidate = Path(output_ref)
+    if candidate.is_absolute():
+        return candidate
+
+    run_root = _observability_run_root(events_path)
+    if candidate.parts and candidate.parts[0] == "outputs":
+        return run_root / candidate
+    return run_root / candidate
+
+
+def _provenance_status_for_artifact(artifact_path: Path) -> str:
+    provenance_path = _provenance_sidecar_path(artifact_path)
+    if not provenance_path.exists():
+        return "missing"
+    try:
+        payload = _load_json_object(provenance_path)
+        _validate_provenance_payload(payload, artifact_path=artifact_path)
+    except ValueError:
+        return "invalid"
+    return "present"
+
+
+def _summarize_provenance_statuses(statuses: list[str]) -> str:
+    present = sum(1 for status in statuses if status == "present")
+    missing = sum(1 for status in statuses if status == "missing")
+    invalid = sum(1 for status in statuses if status == "invalid")
+    return f"tracked={len(statuses)}, present={present}, missing={missing}, invalid={invalid}"
 
 
 def _load_run_events(path: Path) -> list[dict[str, object]]:
@@ -519,6 +687,31 @@ def _run_observability(*, input_path: str | None, config_path: str | None, last:
             lines.append(f"- Outputs touched: {', '.join(str(item) for item in outputs_touched)}")
         else:
             lines.append("- Outputs touched: none recorded")
+
+    touched_outputs: list[str] = []
+    for event in recent_events:
+        outputs_touched = event.get("outputs_touched")
+        if not isinstance(outputs_touched, list):
+            continue
+        for item in outputs_touched:
+            text = str(item).strip()
+            if text and text not in touched_outputs:
+                touched_outputs.append(text)
+
+    lines.append("")
+    lines.append("Provenance snapshot")
+    if not touched_outputs:
+        lines.append("- No outputs recorded in the recent event slice.")
+    else:
+        provenance_statuses: list[str] = []
+        for output_ref in touched_outputs:
+            artifact_path = _resolve_observability_artifact_path(events_path, output_ref)
+            provenance_status = _provenance_status_for_artifact(artifact_path)
+            provenance_statuses.append(provenance_status)
+            lines.append(
+                f"- {output_ref}: provenance={provenance_status} ({artifact_path.as_posix()})"
+            )
+        lines.append(f"- Summary: {_summarize_provenance_statuses(provenance_statuses)}")
 
     print("\n".join(lines))
     return 0
@@ -644,6 +837,46 @@ def _path_mtime(path: Path) -> float | None:
         return path.stat().st_mtime
     except OSError:
         return None
+
+
+def _doctor_provenance_candidates(
+    review_config: ReviewConfig | None,
+) -> tuple[tuple[str, Path], ...]:
+    if review_config is None:
+        return (
+            ("status summary", PROJECT_ROOT / "outputs/status_summary.json"),
+            ("status report", PROJECT_ROOT / "outputs/status_report.md"),
+            ("todo action plan", PROJECT_ROOT / "outputs/todo_action_plan.md"),
+            ("review descriptives json", PROJECT_ROOT / "outputs/review_descriptives.json"),
+            ("review descriptives markdown", PROJECT_ROOT / "outputs/review_descriptives.md"),
+            ("results summary csv", PROJECT_ROOT / "outputs/results_summary_table.csv"),
+            (
+                "results summary latex",
+                PROJECT_ROOT / "04_manuscript/tables/results_summary_table.tex",
+            ),
+            ("prisma counts latex", PROJECT_ROOT / "04_manuscript/tables/prisma_counts_table.tex"),
+            (
+                "fulltext exclusion latex",
+                PROJECT_ROOT / "04_manuscript/tables/fulltext_exclusion_table.tex",
+            ),
+            ("prisma tables summary", PROJECT_ROOT / "outputs/prisma_tables_summary.md"),
+        )
+
+    outputs_root = review_config.outputs_root
+    manuscript_root = review_config.manuscript_root
+    return (
+        ("status summary", outputs_root / "status_summary.json"),
+        ("status report", outputs_root / "status_report.md"),
+        ("todo action plan", outputs_root / "todo_action_plan.md"),
+        ("review descriptives json", outputs_root / "review_descriptives.json"),
+        ("review descriptives markdown", outputs_root / "review_descriptives.md"),
+        ("results summary csv", outputs_root / "results_summary_table.csv"),
+        ("results summary summary", outputs_root / "results_summary_table_summary.md"),
+        ("prisma tables summary", outputs_root / "prisma_tables_summary.md"),
+        ("results summary latex", manuscript_root / "tables/results_summary_table.tex"),
+        ("prisma counts latex", manuscript_root / "tables/prisma_counts_table.tex"),
+        ("fulltext exclusion latex", manuscript_root / "tables/fulltext_exclusion_table.tex"),
+    )
 
 
 def _doctor_required_paths(review_config: ReviewConfig | None) -> tuple[tuple[str, Path], ...]:
@@ -902,6 +1135,60 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
             )
 
     lines.append("")
+    lines.append("Provenance coverage")
+    provenance_candidates = _doctor_provenance_candidates(review_config)
+    provenance_statuses: list[str] = []
+    for label, artifact_path in provenance_candidates:
+        if not artifact_path.exists():
+            lines.append(
+                _doctor_line(
+                    "ok",
+                    f"{label} provenance",
+                    f"artifact not present; no provenance expected at {artifact_path.as_posix()}",
+                )
+            )
+            continue
+
+        provenance_path = _provenance_sidecar_path(artifact_path)
+        if provenance_path.exists():
+            try:
+                provenance_payload = _load_json_object(provenance_path)
+                _validate_provenance_payload(provenance_payload, artifact_path=artifact_path)
+            except ValueError as exc:
+                provenance_statuses.append("invalid")
+                warnings += 1
+                record_failure("schema violation")
+                lines.append(
+                    _doctor_classified_line(
+                        "warn",
+                        f"{label} provenance",
+                        str(exc),
+                        failure_class="schema violation",
+                    )
+                )
+            else:
+                provenance_statuses.append("present")
+                lines.append(_doctor_line("ok", f"{label} provenance", provenance_path.as_posix()))
+        else:
+            provenance_statuses.append("missing")
+            warnings += 1
+            record_failure("missing artifact")
+            lines.append(
+                _doctor_classified_line(
+                    "warn",
+                    f"{label} provenance",
+                    f"missing sidecar for generated artifact {artifact_path.as_posix()}",
+                    failure_class="missing artifact",
+                )
+            )
+    if provenance_statuses:
+        lines.append(
+            _doctor_line(
+                "ok", "provenance summary", _summarize_provenance_statuses(provenance_statuses)
+            )
+        )
+
+    lines.append("")
     lines.append("Registry checks")
     for script_name in ("status_cli", "validate_csv_inputs", "validate_extraction"):
         if script_name in AVAILABLE_SCRIPTS:
@@ -1132,7 +1419,12 @@ def main(argv: list[str] | None = None) -> int:
     if command == "status":
         return _run_status(args.status_args, config_path=args.config)
     if command == "artifacts":
-        return _list_artifacts(args.kind, missing_only=bool(args.missing_only))
+        return _list_artifacts(
+            args.kind,
+            missing_only=bool(args.missing_only),
+            provenance_missing_only=bool(getattr(args, "provenance_missing_only", False)),
+            provenance_invalid_only=bool(getattr(args, "provenance_invalid_only", False)),
+        )
     if command == "validate":
         return _run_validate(args.target, args.validate_args)
     if command == "doctor":

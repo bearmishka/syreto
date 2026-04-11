@@ -83,6 +83,7 @@ SyReTo is built around operational guarantees rather than black-box convenience.
 - Deterministic processing: core steps rely on explicit rules and thresholds rather than opaque ML classifiers.
 - Replayability: generated artifacts can be rebuilt from repository state and scripted inputs.
 - Auditability: key review decisions are persisted in versioned files and summarized in status artifacts.
+- Artifact provenance: selected generated outputs can carry sidecar metadata describing producer, upstream inputs, review mode, and config linkage.
 - Integrity checks: dedicated guards validate the audit log, record identity stability, epistemic consistency, source integrity, and template leakage.
 - Manuscript synchronization: review-state summaries are turned into manuscript-ready tables and sections instead of being maintained separately by hand.
 
@@ -123,6 +124,8 @@ syreto doctor --config reviews/repo-default/review.toml
 syreto status
 syreto status --config reviews/repo-default/review.toml
 syreto artifacts --kind operational
+syreto artifacts --kind operational --provenance-missing-only
+syreto artifacts --kind operational --provenance-invalid-only
 syreto validate all -- --fail-on error
 syreto analytics
 syreto observability
@@ -164,6 +167,8 @@ syreto observability
 syreto artifacts --kind operational
 cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 ```
+
+`syreto artifacts` now reports provenance availability for tracked generated artifacts and can filter to missing or invalid provenance sidecars. `syreto doctor` checks both provenance coverage and minimal sidecar validity for the current trust-bearing output surface and reports a small provenance summary. `syreto observability` adds a provenance snapshot plus a small provenance summary for outputs touched in the recent event slice.
 
 If you are using production mode, the status gate and template-term guard should also pass without blocker findings.
 
@@ -236,7 +241,15 @@ The GitHub Actions workflow also checks two higher-level system surfaces on ever
 Useful generated analytics artifacts:
 
 - `outputs/review_descriptives.json`
+- `outputs/review_descriptives.json.provenance.json`
 - `outputs/review_descriptives.md`
+- `outputs/review_descriptives.md.provenance.json`
+- `outputs/status_summary.json`
+- `outputs/status_summary.json.provenance.json`
+- `outputs/status_report.md`
+- `outputs/status_report.md.provenance.json`
+- `outputs/todo_action_plan.md`
+- `outputs/todo_action_plan.md.provenance.json`
 - `outputs/figures/year_distribution.png`
 - `outputs/figures/study_design_distribution.png`
 - `outputs/figures/country_distribution.png`

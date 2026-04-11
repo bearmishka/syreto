@@ -96,6 +96,8 @@ At a minimum, reproducible runs should agree on:
 - generated canonical summary content
 - review-state and manuscript-facing derived content
 
+Where provenance sidecars are present, they should also agree on upstream artifact linkage, producing script identity, review mode, and review-config reference, while timestamps remain intentionally time-variant metadata.
+
 For the broader artifact inventory, see [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md).
 
 ---

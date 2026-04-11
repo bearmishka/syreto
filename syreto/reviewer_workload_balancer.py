@@ -3,6 +3,14 @@ from pathlib import Path
 
 import pandas as pd
 
+if __package__ in {None, ""}:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from provenance import write_provenance_sidecar
+else:
+    from .provenance import write_provenance_sidecar
+
 EMPTY_VALUES = {"", "nan", "none"}
 PLAN_COLUMNS = [
     "reviewer",
@@ -218,6 +226,17 @@ def main(argv: list[str] | None = None) -> int:
     summary_text = canonicalize_summary_text(summary_text)
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(summary_text, encoding="utf-8")
+    upstream_inputs = [screening_log_path]
+    write_provenance_sidecar(
+        plan_output_path,
+        generated_by="reviewer_workload_balancer.py",
+        upstream_inputs=upstream_inputs,
+    )
+    write_provenance_sidecar(
+        summary_path,
+        generated_by="reviewer_workload_balancer.py",
+        upstream_inputs=upstream_inputs,
+    )
 
     print(f"Wrote: {plan_output_path}")
     print(f"Wrote: {summary_path}")

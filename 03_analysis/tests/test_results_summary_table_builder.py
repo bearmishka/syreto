@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -111,11 +112,33 @@ class ResultsSummaryTableBuilderTests(unittest.TestCase):
 
             summary_text = summary_path.read_text(encoding="utf-8")
             self.assertIn("Duplicate outcome in meta results ignored", summary_text)
+            output_provenance = json.loads(
+                output_path.with_name(f"{output_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            latex_provenance = json.loads(
+                latex_path.with_name(f"{latex_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            summary_provenance = json.loads(
+                summary_path.with_name(f"{summary_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
 
             latex_text = latex_path.read_text(encoding="utf-8")
             self.assertIn(r"\label{tab:final_results_summary}", latex_text)
             self.assertIn("confidence", latex_text)
             self.assertIn("very low", latex_text)
+            self.assertEqual(output_provenance["generated_by"], "results_summary_table_builder.py")
+            self.assertEqual(
+                output_provenance["upstream_inputs"],
+                [str(meta_path), str(extraction_path), str(grade_path)],
+            )
+            self.assertEqual(latex_provenance["artifact_path"], str(latex_path))
+            self.assertEqual(summary_provenance["artifact_path"], str(summary_path))
 
     def test_fallbacks_when_meta_input_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

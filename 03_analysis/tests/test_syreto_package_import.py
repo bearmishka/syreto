@@ -174,6 +174,7 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("operational:", rendered)
         self.assertIn("outputs/status_summary.json", rendered)
         self.assertIn("outputs/review_descriptives.json", rendered)
+        self.assertIn("outputs/review_descriptives.json | provenance=", rendered)
         self.assertIn("outputs/figures/predictor_outcome_heatmap.png", rendered)
         self.assertNotIn("manuscript:", rendered)
 
@@ -197,6 +198,90 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("operational:", rendered)
         self.assertNotIn("outputs/status_summary.json", rendered)
         self.assertIn("outputs/status_report.md", rendered)
+
+    def test_cli_artifacts_reports_provenance_presence_for_tracked_artifact(self) -> None:
+        from syreto import cli
+
+        artifact = (cli.PROJECT_ROOT / "outputs/review_descriptives.json").resolve()
+        provenance = artifact.with_name(f"{artifact.name}.provenance.json").resolve()
+        existing = {artifact, provenance}
+
+        def fake_exists(self: Path) -> bool:
+            return self.resolve() in existing
+
+        stdout = StringIO()
+        with mock.patch.object(Path, "exists", fake_exists):
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["artifacts", "--kind", "operational"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn(
+            "outputs/review_descriptives.json | provenance=present",
+            stdout.getvalue(),
+        )
+
+    def test_cli_artifacts_provenance_missing_only_filters_to_missing_sidecars(self) -> None:
+        from syreto import cli
+
+        artifact = (cli.PROJECT_ROOT / "outputs/review_descriptives.json").resolve()
+        existing = {artifact}
+
+        def fake_exists(self: Path) -> bool:
+            return self.resolve() in existing
+
+        stdout = StringIO()
+        with mock.patch.object(Path, "exists", fake_exists):
+            with redirect_stdout(stdout):
+                exit_code = cli.main(
+                    ["artifacts", "--kind", "operational", "--provenance-missing-only"]
+                )
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("outputs/review_descriptives.json | provenance=missing", rendered)
+        self.assertNotIn("outputs/status_summary.json", rendered)
+
+    def test_cli_artifacts_provenance_invalid_only_filters_to_invalid_sidecars(self) -> None:
+        from syreto import cli
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            artifact = tmp_path / "outputs" / "review_descriptives.json"
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            provenance = artifact.with_name(f"{artifact.name}.provenance.json")
+            artifact.write_text("{}", encoding="utf-8")
+            provenance.write_text("{bad-json}", encoding="utf-8")
+
+            stdout = StringIO()
+            with mock.patch.dict(
+                cli.ARTIFACT_GROUPS,
+                {"operational": ("outputs/review_descriptives.json",), "manuscript": ()},
+                clear=False,
+            ):
+                with mock.patch.object(cli, "PROJECT_ROOT", tmp_path):
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(
+                            ["artifacts", "--kind", "operational", "--provenance-invalid-only"]
+                        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("outputs/review_descriptives.json | provenance=present", stdout.getvalue())
+
+    def test_cli_artifacts_rejects_combined_provenance_filters(self) -> None:
+        from syreto import cli
+
+        stderr = StringIO()
+        with redirect_stderr(stderr):
+            exit_code = cli.main(
+                [
+                    "artifacts",
+                    "--provenance-missing-only",
+                    "--provenance-invalid-only",
+                ]
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("cannot be combined", stderr.getvalue())
 
     def test_cli_validate_csv_routes_to_csv_validator(self) -> None:
         from syreto import cli
@@ -320,6 +405,96 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("Run `cd 03_analysis && bash daily_run.sh`", stdout.getvalue())
 
+    def test_cli_doctor_reports_missing_provenance_sidecar_as_warning(self) -> None:
+        from syreto import cli
+
+        artifact = (cli.PROJECT_ROOT / "outputs/review_descriptives.json").resolve()
+        existing = {
+            *(path.resolve() for _, path in cli.DOCTOR_REQUIRED_PATHS),
+            *(path.resolve() for _, path in cli.DOCTOR_OPTIONAL_PATHS),
+            artifact,
+            (cli.PROJECT_ROOT / "outputs/run_events.jsonl").resolve(),
+            (cli.PROJECT_ROOT / "outputs/status_summary.json").resolve(),
+        }
+
+        def fake_exists(self: Path) -> bool:
+            return self.resolve() in existing
+
+        stdout = StringIO()
+        with mock.patch.object(Path, "exists", fake_exists):
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("review descriptives json provenance", rendered)
+        self.assertIn("missing sidecar for generated artifact", rendered)
+        self.assertIn("class=missing artifact", rendered)
+        self.assertIn("provenance summary: tracked=4, present=0, missing=4, invalid=0", rendered)
+
+    def test_cli_doctor_reports_invalid_provenance_json_as_schema_warning(self) -> None:
+        from syreto import cli
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            artifact = tmp_path / "review_descriptives.json"
+            provenance = artifact.with_name(f"{artifact.name}.provenance.json")
+            artifact.write_text("{}", encoding="utf-8")
+            provenance.write_text("{not-json}", encoding="utf-8")
+
+            stdout = StringIO()
+            with mock.patch.object(
+                cli,
+                "_doctor_provenance_candidates",
+                return_value=(("review descriptives json", artifact),),
+            ):
+                with mock.patch.object(cli, "DOCTOR_OPTIONAL_PATHS", ()):
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("review descriptives json provenance", rendered)
+        self.assertIn("invalid JSON", rendered)
+        self.assertIn("class=schema violation", rendered)
+
+    def test_cli_doctor_reports_invalid_provenance_contract_as_schema_warning(self) -> None:
+        from syreto import cli
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            artifact = tmp_path / "review_descriptives.json"
+            provenance = artifact.with_name(f"{artifact.name}.provenance.json")
+            artifact.write_text("{}", encoding="utf-8")
+            provenance.write_text(
+                json.dumps(
+                    {
+                        "artifact_path": str(tmp_path / "other.json"),
+                        "generated_at_utc": "2026-04-11T10:00:00+00:00",
+                        "generated_by": "review_descriptives_builder.py",
+                        "upstream_inputs": [str(tmp_path / "input.csv")],
+                        "review_mode": "template",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+            with mock.patch.object(
+                cli,
+                "_doctor_provenance_candidates",
+                return_value=(("review descriptives json", artifact),),
+            ):
+                with mock.patch.object(cli, "DOCTOR_OPTIONAL_PATHS", ()):
+                    with redirect_stdout(stdout):
+                        exit_code = cli.main(["doctor"])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("artifact_path does not match tracked artifact", rendered)
+        self.assertIn("class=schema violation", rendered)
+
     def test_cli_doctor_reads_repo_default_review_config(self) -> None:
         from syreto import cli
 
@@ -385,7 +560,26 @@ class SyretoPackageImportTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
+            outputs_root = tmp_path / "outputs"
+            outputs_root.mkdir(parents=True, exist_ok=True)
             run_events_path = tmp_path / "run_events.jsonl"
+            (outputs_root / "status_summary.json").write_text("{}", encoding="utf-8")
+            (outputs_root / "status_summary.json.provenance.json").write_text(
+                json.dumps(
+                    {
+                        "artifact_path": str(outputs_root / "status_summary.json"),
+                        "generated_at_utc": "2026-04-09T10:00:02+00:00",
+                        "generated_by": "status_report.py",
+                        "upstream_inputs": [str(tmp_path / "search_log.csv")],
+                        "review_mode": "template",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (outputs_root / "results_summary_table.csv").write_text(
+                "outcome\nx\n", encoding="utf-8"
+            )
             run_events_path.write_text(
                 "\n".join(
                     [
@@ -435,6 +629,10 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("Events: 2", rendered)
         self.assertIn("Last failed step: synthesis", rendered)
         self.assertIn("missing inclusion criteria", rendered)
+        self.assertIn("Provenance snapshot", rendered)
+        self.assertIn("outputs/status_summary.json: provenance=present", rendered)
+        self.assertIn("outputs/results_summary_table.csv: provenance=missing", rendered)
+        self.assertIn("Summary: tracked=2, present=1, missing=1, invalid=0", rendered)
 
     def test_cli_observability_uses_config_outputs_root(self) -> None:
         from syreto import cli
@@ -494,13 +692,73 @@ class SyretoPackageImportTests(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
+            (outputs_root / "status_report.md").write_text("# Status report\n", encoding="utf-8")
+            (outputs_root / "status_report.md.provenance.json").write_text(
+                json.dumps(
+                    {
+                        "artifact_path": str(outputs_root / "status_report.md"),
+                        "generated_at_utc": "2026-04-09T11:00:01+00:00",
+                        "generated_by": "status_report.py",
+                        "upstream_inputs": [
+                            str(review_root / "data" / "processed" / "search_log.csv")
+                        ],
+                        "review_mode": "template",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
 
             stdout = StringIO()
             with redirect_stdout(stdout):
                 exit_code = cli.main(["observability", "--config", str(config_path)])
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("Run id: run-2", stdout.getvalue())
+        rendered = stdout.getvalue()
+        self.assertIn("Run id: run-2", rendered)
+        self.assertIn("outputs/status_report.md: provenance=present", rendered)
+        self.assertIn("Summary: tracked=1, present=1, missing=0, invalid=0", rendered)
+
+    def test_cli_observability_reports_invalid_provenance_for_recent_output(self) -> None:
+        from syreto import cli
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            outputs_root = tmp_path / "outputs"
+            outputs_root.mkdir(parents=True, exist_ok=True)
+            run_events_path = tmp_path / "run_events.jsonl"
+            (outputs_root / "status_report.md").write_text("# Status report\n", encoding="utf-8")
+            (outputs_root / "status_report.md.provenance.json").write_text(
+                "{bad-json}",
+                encoding="utf-8",
+            )
+            run_events_path.write_text(
+                json.dumps(
+                    {
+                        "run_id": "run-3",
+                        "review_mode": "template",
+                        "step_order": 1,
+                        "step": "status_report",
+                        "started_at": "2026-04-09T12:00:00Z",
+                        "finished_at": "2026-04-09T12:00:01Z",
+                        "duration": 1.0,
+                        "status": "success",
+                        "failure_reason": None,
+                        "outputs_touched": ["outputs/status_report.md"],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["observability", "--input", str(run_events_path)])
+
+        self.assertEqual(exit_code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("outputs/status_report.md: provenance=invalid", rendered)
+        self.assertIn("Summary: tracked=1, present=0, missing=0, invalid=1", rendered)
 
     def test_cli_observability_fails_when_run_events_missing(self) -> None:
         from syreto import cli

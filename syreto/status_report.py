@@ -7,6 +7,11 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from .provenance import write_provenance_sidecar
+except ImportError:
+    from provenance import write_provenance_sidecar
+
 EMPTY_VALUES = {"", "nan", "none"}
 YES_VALUES = {"yes", "y", "1", "true"}
 VALID_DUPLICATE_VALUES = YES_VALUES | {"no", "n", "0", "false"}
@@ -1888,6 +1893,39 @@ def main() -> None:
     json_output_path.parent.mkdir(parents=True, exist_ok=True)
     json_output_path.write_text(
         json.dumps(status_summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    upstream_inputs = [
+        screening_log_path,
+        screening_record_log_path,
+        master_path,
+        search_log_path,
+        prisma_path,
+        protocol_path,
+        manuscript_path,
+        screening_summary_path,
+        csv_input_validation_summary_path,
+        extraction_validation_summary_path,
+        quality_appraisal_summary_path,
+        quality_appraisal_scored_path,
+        effect_size_summary_path,
+        effect_size_converted_path,
+        reviewer_workload_summary_path,
+        dedup_summary_path,
+        prisma_flow_path,
+        daily_run_manifest_path,
+        daily_run_failed_marker_path,
+    ]
+    write_provenance_sidecar(
+        output_path,
+        generated_by="status_report.py",
+        upstream_inputs=upstream_inputs,
+        review_mode=args.review_mode,
+    )
+    write_provenance_sidecar(
+        json_output_path,
+        generated_by="status_report.py",
+        upstream_inputs=upstream_inputs,
+        review_mode=args.review_mode,
     )
 
     print(f"Wrote: {output_path}")

@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from provenance import write_provenance_sidecar
 from study_table import included_study_table, load_study_table
 
 RESULT_COLUMNS = [
@@ -470,6 +471,22 @@ def main() -> None:
         warnings=warnings,
     )
     atomic_write_text(summary_output, summary_text)
+    upstream_inputs = [meta_input, extraction_input, grade_input]
+    write_provenance_sidecar(
+        output_path,
+        generated_by="results_summary_table_builder.py",
+        upstream_inputs=upstream_inputs,
+    )
+    write_provenance_sidecar(
+        latex_output_path,
+        generated_by="results_summary_table_builder.py",
+        upstream_inputs=upstream_inputs,
+    )
+    write_provenance_sidecar(
+        summary_output,
+        generated_by="results_summary_table_builder.py",
+        upstream_inputs=upstream_inputs,
+    )
 
     print(f"Wrote: {output_path}")
     print(f"Wrote: {latex_output_path}")

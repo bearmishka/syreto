@@ -142,7 +142,9 @@ Suggested outputs:
 
 ```text
 outputs/review_descriptives.json
+outputs/review_descriptives.json.provenance.json
 outputs/review_descriptives.md
+outputs/review_descriptives.md.provenance.json
 outputs/figures/year_distribution.png
 outputs/figures/study_design_distribution.png
 outputs/figures/country_distribution.png
@@ -151,6 +153,7 @@ outputs/figures/predictor_outcome_heatmap.png
 ```
 
 Not every figure is mandatory in every run, but the artifact family should be predictable.
+Where present, provenance sidecars make the analytics layer easier to audit without changing the analytics payload itself.
 
 ---
 

@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -62,6 +63,17 @@ class ReviewerWorkloadBalancerTests(unittest.TestCase):
             self.assertTrue(plan_path.exists())
             self.assertTrue(summary_path.exists())
             self.assertIn("non-blocking", summary_path.read_text(encoding="utf-8").lower())
+            plan_provenance = json.loads(
+                plan_path.with_name(f"{plan_path.name}.provenance.json").read_text(encoding="utf-8")
+            )
+            summary_provenance = json.loads(
+                summary_path.with_name(f"{summary_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(plan_provenance["generated_by"], "reviewer_workload_balancer.py")
+            self.assertEqual(plan_provenance["upstream_inputs"], [str(screening_log)])
+            self.assertEqual(summary_provenance["artifact_path"], str(summary_path))
 
     def test_strict_mode_fails_when_only_one_reviewer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

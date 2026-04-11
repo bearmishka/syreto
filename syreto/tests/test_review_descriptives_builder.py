@@ -192,6 +192,16 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
 
             payload = json.loads(json_output.read_text(encoding="utf-8"))
             markdown = markdown_output.read_text(encoding="utf-8")
+            json_provenance = json.loads(
+                json_output.with_name(f"{json_output.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            markdown_provenance = json.loads(
+                markdown_output.with_name(f"{markdown_output.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
 
         self.assertEqual(payload["included_study_count"], 1)
         self.assertEqual(payload["distributions"]["predictor_construct"]["attachment"], 1)
@@ -202,6 +212,14 @@ class ReviewDescriptivesBuilderTests(unittest.TestCase):
         self.assertIn("Included studies: 1", markdown)
         self.assertIn("attachment x distress: 1", markdown)
         self.assertIn("year:", markdown)
+        self.assertEqual(json_provenance["generated_by"], "review_descriptives_builder.py")
+        self.assertEqual(json_provenance["artifact_path"], str(json_output))
+        self.assertEqual(json_provenance["review_mode"], "unknown")
+        self.assertEqual(
+            json_provenance["upstream_inputs"],
+            [str(extraction_path), str(quality_input)],
+        )
+        self.assertEqual(markdown_provenance["artifact_path"], str(markdown_output))
 
 
 if __name__ == "__main__":

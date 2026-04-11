@@ -16,8 +16,10 @@ if __package__ in {None, ""}:
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from provenance import write_provenance_sidecar
     from study_table import included_study_table, normalize
 else:
+    from .provenance import write_provenance_sidecar
     from .study_table import included_study_table, normalize
 
 STUDY_COLUMNS = [
@@ -483,13 +485,27 @@ def main() -> None:
     )
     markdown = build_markdown(payload, extraction_path=extraction_path)
 
-    atomic_write_text(
-        Path(args.json_output), json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+    json_output_path = Path(args.json_output)
+    markdown_output_path = Path(args.markdown_output)
+    quality_input_path = Path(args.quality_input)
+    atomic_write_text(json_output_path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+    atomic_write_text(markdown_output_path, markdown)
+    upstream_inputs = [extraction_path]
+    if quality_input_path.exists():
+        upstream_inputs.append(quality_input_path)
+    write_provenance_sidecar(
+        json_output_path,
+        generated_by="review_descriptives_builder.py",
+        upstream_inputs=upstream_inputs,
     )
-    atomic_write_text(Path(args.markdown_output), markdown)
+    write_provenance_sidecar(
+        markdown_output_path,
+        generated_by="review_descriptives_builder.py",
+        upstream_inputs=upstream_inputs,
+    )
 
-    print(f"Wrote: {Path(args.json_output)}")
-    print(f"Wrote: {Path(args.markdown_output)}")
+    print(f"Wrote: {json_output_path}")
+    print(f"Wrote: {markdown_output_path}")
     for figure_path in payload["figure_outputs"].values():
         print(f"Wrote: {figure_path}")
     print(f"Included studies: {payload['included_study_count']}")

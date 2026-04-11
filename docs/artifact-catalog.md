@@ -105,6 +105,8 @@ The `review_descriptives.*` and `outputs/figures/` artifacts are specifically in
 
 - what does the current included-study corpus look like as a dataset?
 
+Selected generated artifacts may also have a sidecar provenance file named `*.provenance.json`, which records the producing script, generation time, upstream inputs, active review mode, and review-config linkage when available.
+
 ## 3. Manuscript-Facing Generated Outputs
 
 These artifacts are generated from review-state inputs and are intended to be consumed by manuscript workflows.
@@ -170,6 +172,7 @@ This makes the catalog a companion to:
 - [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
 - [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
 - [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
+- [provenance-layer.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/provenance-layer.md)
 
 ## Fast Inspection Checklist
 

@@ -5,6 +5,11 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+try:
+    from .provenance import write_provenance_sidecar
+except ImportError:
+    from provenance import write_provenance_sidecar
+
 QUICK_FIX_COMMANDS = {
     "search_totals": "python validate_csv_inputs.py",
     "master_records": "python dedup_merge.py --if-new-exports",
@@ -174,6 +179,11 @@ def main() -> None:
     markdown = build_markdown(status_summary_path=input_path, pending_items=pending_items)
 
     atomic_write_text(output_path, markdown)
+    write_provenance_sidecar(
+        output_path,
+        generated_by="todo_action_plan_builder.py",
+        upstream_inputs=[input_path],
+    )
     print(f"Wrote: {output_path}")
     print(f"Pending TODO items: {len(pending_items)}")
 

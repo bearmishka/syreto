@@ -73,12 +73,19 @@ class TodoActionPlanBuilderTests(unittest.TestCase):
             self.assertTrue(output_path.exists())
 
             text = output_path.read_text(encoding="utf-8")
+            provenance = json.loads(
+                output_path.with_name(f"{output_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
             self.assertIn("Pending checklist items: 2", text)
             self.assertIn("`02_data/processed/search_log.csv`", text)
             self.assertIn("`03_analysis/outputs/csv_input_validation_summary.md`", text)
             self.assertIn("Quick fix: `python validate_csv_inputs.py`", text)
             self.assertIn("Quick fix: `python validate_csv_inputs.py`", text)
             self.assertNotIn("Quality appraisal", text)
+            self.assertEqual(provenance["generated_by"], "todo_action_plan_builder.py")
+            self.assertEqual(provenance["upstream_inputs"], [str(status_summary_path)])
 
     def test_writes_empty_plan_when_no_pending_items(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

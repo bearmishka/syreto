@@ -8,8 +8,10 @@ import pandas as pd
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from latex_utils import render_table_block
+    from provenance import write_provenance_sidecar
 else:
     from .latex_utils import render_table_block
+    from .provenance import write_provenance_sidecar
 
 MISSING_VALUES = {
     "",
@@ -222,6 +224,22 @@ def main() -> None:
     )
     summary_output_path.parent.mkdir(parents=True, exist_ok=True)
     summary_output_path.write_text(summary_text, encoding="utf-8")
+    upstream_inputs = [prisma_input_path, fulltext_input_path]
+    write_provenance_sidecar(
+        prisma_output_path,
+        generated_by="prisma_tables.py",
+        upstream_inputs=upstream_inputs,
+    )
+    write_provenance_sidecar(
+        fulltext_output_path,
+        generated_by="prisma_tables.py",
+        upstream_inputs=upstream_inputs,
+    )
+    write_provenance_sidecar(
+        summary_output_path,
+        generated_by="prisma_tables.py",
+        upstream_inputs=upstream_inputs,
+    )
 
     print(f"Wrote: {prisma_output_path}")
     print(f"Wrote: {fulltext_output_path}")
