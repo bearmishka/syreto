@@ -158,8 +158,22 @@ class ProgressHistoryBuilderTests(unittest.TestCase):
             self.assertEqual(latest["delta_todo_open_count"], "-1")
 
             summary_text = summary_path.read_text(encoding="utf-8")
+            history_provenance = json.loads(
+                history_path.with_name(f"{history_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            summary_provenance = json.loads(
+                summary_path.with_name(f"{summary_path.name}.provenance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
             self.assertIn("Runs tracked: 2", summary_text)
             self.assertIn("Search results total: +3", summary_text)
+            self.assertEqual(history_provenance["generated_by"], "progress_history_builder.py")
+            self.assertEqual(history_provenance["review_mode"], "production")
+            self.assertEqual(len(history_provenance["upstream_inputs"]), 2)
+            self.assertEqual(summary_provenance["artifact_path"], str(summary_path))
 
     def test_upserts_same_run_id_without_duplicate_row(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

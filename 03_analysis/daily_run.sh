@@ -354,6 +354,54 @@ PY
   return 0
 }
 
+write_provenance_sidecar() {
+  local artifact_path="$1"
+  local generated_by="$2"
+  local upstream_inputs_json="${3:-[]}"
+
+  local python_bin=""
+  python_bin="$(resolve_python_bin)" || return 0
+
+  ARTIFACT_PATH="$artifact_path" \
+  GENERATED_BY="$generated_by" \
+  UPSTREAM_INPUTS_JSON="$upstream_inputs_json" \
+  PROVENANCE_REVIEW_MODE="$REVIEW_MODE" \
+  PROVENANCE_REVIEW_CONFIG="${SYRETO_REVIEW_CONFIG:-}" \
+  "$python_bin" - <<'PY'
+import json
+import os
+from datetime import UTC, datetime
+from pathlib import Path
+
+
+def main() -> int:
+    artifact_path = Path(os.environ["ARTIFACT_PATH"])
+    sidecar_path = artifact_path.with_name(f"{artifact_path.name}.provenance.json")
+    try:
+        upstream_inputs = json.loads(os.environ["UPSTREAM_INPUTS_JSON"])
+    except json.JSONDecodeError:
+        upstream_inputs = []
+
+    payload = {
+        "artifact_path": str(artifact_path.resolve()),
+        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        "generated_by": os.environ["GENERATED_BY"],
+        "upstream_inputs": [str(item) for item in upstream_inputs if str(item).strip()],
+        "review_mode": os.environ.get("PROVENANCE_REVIEW_MODE", "").strip() or "unknown",
+    }
+    review_config = os.environ.get("PROVENANCE_REVIEW_CONFIG", "").strip()
+    if review_config:
+        payload["review_config"] = review_config
+
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    sidecar_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+raise SystemExit(main())
+PY
+}
+
 update_daily_run_manifest() {
   local state="$1"
   local pipeline_rc="$2"
@@ -381,6 +429,7 @@ update_daily_run_manifest() {
 EOF
 
   normalize_json_object_stream_file "$DAILY_RUN_MANIFEST" "daily-run manifest"
+  write_provenance_sidecar "$DAILY_RUN_MANIFEST" "daily_run.sh" '[]'
 }
 
 write_daily_run_failed_marker() {

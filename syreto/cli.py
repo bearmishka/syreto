@@ -86,6 +86,7 @@ ARTIFACT_GROUPS = {
 }
 
 PROVENANCE_TRACKED_ARTIFACTS = {
+    "outputs/daily_run_manifest.json",
     "outputs/status_summary.json",
     "outputs/status_report.md",
     "outputs/todo_action_plan.md",
@@ -95,6 +96,8 @@ PROVENANCE_TRACKED_ARTIFACTS = {
     "outputs/reviewer_workload_balancer_summary.md",
     "outputs/results_summary_table.csv",
     "outputs/results_summary_table_summary.md",
+    "outputs/progress_history.csv",
+    "outputs/progress_history_summary.md",
     "04_manuscript/tables/results_summary_table.tex",
     "04_manuscript/tables/prisma_counts_table.tex",
     "04_manuscript/tables/fulltext_exclusion_table.tex",
@@ -844,12 +847,15 @@ def _doctor_provenance_candidates(
 ) -> tuple[tuple[str, Path], ...]:
     if review_config is None:
         return (
+            ("daily run manifest", PROJECT_ROOT / "outputs/daily_run_manifest.json"),
             ("status summary", PROJECT_ROOT / "outputs/status_summary.json"),
             ("status report", PROJECT_ROOT / "outputs/status_report.md"),
             ("todo action plan", PROJECT_ROOT / "outputs/todo_action_plan.md"),
             ("review descriptives json", PROJECT_ROOT / "outputs/review_descriptives.json"),
             ("review descriptives markdown", PROJECT_ROOT / "outputs/review_descriptives.md"),
             ("results summary csv", PROJECT_ROOT / "outputs/results_summary_table.csv"),
+            ("progress history csv", PROJECT_ROOT / "outputs/progress_history.csv"),
+            ("progress history summary", PROJECT_ROOT / "outputs/progress_history_summary.md"),
             (
                 "results summary latex",
                 PROJECT_ROOT / "04_manuscript/tables/results_summary_table.tex",
@@ -865,12 +871,15 @@ def _doctor_provenance_candidates(
     outputs_root = review_config.outputs_root
     manuscript_root = review_config.manuscript_root
     return (
+        ("daily run manifest", outputs_root / "daily_run_manifest.json"),
         ("status summary", outputs_root / "status_summary.json"),
         ("status report", outputs_root / "status_report.md"),
         ("todo action plan", outputs_root / "todo_action_plan.md"),
         ("review descriptives json", outputs_root / "review_descriptives.json"),
         ("review descriptives markdown", outputs_root / "review_descriptives.md"),
         ("results summary csv", outputs_root / "results_summary_table.csv"),
+        ("progress history csv", outputs_root / "progress_history.csv"),
+        ("progress history summary", outputs_root / "progress_history_summary.md"),
         ("results summary summary", outputs_root / "results_summary_table_summary.md"),
         ("prisma tables summary", outputs_root / "prisma_tables_summary.md"),
         ("results summary latex", manuscript_root / "tables/results_summary_table.tex"),

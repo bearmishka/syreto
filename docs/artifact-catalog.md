@@ -171,6 +171,7 @@ This makes the catalog a companion to:
 
 - [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
 - [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
+- [architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md)
 - [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
 - [provenance-layer.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/provenance-layer.md)
 

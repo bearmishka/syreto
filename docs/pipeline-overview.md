@@ -201,3 +201,5 @@ python status_cli.py --input outputs/status_summary.json
 ```
 
 For the review-aware configuration layer, see [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md), [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).
+
+For the explicit system split between core, interfaces, tasks, and observability, see [architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md).

@@ -14,7 +14,7 @@ The goal of the RIM is to:
 
 - make review execution explicit and reproducible
 - separate configuration from execution logic
-- provide a stable interface for CLI tools such as `status`, `doctor`, and future `review run`
+- provide a stable interface for CLI tools such as `status`, `doctor`, and `review run`
 - ensure that all epistemically relevant parameters are externally visible and versioned
 
 For the concrete field-level schema and a practical example config, see [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md).

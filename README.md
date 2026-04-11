@@ -176,6 +176,8 @@ For a more explicit contract of hard failures, warnings, blocking conditions, an
 
 For the explicit run-level contract around canonical inputs, canonical outputs, required stages, successful runs, invalid runs, and deterministic guarantees, see [docs/execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md).
 
+For the system split between core, interfaces, tasks, and observability, see [docs/architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md).
+
 For the trust model around reruns, stale outputs, rollback, and what can safely be reused after failure, see [docs/recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
 
 For the separate reproducibility promise around identical config, identical inputs, canonical outputs, environment constraints, and controlled non-determinism, see [docs/reproducibility-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/reproducibility-contract.md).
@@ -195,6 +197,19 @@ For release semantics around patch/minor/major changes, artifact contracts, conf
 For the testing surface organized by operational risk rather than only by module, see [docs/test-taxonomy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/test-taxonomy.md).
 
 For the project’s small, versioned review-sized smoke and regression samples, see [docs/golden-review-fixtures.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/golden-review-fixtures.md).
+
+## Docs Surface
+
+The main human-facing operational docs are:
+
+- [docs/pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
+- [docs/artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
+- [docs/daily-operations.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/daily-operations.md)
+- [docs/integrity-guards.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/integrity-guards.md)
+- [docs/architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md)
+- [docs/observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
+- [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
+- [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md)
 
 ## Main Entry Points
 

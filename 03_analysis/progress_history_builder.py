@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from provenance import write_provenance_sidecar
 
 OUTPUT_COLUMNS = [
     "run_started_at_utc",
@@ -455,8 +456,26 @@ def main() -> None:
 
     summary_text = build_summary(history_df)
 
-    atomic_write_dataframe_csv(history_df, Path(args.history_output), index=False)
-    atomic_write_text(Path(args.summary_output), summary_text)
+    history_output_path = Path(args.history_output)
+    summary_output_path = Path(args.summary_output)
+    manifest_path = Path(args.manifest)
+    status_summary_path = Path(args.status_summary)
+
+    atomic_write_dataframe_csv(history_df, history_output_path, index=False)
+    atomic_write_text(summary_output_path, summary_text)
+    upstream_inputs = [manifest_path, status_summary_path]
+    write_provenance_sidecar(
+        history_output_path,
+        generated_by="progress_history_builder.py",
+        upstream_inputs=upstream_inputs,
+        review_mode=args.review_mode,
+    )
+    write_provenance_sidecar(
+        summary_output_path,
+        generated_by="progress_history_builder.py",
+        upstream_inputs=upstream_inputs,
+        review_mode=args.review_mode,
+    )
 
     print(f"Wrote: {args.history_output}")
     print(f"Wrote: {args.summary_output}")

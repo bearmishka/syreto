@@ -95,5 +95,8 @@ The first implemented slice writes provenance sidecars for:
 - `outputs/status_summary.json`
 - `outputs/status_report.md`
 - `outputs/todo_action_plan.md`
+- `outputs/daily_run_manifest.json`
+- `outputs/progress_history.csv`
+- `outputs/progress_history_summary.md`
 
 This is enough to establish a testable contract without turning provenance into a new subsystem.

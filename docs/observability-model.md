@@ -232,15 +232,16 @@ This separation is important because SyReTo’s claims depend not just on produc
 
 ---
 
-## 12. Recommended Implementation Path
+## 12. Current Implementation Posture
 
-The minimal implementation path is:
+The current implementation path has already established the first operational slice:
 
-1. define the event schema
-2. write append-only events from `daily_run.sh`
-3. store them in `outputs/run_events.jsonl`
-4. leave `status_summary.json` and `status_report.md` unchanged
-5. optionally teach `doctor` and `status` to read the event stream later
+1. the event schema is defined
+2. append-only events are written from `daily_run.sh`
+3. events are stored in `outputs/run_events.jsonl`
+4. `status_summary.json` and `status_report.md` remain separate state summaries
+5. `syreto observability` reads the event stream directly
+6. `syreto doctor` and provenance-aware CLI surfaces complement the event stream without taking over execution
 
 This preserves architectural discipline:
 
