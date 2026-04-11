@@ -18,6 +18,11 @@ FIXTURE_ROOT = PROJECT_ROOT / "reviews/fixtures/repo-smoke"
 EXPECTED_MANIFEST_PATH = FIXTURE_ROOT / "expected/manifest_expected.json"
 EXPECTED_STATUS_SUMMARY_PATH = FIXTURE_ROOT / "expected/status_summary_expected.json"
 EXPECTED_RUN_EVENTS_PATH = FIXTURE_ROOT / "expected/run_events_expected.json"
+EXPECTED_MASTER_RECORDS_PATH = FIXTURE_ROOT / "expected/master_records_expected.csv"
+EXPECTED_SCREENING_RESULTS_PATH = (
+    FIXTURE_ROOT / "expected/screening_title_abstract_results_expected.csv"
+)
+EXPECTED_PRISMA_INPUT_PATH = FIXTURE_ROOT / "expected/prisma_counts_template_expected.csv"
 EXPECTED_WORKLOAD_PLAN_PATH = FIXTURE_ROOT / "expected/reviewer_workload_plan_expected.csv"
 EXPECTED_WORKLOAD_SUMMARY_PATH = (
     FIXTURE_ROOT / "expected/reviewer_workload_balancer_summary_expected.md"
@@ -141,6 +146,9 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
         expected_run_events_path: Path,
         expected_manifest_path: Path = EXPECTED_MANIFEST_PATH,
         expected_status_summary_path: Path = EXPECTED_STATUS_SUMMARY_PATH,
+        expected_master_records_path: Path | None = EXPECTED_MASTER_RECORDS_PATH,
+        expected_screening_results_path: Path | None = EXPECTED_SCREENING_RESULTS_PATH,
+        expected_prisma_input_path: Path | None = EXPECTED_PRISMA_INPUT_PATH,
         expected_workload_plan_path: Path | None = None,
         expected_workload_summary_path: Path | None = None,
         expected_prisma_table_path: Path | None = None,
@@ -241,6 +249,49 @@ class RepoSmokeReviewRunTests(unittest.TestCase):
                         expected_status_summary_path.read_text(encoding="utf-8")
                     )
                     self.assertEqual(status_summary, expected_status_summary)
+
+                if expected_master_records_path is not None:
+                    master_records_path = (
+                        PROJECT_ROOT / "02_data" / "processed" / "master_records.csv"
+                    )
+                    self.assertTrue(master_records_path.exists())
+                    master_records = master_records_path.read_text(encoding="utf-8")
+                    expected_master_records = expected_master_records_path.read_text(
+                        encoding="utf-8"
+                    )
+                    self.assertEqual(
+                        _normalize_text_artifact(master_records),
+                        _normalize_text_artifact(expected_master_records),
+                    )
+
+                if expected_screening_results_path is not None:
+                    screening_results_path = (
+                        PROJECT_ROOT
+                        / "02_data"
+                        / "processed"
+                        / "screening_title_abstract_results.csv"
+                    )
+                    self.assertTrue(screening_results_path.exists())
+                    screening_results = screening_results_path.read_text(encoding="utf-8")
+                    expected_screening_results = expected_screening_results_path.read_text(
+                        encoding="utf-8"
+                    )
+                    self.assertEqual(
+                        _normalize_text_artifact(screening_results),
+                        _normalize_text_artifact(expected_screening_results),
+                    )
+
+                if expected_prisma_input_path is not None:
+                    prisma_input_path = (
+                        PROJECT_ROOT / "02_data" / "processed" / "prisma_counts_template.csv"
+                    )
+                    self.assertTrue(prisma_input_path.exists())
+                    prisma_input = prisma_input_path.read_text(encoding="utf-8")
+                    expected_prisma_input = expected_prisma_input_path.read_text(encoding="utf-8")
+                    self.assertEqual(
+                        _normalize_text_artifact(prisma_input),
+                        _normalize_text_artifact(expected_prisma_input),
+                    )
 
                 if expected_failed_marker_path is not None:
                     failed_marker = json.loads(failed_marker_path.read_text(encoding="utf-8"))

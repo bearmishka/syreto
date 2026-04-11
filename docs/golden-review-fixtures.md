@@ -57,6 +57,10 @@ The `repo-smoke` fixture currently covers:
 - run-event stream creation
 - failed-marker absence on successful smoke runs
 - core status artifact smoke generation through the current orchestration spine
+- one trust-bearing canonical data artifact (`master_records.csv`)
+- one trust-bearing screening-state artifact (`screening_title_abstract_results.csv`)
+- one trust-bearing PRISMA input artifact (`prisma_counts_template.csv`)
+- a tiny coherent repository-aligned screening sample around that canonical surface
 - one stable tabular artifact (`reviewer_workload_plan.csv`)
 - one stable human-facing report (`reviewer_workload_balancer_summary.md`)
 - one tiny manuscript-facing artifact (`prisma_counts_table.tex`)

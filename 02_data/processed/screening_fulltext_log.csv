@@ -1,1 +1,3 @@
 record_id,fulltext_available,include,exclusion_reason,reviewer,notes
+MR001,yes,include,,reviewer_a,repository-aligned smoke sample
+MR003,yes,include,,reviewer_a,repository-aligned smoke sample

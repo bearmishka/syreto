@@ -1,1 +1,2 @@
 database,date_searched,query_version,start_year,end_date,filters_applied,results_total,results_exported,export_filename,notes
+pubmed,2026-04-01,v1,2015,2026-04-01,english;humans,3,3,pubmed_2026-04-01.ris,repository-aligned smoke sample

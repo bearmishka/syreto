@@ -1,1 +1,4 @@
 record_id,stage,decision,reason,reviewer
+MR001,title_abstract,include,meets topic and outcome criteria,reviewer_c
+MR002,title_abstract,exclude,wrong population,reviewer_c
+MR003,title_abstract,include,resolved conflict in favor of inclusion,reviewer_c
