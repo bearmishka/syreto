@@ -118,6 +118,12 @@ A good PR should make it easy to answer:
 
 PRs that change CLI behavior, artifact contracts, observability, failure semantics, or review-state models should explicitly say so.
 
+If the change affects versioned contracts, explain the expected versioning impact:
+
+- PATCH: fixes or clarifications with no contract break
+- MINOR: additive, backward-compatible contract extension
+- MAJOR: breaking contract or required migration
+
 ## Change Categories That Need Extra Care
 
 Please call out these categories clearly in the PR:
@@ -125,9 +131,12 @@ Please call out these categories clearly in the PR:
 - `daily_run.sh` or orchestration changes
 - output artifact contract changes
 - review-state schema changes
+- `review.toml` schema or review-instance migration changes
 - `StudyTable` or analytics changes
 - manuscript-generation changes
 - status/failure/observability changes
+
+For the formal policy, see [docs/versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
 
 These areas have downstream effects and should not be presented as “small refactors” if behavior changed.
 

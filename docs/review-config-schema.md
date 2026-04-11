@@ -6,6 +6,8 @@ This page defines the practical schema for `review.toml`.
 
 It complements [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md) by turning the conceptual model into a concrete configuration contract that future loaders, validators, and CLI entrypoints can implement.
 
+For release and migration semantics around config changes, see [versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
+
 The goal is not to create a workflow DSL. The goal is to make a single review instance explicit, versioned, and inspectable.
 
 ## Scope

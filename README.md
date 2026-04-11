@@ -183,6 +183,8 @@ For the review-state analytics and visualization contract, see [docs/review-anal
 
 For the internal study-level contract that now backs several downstream synthesis, plotting, summary, and export steps, see [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md).
 
+For release semantics around patch/minor/major changes, artifact contracts, config schema changes, `StudyTable` evolution, and review-instance migration expectations, see [docs/versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
+
 For the testing surface organized by operational risk rather than only by module, see [docs/test-taxonomy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/test-taxonomy.md).
 
 For the project’s small, versioned review-sized smoke and regression samples, see [docs/golden-review-fixtures.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/golden-review-fixtures.md).
