@@ -8,6 +8,8 @@ It complements [review-instance-model.md](/Users/pigra/Documents/New%20project/s
 
 For release and migration semantics around config changes, see [versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
 
+For the practical transition path from legacy repository-aligned reviews to config-aware review instances, see [migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+
 The goal is not to create a workflow DSL. The goal is to make a single review instance explicit, versioned, and inspectable.
 
 ## Scope

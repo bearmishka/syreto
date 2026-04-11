@@ -179,6 +179,8 @@ For the planned configuration model of review-specific execution, see [docs/revi
 
 For the concrete `review.toml` schema and example review-instance configs, see [docs/review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).
 
+For the practical path from legacy repository-aligned reviews to config-aware, `StudyTable`-aware, and observability-aware projects, see [docs/migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+
 For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-analytics-model.md).
 
 For the internal study-level contract that now backs several downstream synthesis, plotting, summary, and export steps, see [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md).

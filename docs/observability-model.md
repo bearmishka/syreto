@@ -23,6 +23,8 @@ The model exists to answer questions such as:
 
 This is not a workflow engine, a tracing platform, or a control layer. It is a structured record of execution.
 
+For the practical migration path that adds observability to existing review projects without changing execution authority, see [migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+
 ---
 
 ## 2. Core Principle

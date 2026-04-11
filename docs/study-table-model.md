@@ -20,6 +20,8 @@ The STM exists to reduce repeated glue code across:
 
 For release semantics around `StudyTable` evolution and downstream compatibility, see [versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
 
+For the practical adoption path that moves existing downstream consumers onto `StudyTable` without replacing canonical files, see [migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+
 The STM is **not** a universal model of the entire review. It is a targeted internal contract for repeated study-level transitions.
 
 ---
