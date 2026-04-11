@@ -15,10 +15,12 @@ Its purpose is to make pipeline execution legible in time without changing the e
 The model exists to answer questions such as:
 
 - which step ran
+- what kind of step it was
 - when it started
 - when it finished
 - whether it succeeded or failed
 - why it failed
+- which inputs it read
 - which outputs it touched
 
 This is not a workflow engine, a tracing platform, or a control layer. It is a structured record of execution.
@@ -63,11 +65,16 @@ Example:
   "review_mode": "production",
   "step_order": 12,
   "step": "deduplication",
+  "step_kind": "reporting",
   "started_at": "2026-04-09T10:15:00Z",
   "finished_at": "2026-04-09T10:15:12Z",
   "duration": 12.0,
   "status": "success",
   "failure_reason": null,
+  "inputs_read": [
+    "../02_data/processed/master_records.csv",
+    "../02_data/processed/prisma_counts_template.csv"
+  ],
   "outputs_touched": [
     "outputs/dedup_merge_summary.md",
     "../02_data/processed/record_id_map.csv"
@@ -106,17 +113,21 @@ The minimal event schema should include:
 - `review_mode`
 - `step_order`
 - `step`
+- `step_kind`
 - `started_at`
 - `finished_at`
 - `duration`
 - `status`
 - `failure_reason`
+- `inputs_read`
 - `outputs_touched`
 
 Where:
 
 - `status` is expected to be one of `success`, `failed`, or `warning`
 - `failure_reason` is `null` on success and populated on failure
+- `step_kind` is a compact classification such as `validation`, `guard`, `screening`, `synthesis`, `reporting`, or `traceability`
+- `inputs_read` is a list of canonical or derived inputs the step consumed
 - `outputs_touched` is a list of paths that the step generated, modified, or attempted to update
 
 ---
@@ -153,9 +164,11 @@ Instead of:
 the system should be able to show:
 
 - which step failed
+- what kind of step it was
 - at what time
 - after which prior steps
 - with which failure reason
+- after reading which inputs
 - after touching which outputs
 
 Example postmortem interpretation:

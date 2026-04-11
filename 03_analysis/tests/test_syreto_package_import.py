@@ -589,11 +589,13 @@ class SyretoPackageImportTests(unittest.TestCase):
                                 "review_mode": "template",
                                 "step_order": 1,
                                 "step": "validate_csv",
+                                "step_kind": "validation",
                                 "started_at": "2026-04-09T10:00:00Z",
                                 "finished_at": "2026-04-09T10:00:02Z",
                                 "duration": 2.0,
                                 "status": "success",
                                 "failure_reason": None,
+                                "inputs_read": ["../02_data/processed/search_log.csv"],
                                 "outputs_touched": ["outputs/status_summary.json"],
                             }
                         ),
@@ -603,11 +605,13 @@ class SyretoPackageImportTests(unittest.TestCase):
                                 "review_mode": "template",
                                 "step_order": 2,
                                 "step": "synthesis",
+                                "step_kind": "reporting",
                                 "started_at": "2026-04-09T10:00:03Z",
                                 "finished_at": "2026-04-09T10:00:07Z",
                                 "duration": 4.0,
                                 "status": "failed",
                                 "failure_reason": "missing inclusion criteria",
+                                "inputs_read": ["../02_data/codebook/extraction_template.csv"],
                                 "outputs_touched": ["outputs/results_summary_table.csv"],
                             }
                         ),
@@ -628,7 +632,10 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("SyReTo observability", rendered)
         self.assertIn("Events: 2", rendered)
         self.assertIn("Last failed step: synthesis", rendered)
+        self.assertIn("kind=validation", rendered)
+        self.assertIn("kind=reporting", rendered)
         self.assertIn("missing inclusion criteria", rendered)
+        self.assertIn("Inputs read: ../02_data/codebook/extraction_template.csv", rendered)
         self.assertIn("Provenance snapshot", rendered)
         self.assertIn("outputs/status_summary.json: provenance=present", rendered)
         self.assertIn("outputs/results_summary_table.csv: provenance=missing", rendered)
@@ -681,11 +688,13 @@ class SyretoPackageImportTests(unittest.TestCase):
                         "review_mode": "template",
                         "step_order": 1,
                         "step": "status_report",
+                        "step_kind": "reporting",
                         "started_at": "2026-04-09T11:00:00Z",
                         "finished_at": "2026-04-09T11:00:01Z",
                         "duration": 1.0,
                         "status": "success",
                         "failure_reason": None,
+                        "inputs_read": ["outputs/status_summary.json"],
                         "outputs_touched": ["outputs/status_report.md"],
                     }
                 )
@@ -739,11 +748,13 @@ class SyretoPackageImportTests(unittest.TestCase):
                         "review_mode": "template",
                         "step_order": 1,
                         "step": "status_report",
+                        "step_kind": "reporting",
                         "started_at": "2026-04-09T12:00:00Z",
                         "finished_at": "2026-04-09T12:00:01Z",
                         "duration": 1.0,
                         "status": "success",
                         "failure_reason": None,
+                        "inputs_read": ["outputs/status_summary.json"],
                         "outputs_touched": ["outputs/status_report.md"],
                     }
                 )

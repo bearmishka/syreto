@@ -633,12 +633,14 @@ STATUS_CHECKPOINT_RAN=0
 
 append_run_event() {
   local step="$1"
-  local status="$2"
-  local started_at="$3"
-  local finished_at="$4"
-  local duration="$5"
-  local failure_reason="$6"
-  local outputs_json="$7"
+  local step_kind="$2"
+  local status="$3"
+  local started_at="$4"
+  local finished_at="$5"
+  local duration="$6"
+  local failure_reason="$7"
+  local inputs_json="$8"
+  local outputs_json="$9"
 
   local python_bin=""
   python_bin="$(resolve_python_bin)" || return 0
@@ -652,7 +654,9 @@ append_run_event() {
   RUN_EVENT_FINISHED_AT="$finished_at" \
   RUN_EVENT_DURATION="$duration" \
   RUN_EVENT_FAILURE_REASON="$failure_reason" \
+  RUN_EVENT_INPUTS_JSON="$inputs_json" \
   RUN_EVENT_OUTPUTS_JSON="$outputs_json" \
+  RUN_EVENT_STEP_KIND="$step_kind" \
   RUN_EVENT_RUN_ID="$DAILY_RUN_ID" \
   RUN_EVENT_REVIEW_MODE="$REVIEW_MODE" \
   RUN_EVENT_STEP_ORDER="$RUN_EVENT_STEP_ORDER" \
@@ -663,7 +667,12 @@ import os
 
 def main() -> int:
     failure_reason = os.environ["RUN_EVENT_FAILURE_REASON"]
+    inputs_json = os.environ["RUN_EVENT_INPUTS_JSON"]
     outputs_json = os.environ["RUN_EVENT_OUTPUTS_JSON"]
+    try:
+        inputs = json.loads(inputs_json) if inputs_json else []
+    except json.JSONDecodeError:
+        inputs = []
     try:
         outputs = json.loads(outputs_json) if outputs_json else []
     except json.JSONDecodeError:
@@ -674,11 +683,13 @@ def main() -> int:
         "review_mode": os.environ["RUN_EVENT_REVIEW_MODE"],
         "step_order": int(os.environ["RUN_EVENT_STEP_ORDER"]),
         "step": os.environ["RUN_EVENT_STEP"],
+        "step_kind": os.environ["RUN_EVENT_STEP_KIND"],
         "started_at": os.environ["RUN_EVENT_STARTED_AT"],
         "finished_at": os.environ["RUN_EVENT_FINISHED_AT"],
         "duration": float(os.environ["RUN_EVENT_DURATION"]),
         "status": os.environ["RUN_EVENT_STATUS"],
         "failure_reason": failure_reason if failure_reason else None,
+        "inputs_read": inputs,
         "outputs_touched": outputs,
     }
     print(json.dumps(payload, ensure_ascii=False))
@@ -691,9 +702,11 @@ PY
 
 run_logged_python_step() {
   local step="$1"
-  local outputs_json="$2"
-  local script_name="$3"
-  shift 3
+  local step_kind="$2"
+  local inputs_json="$3"
+  local outputs_json="$4"
+  local script_name="$5"
+  shift 5
 
   local started_at
   started_at="$(utc_now)"
@@ -719,7 +732,7 @@ run_logged_python_step() {
   local duration
   duration=$((finished_epoch - started_epoch))
 
-  append_run_event "$step" "$status" "$started_at" "$finished_at" "$duration" "$failure_reason" "$outputs_json"
+  append_run_event "$step" "$step_kind" "$status" "$started_at" "$finished_at" "$duration" "$failure_reason" "$inputs_json" "$outputs_json"
   return "$rc"
 }
 
@@ -730,11 +743,13 @@ run_optional_python_step() {
   local skip_message="$4"
   local step_name="${5:-$script_name}"
   local outputs_json="${6:-[]}"
-  shift 6
+  local step_kind="${7:-task}"
+  local inputs_json="${8:-[]}"
+  shift 8
 
   if [[ "$enabled" == "1" ]]; then
     echo "[daily_run] $run_message"
-    run_logged_python_step "$step_name" "$outputs_json" "$script_name" "$@"
+    run_logged_python_step "$step_name" "$step_kind" "$inputs_json" "$outputs_json" "$script_name" "$@"
   else
     echo "[daily_run] $skip_message"
   fi
@@ -785,24 +800,24 @@ run_status_checkpoint() {
   local checkpoint_rc=0
 
   echo "[daily_run] Running consolidated status report (mandatory final checkpoint)..."
-  if ! run_logged_python_step "status_report" '["outputs/status_report.md","outputs/status_summary.json"]' "status_report.py"; then
+  if ! run_logged_python_step "status_report" "reporting" '["../02_data/processed/search_log.csv","../02_data/processed/master_records.csv","../02_data/processed/screening_title_abstract_results.csv","../02_data/processed/screening_fulltext_log.csv","../02_data/processed/prisma_counts_template.csv","'"$DAILY_RUN_MANIFEST"'"]' '["outputs/status_report.md","outputs/status_summary.json"]' "status_report.py"; then
     echo "[daily_run] ERROR: status_report.py failed during mandatory final checkpoint."
     checkpoint_rc=1
   fi
 
   echo "[daily_run] Building grouped TODO action plan (quick-fix hints)..."
-  if ! run_logged_python_step "todo_action_plan" '["outputs/todo_action_plan.md"]' "todo_action_plan_builder.py" --input outputs/status_summary.json --output outputs/todo_action_plan.md; then
+  if ! run_logged_python_step "todo_action_plan" "reporting" '["outputs/status_summary.json"]' '["outputs/todo_action_plan.md"]' "todo_action_plan_builder.py" --input outputs/status_summary.json --output outputs/todo_action_plan.md; then
     echo "[daily_run] WARNING: todo_action_plan_builder.py failed during mandatory final checkpoint."
   fi
 
   echo "[daily_run] Running epistemic consistency guard (mandatory final checkpoint)..."
   if [[ "$REVIEW_MODE" == "production" ]]; then
-    if ! run_logged_python_step "epistemic_consistency_guard" '["outputs/epistemic_consistency_report.md"]' "epistemic_consistency_guard.py" --review-mode production --fail-on-risk; then
+    if ! run_logged_python_step "epistemic_consistency_guard" "guard" '["../02_data/processed/master_records.csv","../02_data/processed/screening_title_abstract_results.csv","../02_data/processed/screening_fulltext_log.csv","../04_manuscript/tables/prisma_counts_table.tex"]' '["outputs/epistemic_consistency_report.md"]' "epistemic_consistency_guard.py" --review-mode production --fail-on-risk; then
       echo "[daily_run] ERROR: epistemic_consistency_guard.py failed during mandatory final checkpoint."
       checkpoint_rc=1
     fi
   else
-    if ! run_logged_python_step "epistemic_consistency_guard" '["outputs/epistemic_consistency_report.md"]' "epistemic_consistency_guard.py" --review-mode template --no-fail-on-risk; then
+    if ! run_logged_python_step "epistemic_consistency_guard" "guard" '["../02_data/processed/master_records.csv","../02_data/processed/screening_title_abstract_results.csv","../02_data/processed/screening_fulltext_log.csv","../04_manuscript/tables/prisma_counts_table.tex"]' '["outputs/epistemic_consistency_report.md"]' "epistemic_consistency_guard.py" --review-mode template --no-fail-on-risk; then
       echo "[daily_run] ERROR: epistemic_consistency_guard.py failed during mandatory final checkpoint."
       checkpoint_rc=1
     fi
@@ -810,7 +825,7 @@ run_status_checkpoint() {
 
   if [[ "$RUN_WEEKLY_RISK_DIGEST" == "1" ]]; then
     echo "[daily_run] Generating weekly risk digest for PI update..."
-    if ! run_logged_python_step "weekly_risk_digest" '["outputs/weekly_risk_digest.md"]' "weekly_risk_digest.py"; then
+    if ! run_logged_python_step "weekly_risk_digest" "reporting" '["outputs/status_summary.json"]' '["outputs/weekly_risk_digest.md"]' "weekly_risk_digest.py"; then
       echo "[daily_run] ERROR: weekly_risk_digest.py failed during mandatory final checkpoint."
       checkpoint_rc=1
     fi
@@ -832,17 +847,17 @@ run_status_checkpoint() {
   status_cli_started_epoch="$(date -u +%s)"
   if python status_cli.py --priority-policy "$STATUS_PRIORITY_POLICY" | tee "$snapshot_tmp"; then
     mv "$snapshot_tmp" "$STATUS_CLI_SNAPSHOT"
-    append_run_event "status_cli_snapshot" "success" "$status_cli_started_at" "$(utc_now)" "$(( $(date -u +%s) - status_cli_started_epoch ))" "" "[\"${STATUS_CLI_SNAPSHOT}\"]"
+    append_run_event "status_cli_snapshot" "reporting" "success" "$status_cli_started_at" "$(utc_now)" "$(( $(date -u +%s) - status_cli_started_epoch ))" "" "[\"outputs/status_summary.json\"]" "[\"${STATUS_CLI_SNAPSHOT}\"]"
   else
     rm -f "$snapshot_tmp"
-    append_run_event "status_cli_snapshot" "failed" "$status_cli_started_at" "$(utc_now)" "$(( $(date -u +%s) - status_cli_started_epoch ))" "status_cli.py snapshot render failed" "[\"${STATUS_CLI_SNAPSHOT}\"]"
+    append_run_event "status_cli_snapshot" "reporting" "failed" "$status_cli_started_at" "$(utc_now)" "$(( $(date -u +%s) - status_cli_started_epoch ))" "status_cli.py snapshot render failed" "[\"outputs/status_summary.json\"]" "[\"${STATUS_CLI_SNAPSHOT}\"]"
     echo "[daily_run] ERROR: status_cli.py failed during mandatory final checkpoint."
     checkpoint_rc=1
   fi
 
   if [[ "$REVIEW_MODE" == "production" ]]; then
     echo "[daily_run] Enforcing production status gate (fail-on=$STATUS_FAIL_ON)..."
-    if ! run_logged_python_step "status_gate" '[]' "status_cli.py" --fail-on "$STATUS_FAIL_ON" --todo-only --priority-policy "$STATUS_PRIORITY_POLICY"; then
+    if ! run_logged_python_step "status_gate" "guard" '["outputs/status_summary.json"]' '[]' "status_cli.py" --fail-on "$STATUS_FAIL_ON" --todo-only --priority-policy "$STATUS_PRIORITY_POLICY"; then
       echo "[daily_run] ERROR: production status gate failed (status_cli --fail-on $STATUS_FAIL_ON --priority-policy $STATUS_PRIORITY_POLICY)."
       checkpoint_rc=1
     fi
@@ -922,20 +937,20 @@ trap 'on_exit "$?"' EXIT
 snapshot_transaction_state
 
 echo "[daily_run] Consolidating title/abstract dual-log consensus..."
-run_logged_python_step "title_abstract_consensus" '[]' "consolidate_title_abstract_consensus.py"
+run_logged_python_step "title_abstract_consensus" "screening" '["../02_data/processed/screening_title_abstract_dual_log.csv"]' '[]' "consolidate_title_abstract_consensus.py"
 
 echo "[daily_run] Running CSV input validation..."
-run_logged_python_step "validate_csv_inputs" '["outputs/csv_input_validation_summary.md"]' "validate_csv_inputs.py"
+run_logged_python_step "validate_csv_inputs" "validation" '["../02_data/processed/search_log.csv","../02_data/processed/master_records.csv","../02_data/processed/screening_title_abstract_results.csv","../02_data/processed/screening_fulltext_log.csv","../02_data/processed/decision_log.csv","../02_data/processed/prisma_counts_template.csv","../02_data/processed/full_text_exclusion_reasons.csv","../02_data/codebook/extraction_template.csv"]' '["outputs/csv_input_validation_summary.md"]' "validate_csv_inputs.py"
 
 echo "[daily_run] Running audit log integrity guard..."
 ensure_audit_log_header
-run_logged_python_step "audit_log_integrity_guard" '[]' "audit_log_integrity_guard.py" --path "$AUDIT_LOG_PATH"
+run_logged_python_step "audit_log_integrity_guard" "guard" "[\"$AUDIT_LOG_PATH\"]" '[]' "audit_log_integrity_guard.py" --path "$AUDIT_LOG_PATH"
 
 echo "[daily_run] Running record-id map integrity guard..."
-run_logged_python_step "record_id_map_integrity_guard" '[]' "record_id_map_integrity_guard.py"
+run_logged_python_step "record_id_map_integrity_guard" "guard" '["../02_data/processed/record_id_map.csv"]' '[]' "record_id_map_integrity_guard.py"
 
 echo "[daily_run] Running screening metrics..."
-run_logged_python_step "screening_metrics" '[]' "screening_metrics.py"
+run_logged_python_step "screening_metrics" "screening" '["../02_data/processed/screening_title_abstract_dual_log.csv","../02_data/processed/screening_title_abstract_results.csv"]' '[]' "screening_metrics.py"
 
 run_optional_python_step \
   "$RUN_REVIEWER_WORKLOAD_BALANCER" \
@@ -943,10 +958,12 @@ run_optional_python_step \
   "reviewer_workload_balancer.py" \
   "Skipping reviewer workload balancer (set RUN_REVIEWER_WORKLOAD_BALANCER=1 to enable)." \
   "reviewer_workload_balancer" \
-  '["outputs/reviewer_workload_balancer_summary.md","outputs/reviewer_workload_plan.csv"]'
+  '["outputs/reviewer_workload_balancer_summary.md","outputs/reviewer_workload_plan.csv"]' \
+  "operations" \
+  '["../02_data/processed/screening_title_abstract_dual_log.csv","../02_data/processed/screening_title_abstract_results.csv"]'
 
 echo "[daily_run] Running screening disagreement analyzer..."
-run_logged_python_step "screening_disagreement_analyzer" '[]' "screening_disagreement_analyzer.py"
+run_logged_python_step "screening_disagreement_analyzer" "screening" '["../02_data/processed/screening_title_abstract_dual_log.csv","../02_data/processed/screening_title_abstract_results.csv"]' '[]' "screening_disagreement_analyzer.py"
 
 run_optional_python_step \
   "$RUN_MULTILANG_ABSTRACT_SCREENER" \
@@ -954,28 +971,30 @@ run_optional_python_step \
   "multilang_abstract_screener.py" \
   "Skipping multilingual abstract screener (set RUN_MULTILANG_ABSTRACT_SCREENER=1 to enable)." \
   "multilang_abstract_screener" \
-  '[]'
+  '[]' \
+  "screening" \
+  '["../02_data/processed/master_records.csv"]'
 
 echo "[daily_run] Running extraction validation..."
-run_logged_python_step "validate_extraction" '["outputs/extraction_validation_summary.md"]' "validate_extraction.py"
+run_logged_python_step "validate_extraction" "validation" '["../02_data/codebook/extraction_template.csv"]' '["outputs/extraction_validation_summary.md"]' "validate_extraction.py"
 
 echo "[daily_run] Running quality appraisal scoring (JBI)..."
-run_logged_python_step "quality_appraisal" '[]' "quality_appraisal.py"
+run_logged_python_step "quality_appraisal" "extraction" '["../02_data/processed/quality_appraisal_scored.csv"]' '[]' "quality_appraisal.py"
 
 echo "[daily_run] Running GRADE evidence profiler..."
-run_logged_python_step "grade_evidence_profiler" '["../04_manuscript/tables/grade_evidence_profile_table.tex"]' "grade_evidence_profiler.py"
+run_logged_python_step "grade_evidence_profiler" "synthesis" '["../02_data/codebook/extraction_template.csv","../02_data/processed/quality_appraisal_scored.csv"]' '["../04_manuscript/tables/grade_evidence_profile_table.tex"]' "grade_evidence_profiler.py"
 
 echo "[daily_run] Converting effect sizes for meta-analysis harmonization..."
-run_logged_python_step "effect_size_converter" '[]' "effect_size_converter.py"
+run_logged_python_step "effect_size_converter" "synthesis" '["../02_data/codebook/extraction_template.csv"]' '[]' "effect_size_converter.py"
 
 echo "[daily_run] Building optional meta-analysis aggregate table..."
-run_logged_python_step "meta_analysis_results_builder" '[]' "meta_analysis_results_builder.py" --fail-on none
+run_logged_python_step "meta_analysis_results_builder" "synthesis" '["outputs/results_summary_table.csv"]' '[]' "meta_analysis_results_builder.py" --fail-on none
 
 echo "[daily_run] Building final results summary table..."
-run_logged_python_step "results_summary_table_builder" '["../04_manuscript/tables/results_summary_table.tex"]' "results_summary_table_builder.py"
+run_logged_python_step "results_summary_table_builder" "reporting" '["../02_data/codebook/extraction_template.csv","../02_data/processed/quality_appraisal_scored.csv"]' '["../04_manuscript/tables/results_summary_table.tex"]' "results_summary_table_builder.py"
 
 echo "[daily_run] Generating forest plot from converted effect sizes..."
-run_logged_python_step "forest_plot_generator" '[]' "forest_plot_generator.py"
+run_logged_python_step "forest_plot_generator" "reporting" '["outputs/results_summary_table.csv"]' '[]' "forest_plot_generator.py"
 
 run_optional_python_step \
   "$RUN_PUBLICATION_BIAS" \
@@ -983,16 +1002,18 @@ run_optional_python_step \
   "publication_bias_assessment.py" \
   "Skipping publication-bias assessment (set RUN_PUBLICATION_BIAS=1 to enable)." \
   "publication_bias_assessment" \
-  '[]'
+  '[]' \
+  "synthesis" \
+  '["outputs/results_summary_table.csv"]'
 
 echo "[daily_run] Building manuscript-ready results interpretation narrative layer..."
-run_logged_python_step "results_interpretation_layer" '["../04_manuscript/sections/03c_interpretation_auto.tex"]' "results_interpretation_layer.py"
+run_logged_python_step "results_interpretation_layer" "reporting" '["outputs/results_summary_table.csv","../04_manuscript/tables/results_summary_table.tex"]' '["../04_manuscript/sections/03c_interpretation_auto.tex"]' "results_interpretation_layer.py"
 
 echo "[daily_run] Building analysis lineage (per-outcome study IDs across synthesis artifacts)..."
-run_logged_python_step "analysis_lineage" '[]' "analysis_lineage.py"
+run_logged_python_step "analysis_lineage" "traceability" '["../02_data/codebook/extraction_template.csv","outputs/results_summary_table.csv"]' '[]' "analysis_lineage.py"
 
 echo "[daily_run] Building study-level flow map (search -> screening -> inclusion -> analysis)..."
-run_logged_python_step "study_flow_map_builder" '[]' "study_flow_map_builder.py"
+run_logged_python_step "study_flow_map_builder" "traceability" '["../02_data/processed/master_records.csv","../02_data/processed/screening_title_abstract_results.csv","../02_data/processed/screening_fulltext_log.csv"]' '[]' "study_flow_map_builder.py"
 
 run_optional_python_step \
   "$RUN_POLYGLOT_TRANSLATION" \
@@ -1000,7 +1021,9 @@ run_optional_python_step \
   "polyglot_search.py" \
   "Skipping polyglot translation (set RUN_POLYGLOT_TRANSLATION=1 to enable)." \
   "polyglot_search" \
-  '[]'
+  '[]' \
+  "operations" \
+  '["../01_protocol/pubmed_query_v0.2.txt"]'
 
 run_optional_python_step \
   "$RUN_KEYWORD_ANALYSIS" \
@@ -1008,16 +1031,18 @@ run_optional_python_step \
   "keyword_network.py" \
   "Skipping keyword analysis (set RUN_KEYWORD_ANALYSIS=1 to enable)." \
   "keyword_network" \
-  '[]'
+  '[]' \
+  "analytics" \
+  '["../02_data/processed/master_records.csv"]'
 
 echo "[daily_run] Generating synthesis characteristics table (LaTeX)..."
-run_logged_python_step "synthesis_tables" '["../04_manuscript/tables/study_characteristics_table.tex"]' "synthesis_tables.py"
+run_logged_python_step "synthesis_tables" "reporting" '["../02_data/codebook/extraction_template.csv"]' '["../04_manuscript/tables/study_characteristics_table.tex"]' "synthesis_tables.py"
 
 echo "[daily_run] Running dedup merge (only if new exports)..."
-run_logged_python_step "dedup_merge" '["outputs/dedup_merge_summary.md","../02_data/processed/record_id_map.csv"]' "dedup_merge.py" --if-new-exports
+run_logged_python_step "dedup_merge" "screening" '["../02_data/raw","../02_data/processed/master_records.csv","../02_data/processed/record_id_map.csv"]' '["outputs/dedup_merge_summary.md","../02_data/processed/record_id_map.csv"]' "dedup_merge.py" --if-new-exports
 
 echo "[daily_run] Running dedup stats + PRISMA update (apply + explicit backup)..."
-run_logged_python_step "dedup_stats" '["outputs/dedup_stats_summary.md","outputs/prisma_flow_diagram.svg","outputs/prisma_flow_diagram.tex","../02_data/processed/prisma_counts_template.csv"]' "dedup_stats.py" --flow-backend both --flow-style journal --flow-output outputs/prisma_flow_diagram.svg --apply --backup
+run_logged_python_step "dedup_stats" "reporting" '["../02_data/processed/master_records.csv","../02_data/processed/screening_title_abstract_results.csv","../02_data/processed/prisma_counts_template.csv"]' '["outputs/dedup_stats_summary.md","outputs/prisma_flow_diagram.svg","outputs/prisma_flow_diagram.tex","../02_data/processed/prisma_counts_template.csv"]' "dedup_stats.py" --flow-backend both --flow-style journal --flow-output outputs/prisma_flow_diagram.svg --apply --backup
 
 run_optional_python_step \
   "$RUN_CITATION_TRACKING" \
@@ -1025,10 +1050,12 @@ run_optional_python_step \
   "citation_tracker.py" \
   "Skipping citation chasing (set RUN_CITATION_TRACKING=1 to enable)." \
   "citation_tracker" \
-  '[]'
+  '[]' \
+  "operations" \
+  '["../02_data/processed/master_records.csv"]'
 
 echo "[daily_run] Generating PRISMA manuscript tables (LaTeX)..."
-run_logged_python_step "prisma_tables" '["../04_manuscript/tables/prisma_counts_table.tex","../04_manuscript/tables/fulltext_exclusion_table.tex"]' "prisma_tables.py"
+run_logged_python_step "prisma_tables" "reporting" '["../02_data/processed/prisma_counts_template.csv","../02_data/processed/full_text_exclusion_reasons.csv"]' '["../04_manuscript/tables/prisma_counts_table.tex","../04_manuscript/tables/fulltext_exclusion_table.tex"]' "prisma_tables.py"
 
 run_optional_python_step \
   "$RUN_PROSPERO_DRAFTER" \
@@ -1036,7 +1063,9 @@ run_optional_python_step \
   "prospero_submission_drafter.py" \
   "Skipping PROSPERO drafter (set RUN_PROSPERO_DRAFTER=1 to enable)." \
   "prospero_submission_drafter" \
-  '["outputs/prospero_registration_prefill.md","outputs/prospero_registration_prefill.xml","outputs/prospero_submission_drafter_summary.md"]'
+  '["outputs/prospero_registration_prefill.md","outputs/prospero_registration_prefill.xml","outputs/prospero_submission_drafter_summary.md"]' \
+  "reporting" \
+  '["../01_protocol/protocol.md","outputs/status_summary.json"]'
 
 run_optional_python_step \
   "$RUN_RETRACTION_CHECKER" \
@@ -1044,7 +1073,9 @@ run_optional_python_step \
   "retraction_checker.py" \
   "Skipping retraction checker (set RUN_RETRACTION_CHECKER=1 to enable)." \
   "retraction_checker" \
-  '[]'
+  '[]' \
+  "guard" \
+  '["../02_data/processed/master_records.csv"]'
 
 if [[ "$RUN_LIVING_REVIEW_SCHEDULER" == "1" ]]; then
   SCHEDULER_ARGS=(--review-mode auto)
@@ -1054,17 +1085,17 @@ if [[ "$RUN_LIVING_REVIEW_SCHEDULER" == "1" ]]; then
   else
     echo "[daily_run] Running living-review scheduler (auto mode + session diffs)..."
   fi
-  run_logged_python_step "living_review_scheduler" '[]' "living_review_scheduler.py" "${SCHEDULER_ARGS[@]}"
+  run_logged_python_step "living_review_scheduler" "operations" '["outputs/status_summary.json"]' '[]' "living_review_scheduler.py" "${SCHEDULER_ARGS[@]}"
 else
   echo "[daily_run] Skipping living-review scheduler (set RUN_LIVING_REVIEW_SCHEDULER=1 to enable)."
 fi
 
 echo "[daily_run] Running PRISMA adherence checker..."
-run_logged_python_step "prisma_adherence_checker" '["outputs/prisma_adherence_report.md"]' "prisma_adherence_checker.py"
+run_logged_python_step "prisma_adherence_checker" "guard" '["../04_manuscript/tables/prisma_counts_table.tex","../04_manuscript/tables/fulltext_exclusion_table.tex"]' '["outputs/prisma_adherence_report.md"]' "prisma_adherence_checker.py"
 
 if [[ "$REVIEW_MODE" == "production" ]]; then
   echo "[daily_run] REVIEW_MODE=production: enforcing strict template leakage guard for ../04_manuscript/ ..."
-  run_logged_python_step "template_term_guard" '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" \
+  run_logged_python_step "template_term_guard" "guard" '["../04_manuscript"]' '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" \
     --scan-path ../04_manuscript \
     --check-placeholders \
     --no-check-banned-terms \
@@ -1075,11 +1106,11 @@ else
   case "$RUN_TEMPLATE_TERM_GUARD" in
     fail)
       echo "[daily_run] Running template term guard in fail mode..."
-      run_logged_python_step "template_term_guard" '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" --fail-on-match || true
+      run_logged_python_step "template_term_guard" "guard" '["../04_manuscript"]' '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" --fail-on-match || true
       ;;
     warn)
       echo "[daily_run] Running template term guard in warn mode..."
-      run_logged_python_step "template_term_guard" '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" --no-fail-on-match
+      run_logged_python_step "template_term_guard" "guard" '["../04_manuscript"]' '["outputs/template_term_guard_summary.md"]' "template_term_guard.py" --no-fail-on-match
       ;;
     skip)
       echo "[daily_run] Skipping template term guard (RUN_TEMPLATE_TERM_GUARD=skip)."
@@ -1094,6 +1125,8 @@ run_optional_python_step \
   "Skipping transparency appendix sync (set RUN_TRANSPARENCY_APPENDIX_SYNC=1 to enable)." \
   "transparency_appendix_decision_trace" \
   '["../04_manuscript/tables/decision_trace_table.tex","../04_manuscript/tables/analysis_trace_table.tex","../appendix_transparency.md"]' \
+  "traceability" \
+  '["../02_data/processed/decision_log.csv","outputs/results_summary_table.csv"]' \
   --max-rows "$DECISION_TRACE_MARKDOWN_MAX_ROWS" \
   --latex-max-rows "$DECISION_TRACE_LATEX_MAX_ROWS" \
   --analysis-max-rows "$DECISION_TRACE_MARKDOWN_MAX_ROWS" \

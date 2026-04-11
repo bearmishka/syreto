@@ -666,13 +666,14 @@ def _run_observability(*, input_path: str | None, config_path: str | None, last:
 
     for event in recent_events:
         step = str(event.get("step", "unknown"))
+        step_kind = str(event.get("step_kind", "unknown"))
         status = str(event.get("status", "unknown"))
         duration = event.get("duration", 0.0)
         started_at = str(event.get("started_at", "unknown"))
         failure_reason = event.get("failure_reason")
         suffix = f" | failure_reason={failure_reason}" if failure_reason else ""
         lines.append(
-            f"- step={step} | status={status} | duration={duration}s | started_at={started_at}{suffix}"
+            f"- step={step} | kind={step_kind} | status={status} | duration={duration}s | started_at={started_at}{suffix}"
         )
 
     lines.append("")
@@ -682,9 +683,14 @@ def _run_observability(*, input_path: str | None, config_path: str | None, last:
     else:
         lines.append(
             f"- Last failed step: {last_failure.get('step', 'unknown')} "
-            f"({last_failure.get('status', 'unknown')})"
+            f"({last_failure.get('status', 'unknown')}; kind={last_failure.get('step_kind', 'unknown')})"
         )
         lines.append(f"- Failure reason: {last_failure.get('failure_reason') or 'not provided'}")
+        inputs_read = last_failure.get("inputs_read")
+        if isinstance(inputs_read, list) and inputs_read:
+            lines.append(f"- Inputs read: {', '.join(str(item) for item in inputs_read)}")
+        else:
+            lines.append("- Inputs read: none recorded")
         outputs_touched = last_failure.get("outputs_touched")
         if isinstance(outputs_touched, list) and outputs_touched:
             lines.append(f"- Outputs touched: {', '.join(str(item) for item in outputs_touched)}")
