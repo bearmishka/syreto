@@ -98,7 +98,7 @@ At a minimum, reproducible runs should agree on:
 
 Where provenance sidecars are present, they should also agree on upstream artifact linkage, producing script identity, review mode, and review-config reference, while timestamps remain intentionally time-variant metadata.
 
-For the broader artifact inventory, see [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md).
+For the broader artifact inventory, see [artifact-catalog.md](artifact-catalog.md).
 
 ---
 
@@ -111,7 +111,7 @@ The contract assumes a materially compatible environment.
 In the current repository posture, that means:
 
 - Python `>=3.11`
-- the dependency set described by [`pyproject.toml`](/Users/pigra/Documents/New%20project/syreto_clean/pyproject.toml)
+- the dependency set described by [`pyproject.toml`](../pyproject.toml)
 - the locked environment represented by `uv.lock` when using the repository’s intended setup path
 - the same relevant script and package versions in the repository checkout
 - no hidden local modifications to pipeline logic or canonical inputs
@@ -200,7 +200,7 @@ The contract also fails when:
 - rollback state remains unresolved
 - downstream artifacts are manually edited in place
 
-For those cases, see [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
+For those cases, see [recovery-rerun-semantics.md](recovery-rerun-semantics.md).
 
 ---
 
@@ -235,11 +235,11 @@ These non-guarantees are part of the contract, not exceptions to it.
 
 ## 12. Relationship To Other Contracts
 
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
-- [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md)
-- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
-- [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md)
-- [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
+- [execution-contract.md](execution-contract.md)
+- [review-instance-model.md](review-instance-model.md)
+- [review-config-schema.md](review-config-schema.md)
+- [observability-model.md](observability-model.md)
+- [recovery-rerun-semantics.md](recovery-rerun-semantics.md)
+- [artifact-catalog.md](artifact-catalog.md)
 
 Together, these documents define not only how SyReTo runs, but how it justifies the claim that its runs can be reproduced and trusted.

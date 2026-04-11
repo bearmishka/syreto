@@ -18,9 +18,9 @@ The STM exists to reduce repeated glue code across:
 * forest-plot preparation
 * bibliographic export
 
-For release semantics around `StudyTable` evolution and downstream compatibility, see [versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
+For release semantics around `StudyTable` evolution and downstream compatibility, see [versioning-policy.md](versioning-policy.md).
 
-For the practical adoption path that moves existing downstream consumers onto `StudyTable` without replacing canonical files, see [migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+For the practical adoption path that moves existing downstream consumers onto `StudyTable` without replacing canonical files, see [migration-story.md](migration-story.md).
 
 The STM is **not** a universal model of the entire review. It is a targeted internal contract for repeated study-level transitions.
 
@@ -48,11 +48,11 @@ SyReTo already contains a de facto study-level contract, but it is currently rep
 
 Examples include:
 
-* extraction schema validation in [validate_extraction.py](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/validate_extraction.py#L8)
-* study characteristics rendering in [synthesis_tables.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/synthesis_tables.py#L39)
-* effect harmonization and CI fallback in [forest_plot_generator.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/forest_plot_generator.py#L368)
-* study-level certainty profiling in [grade_evidence_profiler.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/grade_evidence_profiler.py#L73)
-* study export fallback rules in [export_to_ris.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/export_to_ris.py#L134)
+* extraction schema validation in [validate_extraction.py](../03_analysis/validate_extraction.py#L8)
+* study characteristics rendering in [synthesis_tables.py](../syreto/synthesis_tables.py#L39)
+* effect harmonization and CI fallback in [forest_plot_generator.py](../syreto/forest_plot_generator.py#L368)
+* study-level certainty profiling in [grade_evidence_profiler.py](../syreto/grade_evidence_profiler.py#L73)
+* study export fallback rules in [export_to_ris.py](../syreto/export_to_ris.py#L134)
 
 The STM makes that implicit contract explicit.
 
@@ -237,11 +237,11 @@ The STM is no longer only a design target. It is already used in several downstr
 
 Current adoption includes:
 
-1. [synthesis_tables.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/synthesis_tables.py)
-2. [grade_evidence_profiler.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/grade_evidence_profiler.py)
-3. [results_summary_table_builder.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/results_summary_table_builder.py)
-4. [forest_plot_generator.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/forest_plot_generator.py)
-5. [export_to_ris.py](/Users/pigra/Documents/New%20project/syreto_clean/syreto/export_to_ris.py)
+1. [synthesis_tables.py](../syreto/synthesis_tables.py)
+2. [grade_evidence_profiler.py](../syreto/grade_evidence_profiler.py)
+3. [results_summary_table_builder.py](../syreto/results_summary_table_builder.py)
+4. [forest_plot_generator.py](../syreto/forest_plot_generator.py)
+5. [export_to_ris.py](../syreto/export_to_ris.py)
 
 These modules now rely on a shared internal study-level contract instead of each maintaining its own selection, harmonization, and sorting logic.
 
@@ -249,7 +249,7 @@ These modules now rely on a shared internal study-level contract instead of each
 
 The next likely adoption targets are:
 
-1. [validate_extraction.py](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/validate_extraction.py)
+1. [validate_extraction.py](../03_analysis/validate_extraction.py)
 2. modules that still duplicate study-level alias handling or inclusion semantics
 3. future analytics builders that need stable study-level inputs
 
@@ -259,9 +259,9 @@ The next likely adoption targets are:
 
 The STM sits below the review-level architecture documents.
 
-* [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md) defines how a review is configured
-* [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md) defines how invalid runs are interpreted
-* [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md) defines how execution is recorded
+* [review-instance-model.md](review-instance-model.md) defines how a review is configured
+* [failure-model.md](failure-model.md) defines how invalid runs are interpreted
+* [observability-model.md](observability-model.md) defines how execution is recorded
 
 The STM answers a narrower question:
 

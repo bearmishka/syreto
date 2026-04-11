@@ -82,7 +82,7 @@ At the highest operational level, the contract depends most strongly on:
 - run manifest and observability stream
 - manuscript-facing outputs expected from enabled mandatory stages
 
-For the broader inventory, see [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md).
+For the broader inventory, see [artifact-catalog.md](artifact-catalog.md).
 
 ## Required Stages
 
@@ -187,11 +187,11 @@ These non-guarantees are important. They prevent a false sense of certainty arou
 
 ## Relationship To Other Contracts
 
-- [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md) defines what review-specific configuration should look like
-- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md) defines how the system behaves when the contract is violated
-- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md) defines how execution is recorded without controlling it
-- [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md) inventories the most important generated outputs
-- [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md) defines when rerun, reuse, rollback, and stale-state handling preserve trust
-- [reproducibility-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/reproducibility-contract.md) defines the envelope within which “same config + same inputs = same canonical outputs” is expected to hold
+- [review-instance-model.md](review-instance-model.md) defines what review-specific configuration should look like
+- [failure-model.md](failure-model.md) defines how the system behaves when the contract is violated
+- [observability-model.md](observability-model.md) defines how execution is recorded without controlling it
+- [artifact-catalog.md](artifact-catalog.md) inventories the most important generated outputs
+- [recovery-rerun-semantics.md](recovery-rerun-semantics.md) defines when rerun, reuse, rollback, and stale-state handling preserve trust
+- [reproducibility-contract.md](reproducibility-contract.md) defines the envelope within which “same config + same inputs = same canonical outputs” is expected to hold
 
 Together, these documents define the external operational promises of SyReTo.

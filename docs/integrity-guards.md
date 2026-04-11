@@ -63,7 +63,7 @@ The main guard contract can be summarized like this.
 
 Script:
 
-- [`03_analysis/audit_log_integrity_guard.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/audit_log_integrity_guard.py)
+- [`03_analysis/audit_log_integrity_guard.py`](../03_analysis/audit_log_integrity_guard.py)
 
 Purpose:
 
@@ -73,11 +73,11 @@ Purpose:
 
 Primary input:
 
-- [`02_data/processed/audit_log.csv`](/Users/pigra/Documents/New%20project/syreto_clean/02_data/processed/audit_log.csv)
+- [`02_data/processed/audit_log.csv`](../02_data/processed/audit_log.csv)
 
 Typical execution point:
 
-- integrity phase in [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh)
+- integrity phase in [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh)
 
 Failure effect:
 
@@ -88,7 +88,7 @@ Failure effect:
 
 Script:
 
-- [`03_analysis/record_id_map_integrity_guard.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/record_id_map_integrity_guard.py)
+- [`03_analysis/record_id_map_integrity_guard.py`](../03_analysis/record_id_map_integrity_guard.py)
 
 Purpose:
 
@@ -97,11 +97,11 @@ Purpose:
 
 Primary input:
 
-- [`02_data/processed/record_id_map.csv`](/Users/pigra/Documents/New%20project/syreto_clean/02_data/processed/record_id_map.csv)
+- [`02_data/processed/record_id_map.csv`](../02_data/processed/record_id_map.csv)
 
 Typical execution point:
 
-- integrity phase in [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh)
+- integrity phase in [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh)
 
 Failure effect:
 
@@ -112,7 +112,7 @@ Failure effect:
 
 Script:
 
-- [`03_analysis/epistemic_consistency_guard.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/epistemic_consistency_guard.py)
+- [`03_analysis/epistemic_consistency_guard.py`](../03_analysis/epistemic_consistency_guard.py)
 
 Purpose:
 
@@ -128,7 +128,7 @@ Primary output:
 
 Typical execution point:
 
-- mandatory final checkpoint in [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh)
+- mandatory final checkpoint in [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh)
 
 Failure effect:
 
@@ -140,7 +140,7 @@ Failure effect:
 
 Script:
 
-- [`03_analysis/template_term_guard.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/template_term_guard.py)
+- [`03_analysis/template_term_guard.py`](../03_analysis/template_term_guard.py)
 
 Purpose:
 
@@ -170,7 +170,7 @@ Failure effect:
 
 Script:
 
-- [`03_analysis/python_source_guard.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/python_source_guard.py)
+- [`03_analysis/python_source_guard.py`](../03_analysis/python_source_guard.py)
 
 Purpose:
 
@@ -310,8 +310,8 @@ This makes the guard contract explicit rather than purely documentary.
 
 ## Related Docs
 
-- [pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
-- [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
-- [daily-operations.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/daily-operations.md)
-- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
+- [pipeline-overview.md](pipeline-overview.md)
+- [artifact-catalog.md](artifact-catalog.md)
+- [daily-operations.md](daily-operations.md)
+- [failure-model.md](failure-model.md)
+- [execution-contract.md](execution-contract.md)

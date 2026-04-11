@@ -4,11 +4,11 @@
 
 This page defines the practical schema for `review.toml`.
 
-It complements [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md) by turning the conceptual model into a concrete configuration contract that future loaders, validators, and CLI entrypoints can implement.
+It complements [review-instance-model.md](review-instance-model.md) by turning the conceptual model into a concrete configuration contract that future loaders, validators, and CLI entrypoints can implement.
 
-For release and migration semantics around config changes, see [versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
+For release and migration semantics around config changes, see [versioning-policy.md](versioning-policy.md).
 
-For the practical transition path from legacy repository-aligned reviews to config-aware review instances, see [migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+For the practical transition path from legacy repository-aligned reviews to config-aware review instances, see [migration-story.md](migration-story.md).
 
 The goal is not to create a workflow DSL. The goal is to make a single review instance explicit, versioned, and inspectable.
 
@@ -43,8 +43,8 @@ All relative paths in the config are resolved relative to that review root.
 
 Two configs are currently useful to read side by side:
 
-- [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml): conceptual example with review-local paths
-- [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml): runnable repository-aligned config for the current orchestration spine
+- [reviews/example/review.toml](../reviews/example/review.toml): conceptual example with review-local paths
+- [reviews/repo-default/review.toml](../reviews/repo-default/review.toml): runnable repository-aligned config for the current orchestration spine
 
 The `repo-default` config is the practical starting point for:
 
@@ -274,6 +274,6 @@ It should also report configuration failures in the same operational language us
 
 ## Relationship To Other Docs
 
-- [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
+- [review-instance-model.md](review-instance-model.md)
+- [execution-contract.md](execution-contract.md)
+- [failure-model.md](failure-model.md)

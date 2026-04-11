@@ -12,7 +12,7 @@ The main operational entry point is:
 syreto review run
 ```
 
-This command invokes the current orchestration spine in [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh). It is the closest thing SyReTo has to a production runbook.
+This command invokes the current orchestration spine in [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh). It is the closest thing SyReTo has to a production runbook.
 
 SyReTo also exposes a config-aware path over this same spine:
 
@@ -169,12 +169,12 @@ For normal usage, the pattern should be:
 
 ## Related Docs
 
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
-- [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
-- [architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md)
-- [integrity-guards.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/integrity-guards.md)
-- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
-- [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md)
-- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
-- [provenance-layer.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/provenance-layer.md)
+- [execution-contract.md](execution-contract.md)
+- [pipeline-overview.md](pipeline-overview.md)
+- [artifact-catalog.md](artifact-catalog.md)
+- [architecture-layers.md](architecture-layers.md)
+- [integrity-guards.md](integrity-guards.md)
+- [failure-model.md](failure-model.md)
+- [review-config-schema.md](review-config-schema.md)
+- [observability-model.md](observability-model.md)
+- [provenance-layer.md](provenance-layer.md)

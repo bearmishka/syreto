@@ -25,7 +25,7 @@ The model exists to answer questions such as:
 
 This is not a workflow engine, a tracing platform, or a control layer. It is a structured record of execution.
 
-For the practical migration path that adds observability to existing review projects without changing execution authority, see [migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+For the practical migration path that adds observability to existing review projects without changing execution authority, see [migration-story.md](migration-story.md).
 
 ---
 
@@ -275,4 +275,4 @@ The SyReTo Observability Model establishes:
 
 It is a formalization of temporal honesty in execution.
 
-For the separate contract that explains how stale outputs, reruns, and rollback affect downstream trust, see [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
+For the separate contract that explains how stale outputs, reruns, and rollback affect downstream trust, see [recovery-rerun-semantics.md](recovery-rerun-semantics.md).

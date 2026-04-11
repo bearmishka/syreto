@@ -34,10 +34,10 @@ The core layer is responsible for:
 
 Representative surfaces:
 
-- [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh)
-- [`syreto/review_config.py`](/Users/pigra/Documents/New%20project/syreto_clean/syreto/review_config.py)
-- validation and builder scripts under [`syreto/`](/Users/pigra/Documents/New%20project/syreto_clean/syreto)
-- mirrored operational scripts under [`03_analysis/`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis)
+- [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh)
+- [`syreto/review_config.py`](../syreto/review_config.py)
+- validation and builder scripts under [`syreto/`](../syreto)
+- mirrored operational scripts under [`03_analysis/`](../03_analysis)
 
 The core decides what happens during a run.
 
@@ -54,8 +54,8 @@ The interfaces layer is responsible for:
 
 Representative surfaces:
 
-- [`syreto/cli.py`](/Users/pigra/Documents/New%20project/syreto_clean/syreto/cli.py)
-- packaged entrypoints declared in [`pyproject.toml`](/Users/pigra/Documents/New%20project/syreto_clean/pyproject.toml)
+- [`syreto/cli.py`](../syreto/cli.py)
+- packaged entrypoints declared in [`pyproject.toml`](../pyproject.toml)
 - current commands such as `syreto doctor`, `syreto status`, `syreto artifacts`, `syreto validate`, `syreto observability`, `syreto analytics`, and `syreto review run`
 
 The interface layer should stay thin.
@@ -79,15 +79,15 @@ Examples include:
 
 Representative scripts include:
 
-- [`03_analysis/consolidate_title_abstract_consensus.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/consolidate_title_abstract_consensus.py)
-- [`03_analysis/validate_csv_inputs.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/validate_csv_inputs.py)
-- [`03_analysis/grade_evidence_profiler.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/grade_evidence_profiler.py)
-- [`03_analysis/results_summary_table_builder.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/results_summary_table_builder.py)
-- [`03_analysis/review_descriptives_builder.py`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/review_descriptives_builder.py)
+- [`03_analysis/consolidate_title_abstract_consensus.py`](../03_analysis/consolidate_title_abstract_consensus.py)
+- [`03_analysis/validate_csv_inputs.py`](../03_analysis/validate_csv_inputs.py)
+- [`03_analysis/grade_evidence_profiler.py`](../03_analysis/grade_evidence_profiler.py)
+- [`03_analysis/results_summary_table_builder.py`](../03_analysis/results_summary_table_builder.py)
+- [`03_analysis/review_descriptives_builder.py`](../03_analysis/review_descriptives_builder.py)
 
 Task scripts are where local transformations happen.
 
-They should consume canonical files and documented internal contracts such as [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md), rather than inventing hidden runtime truth.
+They should consume canonical files and documented internal contracts such as [study-table-model.md](study-table-model.md), rather than inventing hidden runtime truth.
 
 ## 4. Observability
 
@@ -100,8 +100,8 @@ The observability layer is responsible for:
 
 Representative surfaces:
 
-- [`outputs/run_events.jsonl`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/run_events.jsonl)
-- [`outputs/daily_run_manifest.json`](/Users/pigra/Documents/New%20project/syreto_clean/outputs/daily_run_manifest.json)
+- [`outputs/run_events.jsonl`](../outputs/run_events.jsonl)
+- [`outputs/daily_run_manifest.json`](../outputs/daily_run_manifest.json)
 - `*.provenance.json` sidecars for selected generated artifacts
 - `syreto observability`
 - provenance views in `syreto artifacts` and `syreto doctor`
@@ -131,8 +131,8 @@ In day-to-day usage, the layers line up like this:
 
 ## Related Docs
 
-- [pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
-- [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
-- [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md)
+- [pipeline-overview.md](pipeline-overview.md)
+- [execution-contract.md](execution-contract.md)
+- [observability-model.md](observability-model.md)
+- [review-instance-model.md](review-instance-model.md)
+- [study-table-model.md](study-table-model.md)

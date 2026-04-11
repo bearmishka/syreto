@@ -30,10 +30,10 @@ That means small review-sized fixtures are valuable because they let the project
 
 The current first golden fixture is:
 
-- [reviews/fixtures/minimal-golden](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/minimal-golden)
-- [reviews/fixtures/repo-smoke](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke)
-- [reviews/fixtures/repo-smoke-production](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-production)
-- [reviews/fixtures/repo-smoke-broken](/Users/pigra/Documents/New%20project/syreto_clean/reviews/fixtures/repo-smoke-broken)
+- [reviews/fixtures/minimal-golden](../reviews/fixtures/minimal-golden)
+- [reviews/fixtures/repo-smoke](../reviews/fixtures/repo-smoke)
+- [reviews/fixtures/repo-smoke-production](../reviews/fixtures/repo-smoke-production)
+- [reviews/fixtures/repo-smoke-broken](../reviews/fixtures/repo-smoke-broken)
 
 | Fixture | Scenario | Main truth layers | Primary purpose |
 | --- | --- | --- | --- |
@@ -108,8 +108,8 @@ Over time, SyReTo can grow toward:
 
 ## Relationship To Other Contracts
 
-- [test-taxonomy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/test-taxonomy.md)
-- [reproducibility-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/reproducibility-contract.md)
-- [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
+- [test-taxonomy.md](test-taxonomy.md)
+- [reproducibility-contract.md](reproducibility-contract.md)
+- [artifact-catalog.md](artifact-catalog.md)
 
 Together, these documents explain not only what SyReTo promises, but how those promises are checked on stable review-sized samples.

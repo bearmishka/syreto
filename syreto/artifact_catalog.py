@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -416,7 +417,7 @@ def write_machine_readable_catalog(output_path: Path) -> None:
     )
 
 
-def artifact_catalog_markdown_table() -> str:
+def artifact_catalog_markdown_table(*, doc_path: Path) -> str:
     header = (
         "| Artifact | Producer | Consumed by | Required | Canonical | "
         "Schema ref | Reproducible | Human-readable | Machine-readable | Regenerable |"
@@ -427,8 +428,11 @@ def artifact_catalog_markdown_table() -> str:
         schema_ref = "none"
         if entry.schema_ref:
             schema_path = entry.schema_ref
-            absolute_path = Path(__file__).resolve().parents[1] / schema_path
-            schema_ref = f"[{schema_path}]({absolute_path.as_posix()})"
+            repo_root = Path(__file__).resolve().parents[1]
+            relative_target = Path(
+                os.path.relpath((repo_root / schema_path), start=doc_path.parent)
+            )
+            schema_ref = f"[{schema_path}]({relative_target.as_posix()})"
         lines.append(
             "| "
             + " | ".join(
@@ -453,7 +457,7 @@ def artifact_catalog_markdown_table() -> str:
 def sync_artifact_catalog_doc(doc_path: Path) -> None:
     start_marker = "<!-- ARTIFACT_CATALOG_TABLE:START -->"
     end_marker = "<!-- ARTIFACT_CATALOG_TABLE:END -->"
-    rendered_table = artifact_catalog_markdown_table()
+    rendered_table = artifact_catalog_markdown_table(doc_path=doc_path.resolve())
     replacement = f"{start_marker}\n{rendered_table}\n{end_marker}"
 
     text = doc_path.read_text(encoding="utf-8")

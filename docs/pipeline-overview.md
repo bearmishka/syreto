@@ -22,11 +22,11 @@ The pipeline is built around a simple contract:
 
 In practice, this means SyReTo is closer to a build system for systematic reviews than to a notebook collection.
 
-Several downstream stages now share a common study-level internal contract through the [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md), rather than each maintaining separate extraction harmonization logic.
+Several downstream stages now share a common study-level internal contract through the [study-table-model.md](study-table-model.md), rather than each maintaining separate extraction harmonization logic.
 
 ## Main Stages
 
-The end-to-end orchestration entrypoint is [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh).
+The end-to-end orchestration entrypoint is [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh).
 
 At a high level, the pipeline moves through these stages:
 
@@ -131,7 +131,7 @@ There are two practical ways to interact with the system.
 
 ### Packaged CLI
 
-The packaged CLI is defined in [`pyproject.toml`](/Users/pigra/Documents/New%20project/syreto_clean/pyproject.toml) and implemented in [`syreto/cli.py`](/Users/pigra/Documents/New%20project/syreto_clean/syreto/cli.py).
+The packaged CLI is defined in [`pyproject.toml`](../pyproject.toml) and implemented in [`syreto/cli.py`](../syreto/cli.py).
 
 Current public entry points:
 
@@ -161,7 +161,7 @@ For a full pipeline run, the operational entrypoint is:
 syreto review run
 ```
 
-This invokes [`03_analysis/daily_run.sh`](/Users/pigra/Documents/New%20project/syreto_clean/03_analysis/daily_run.sh) and is the primary “system run” interface.
+This invokes [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh) and is the primary “system run” interface.
 
 ## Source of Truth
 
@@ -200,6 +200,6 @@ cd 03_analysis
 python status_cli.py --input outputs/status_summary.json
 ```
 
-For the review-aware configuration layer, see [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md), [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).
+For the review-aware configuration layer, see [review-instance-model.md](review-instance-model.md), [review-config-schema.md](review-config-schema.md), and the runnable repository-aligned [reviews/repo-default/review.toml](../reviews/repo-default/review.toml).
 
-For the explicit system split between core, interfaces, tasks, and observability, see [architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md).
+For the explicit system split between core, interfaces, tasks, and observability, see [architecture-layers.md](architecture-layers.md).

@@ -189,44 +189,44 @@ cd 03_analysis && python status_cli.py --input outputs/status_summary.json
 
 If you are using production mode, the status gate and template-term guard should also pass without blocker findings.
 
-For a more explicit contract of hard failures, warnings, blocking conditions, and unusable runs, see [docs/failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md).
+For a more explicit contract of hard failures, warnings, blocking conditions, and unusable runs, see [docs/failure-model.md](docs/failure-model.md).
 
-For the explicit run-level contract around canonical inputs, canonical outputs, required stages, successful runs, invalid runs, and deterministic guarantees, see [docs/execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md).
+For the explicit run-level contract around canonical inputs, canonical outputs, required stages, successful runs, invalid runs, and deterministic guarantees, see [docs/execution-contract.md](docs/execution-contract.md).
 
-For the system split between core, interfaces, tasks, and observability, see [docs/architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md).
+For the system split between core, interfaces, tasks, and observability, see [docs/architecture-layers.md](docs/architecture-layers.md).
 
-For the trust model around reruns, stale outputs, rollback, and what can safely be reused after failure, see [docs/recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
+For the trust model around reruns, stale outputs, rollback, and what can safely be reused after failure, see [docs/recovery-rerun-semantics.md](docs/recovery-rerun-semantics.md).
 
-For the separate reproducibility promise around identical config, identical inputs, canonical outputs, environment constraints, and controlled non-determinism, see [docs/reproducibility-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/reproducibility-contract.md).
+For the separate reproducibility promise around identical config, identical inputs, canonical outputs, environment constraints, and controlled non-determinism, see [docs/reproducibility-contract.md](docs/reproducibility-contract.md).
 
-For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md).
+For the planned configuration model of review-specific execution, see [docs/review-instance-model.md](docs/review-instance-model.md).
 
-For the concrete `review.toml` schema and example review-instance configs, see [docs/review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md), [reviews/example/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/example/review.toml), and the runnable repository-aligned [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml).
+For the concrete `review.toml` schema and example review-instance configs, see [docs/review-config-schema.md](docs/review-config-schema.md), [reviews/example/review.toml](reviews/example/review.toml), and the runnable repository-aligned [reviews/repo-default/review.toml](reviews/repo-default/review.toml).
 
-For the practical path from legacy repository-aligned reviews to config-aware, `StudyTable`-aware, and observability-aware projects, see [docs/migration-story.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/migration-story.md).
+For the practical path from legacy repository-aligned reviews to config-aware, `StudyTable`-aware, and observability-aware projects, see [docs/migration-story.md](docs/migration-story.md).
 
-For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-analytics-model.md).
+For the review-state analytics and visualization contract, see [docs/review-analytics-model.md](docs/review-analytics-model.md).
 
-For the internal study-level contract that now backs several downstream synthesis, plotting, summary, and export steps, see [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md).
+For the internal study-level contract that now backs several downstream synthesis, plotting, summary, and export steps, see [docs/study-table-model.md](docs/study-table-model.md).
 
-For release semantics around patch/minor/major changes, artifact contracts, config schema changes, `StudyTable` evolution, and review-instance migration expectations, see [docs/versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
+For release semantics around patch/minor/major changes, artifact contracts, config schema changes, `StudyTable` evolution, and review-instance migration expectations, see [docs/versioning-policy.md](docs/versioning-policy.md).
 
-For the testing surface organized by operational risk rather than only by module, see [docs/test-taxonomy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/test-taxonomy.md).
+For the testing surface organized by operational risk rather than only by module, see [docs/test-taxonomy.md](docs/test-taxonomy.md).
 
-For the project’s small, versioned review-sized smoke and regression samples, see [docs/golden-review-fixtures.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/golden-review-fixtures.md).
+For the project’s small, versioned review-sized smoke and regression samples, see [docs/golden-review-fixtures.md](docs/golden-review-fixtures.md).
 
 ## Docs Surface
 
 The main human-facing operational docs are:
 
-- [docs/pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
-- [docs/artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
-- [docs/daily-operations.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/daily-operations.md)
-- [docs/integrity-guards.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/integrity-guards.md)
-- [docs/architecture-layers.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/architecture-layers.md)
-- [docs/observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
-- [docs/review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
-- [docs/study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md)
+- [docs/pipeline-overview.md](docs/pipeline-overview.md)
+- [docs/artifact-catalog.md](docs/artifact-catalog.md)
+- [docs/daily-operations.md](docs/daily-operations.md)
+- [docs/integrity-guards.md](docs/integrity-guards.md)
+- [docs/architecture-layers.md](docs/architecture-layers.md)
+- [docs/observability-model.md](docs/observability-model.md)
+- [docs/review-instance-model.md](docs/review-instance-model.md)
+- [docs/study-table-model.md](docs/study-table-model.md)
 
 ## Main Entry Points
 

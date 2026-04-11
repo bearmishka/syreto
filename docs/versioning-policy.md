@@ -159,7 +159,7 @@ Artifact contracts are version-relevant because SyReTo is artifact-driven.
 - incompatible rename or removal of required fields
 - changing artifact semantics so that old consumers misinterpret the output
 
-For artifact details, see [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md).
+For artifact details, see [artifact-catalog.md](artifact-catalog.md).
 
 ---
 
@@ -192,7 +192,7 @@ either:
 - preserve backward compatibility, or
 - publish explicit migration guidance
 
-For field-level schema details, see [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md).
+For field-level schema details, see [review-config-schema.md](review-config-schema.md).
 
 ---
 
@@ -222,7 +222,7 @@ That means it still needs version discipline.
 If downstream consumers need code changes to remain correct, the schema change is
 MAJOR unless compatibility aliases remain in place.
 
-For the model itself, see [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md).
+For the model itself, see [study-table-model.md](study-table-model.md).
 
 ---
 

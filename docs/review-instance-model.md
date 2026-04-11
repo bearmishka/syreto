@@ -17,9 +17,9 @@ The goal of the RIM is to:
 - provide a stable interface for CLI tools such as `status`, `doctor`, and `review run`
 - ensure that all epistemically relevant parameters are externally visible and versioned
 
-For the concrete field-level schema and a practical example config, see [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md).
+For the concrete field-level schema and a practical example config, see [review-config-schema.md](review-config-schema.md).
 
-For the separate statement of when identical config and identical inputs are expected to reproduce identical canonical outputs, see [reproducibility-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/reproducibility-contract.md).
+For the separate statement of when identical config and identical inputs are expected to reproduce identical canonical outputs, see [reproducibility-contract.md](reproducibility-contract.md).
 
 ---
 

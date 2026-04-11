@@ -163,7 +163,7 @@ The RAM complements existing SyReTo outputs.
 
 It does not replace:
 
-* [status_summary.json](/Users/pigra/Documents/New%20project/syreto_clean/outputs/status_summary.json)
+* [status_summary.json](../outputs/status_summary.json)
 * manuscript tables
 * forest plots
 * PRISMA outputs
@@ -230,7 +230,7 @@ Exploratory analytics should only be added after the descriptive layer is stable
 
 ## 10. Integration with Study Table Model
 
-The RAM should build on the [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md) contract whenever possible.
+The RAM should build on the [study-table-model.md](study-table-model.md) contract whenever possible.
 
 That means:
 

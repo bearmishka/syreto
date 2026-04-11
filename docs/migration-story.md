@@ -99,7 +99,7 @@ The first config migration step is **not** full path decoupling.
 It is the introduction of an explicit, versioned review-instance file that still
 matches the current repository-aligned spine.
 
-That is what [reviews/repo-default/review.toml](/Users/pigra/Documents/New%20project/syreto_clean/reviews/repo-default/review.toml) is for.
+That is what [reviews/repo-default/review.toml](../reviews/repo-default/review.toml) is for.
 
 ### 5.2 Practical Migration Path
 
@@ -298,12 +298,12 @@ SyReTo should migrate by making the new layer explicit and authoritative step by
 
 ## 11. Relationship To Other Contracts
 
-- [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
-- [review-config-schema.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-config-schema.md)
-- [study-table-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/study-table-model.md)
-- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md)
+- [review-instance-model.md](review-instance-model.md)
+- [review-config-schema.md](review-config-schema.md)
+- [study-table-model.md](study-table-model.md)
+- [observability-model.md](observability-model.md)
+- [execution-contract.md](execution-contract.md)
+- [versioning-policy.md](versioning-policy.md)
 
 Together, these documents explain not only what the new architecture is, but
 how existing projects move into it without losing operational clarity.

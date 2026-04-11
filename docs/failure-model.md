@@ -247,7 +247,7 @@ The table below gives the intended default interpretation of the most important 
 
 This matrix is a default operational model, not a claim that every single failure instance has identical semantics.
 
-For the explicit contract around clean reruns, artifact reuse, stale state, and rollback interpretation, see [recovery-rerun-semantics.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/recovery-rerun-semantics.md).
+For the explicit contract around clean reruns, artifact reuse, stale state, and rollback interpretation, see [recovery-rerun-semantics.md](recovery-rerun-semantics.md).
 
 ## Hard Fail vs Warning Only
 
@@ -407,8 +407,8 @@ Together, these define the usable trust contract of the pipeline.
 
 ## Related Docs
 
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [daily-operations.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/daily-operations.md)
-- [integrity-guards.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/integrity-guards.md)
-- [pipeline-overview.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/pipeline-overview.md)
-- [review-instance-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/review-instance-model.md)
+- [execution-contract.md](execution-contract.md)
+- [daily-operations.md](daily-operations.md)
+- [integrity-guards.md](integrity-guards.md)
+- [pipeline-overview.md](pipeline-overview.md)
+- [review-instance-model.md](review-instance-model.md)

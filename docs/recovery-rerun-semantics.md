@@ -187,9 +187,9 @@ If the answer is unclear, prefer a clean rerun.
 
 ## Relationship To Other Contracts
 
-- [execution-contract.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/execution-contract.md)
-- [failure-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/failure-model.md)
-- [observability-model.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/observability-model.md)
-- [artifact-catalog.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/artifact-catalog.md)
+- [execution-contract.md](execution-contract.md)
+- [failure-model.md](failure-model.md)
+- [observability-model.md](observability-model.md)
+- [artifact-catalog.md](artifact-catalog.md)
 
 Together, these documents define not just how SyReTo runs, but how trust is recovered after a run goes wrong.
