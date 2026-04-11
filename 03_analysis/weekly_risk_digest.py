@@ -35,16 +35,36 @@ def health_counts(health_checks: list[dict]) -> dict[str, int]:
 
 def top_risks(summary: dict, *, max_items: int) -> list[str]:
     items: list[str] = []
+    failure_model = summary.get("failure_model", {})
+    if isinstance(failure_model, dict):
+        findings = failure_model.get("findings", [])
+        if isinstance(findings, list):
+            for finding in findings:
+                if not isinstance(finding, dict):
+                    continue
+                severity = str(finding.get("severity", "")).strip().lower()
+                if severity not in {"critical", "major", "minor"}:
+                    continue
+                message = str(finding.get("message", "")).strip()
+                if not message:
+                    continue
+                failure_class = str(finding.get("failure_class", "")).strip()
+                marker = "🔴" if severity in {"critical", "major"} else "🟠"
+                if failure_class:
+                    items.append(f"{marker} [{failure_class}] {message}")
+                else:
+                    items.append(f"{marker} {message}")
 
-    for check in summary.get("health_checks", []):
-        level = str(check.get("level", "")).strip().lower()
-        if level not in {"error", "warning"}:
-            continue
-        message = str(check.get("message", "")).strip()
-        if not message:
-            continue
-        marker = "🔴" if level == "error" else "🟠"
-        items.append(f"{marker} {message}")
+    if not items:
+        for check in summary.get("health_checks", []):
+            level = str(check.get("level", "")).strip().lower()
+            if level not in {"error", "warning"}:
+                continue
+            message = str(check.get("message", "")).strip()
+            if not message:
+                continue
+            marker = "🔴" if level == "error" else "🟠"
+            items.append(f"{marker} {message}")
 
     for warning in summary.get("warnings", []):
         text = str(warning).strip()

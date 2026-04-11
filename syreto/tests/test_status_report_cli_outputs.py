@@ -169,6 +169,10 @@ class StatusReportCliOutputsTests(unittest.TestCase):
             self.assertIn("direct_csv_schema", summary_payload)
             self.assertTrue(summary_payload["direct_csv_schema"]["ok"])
             self.assertEqual(summary_payload["direct_csv_schema"]["error_count"], 0)
+            self.assertIn("failure_model", summary_payload)
+            self.assertEqual(summary_payload["failure_model"]["fail_on"], "major")
+            self.assertIn("counts", summary_payload["failure_model"])
+            self.assertIn("findings", summary_payload["failure_model"])
 
 
 if __name__ == "__main__":

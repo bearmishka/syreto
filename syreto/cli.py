@@ -16,11 +16,20 @@ import sys
 from importlib.util import find_spec
 from pathlib import Path
 
+from .artifact_catalog import (
+    artifact_catalog_entries,
+    artifact_groups,
+    provenance_tracked_artifacts,
+    required_artifact_entries,
+    sync_artifact_catalog_surfaces,
+)
 from .csv_schema import schema_contract_paths, validate_csv_schema_contract
 from .review_config import ReviewConfig, ReviewConfigError, load_review_config
 from .scripts import AVAILABLE_SCRIPTS, run_script, script_path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ARTIFACT_CATALOG_DOC_PATH = PROJECT_ROOT / "docs" / "artifact-catalog.md"
+ARTIFACT_CATALOG_JSON_PATH = PROJECT_ROOT / "artifacts" / "catalog.json"
 
 FAILURE_SEMANTICS = {
     "config error": {
@@ -53,56 +62,8 @@ FAILURE_SEMANTICS = {
     },
 }
 
-ARTIFACT_GROUPS = {
-    "operational": (
-        "outputs/status_summary.json",
-        "outputs/status_report.md",
-        "outputs/todo_action_plan.md",
-        "outputs/review_descriptives.json",
-        "outputs/review_descriptives.md",
-        "outputs/figures/year_distribution.png",
-        "outputs/figures/study_design_distribution.png",
-        "outputs/figures/country_distribution.png",
-        "outputs/figures/quality_band_distribution.png",
-        "outputs/figures/predictor_outcome_heatmap.png",
-        "outputs/progress_history.csv",
-        "outputs/progress_history_summary.md",
-        "outputs/dedup_merge_summary.md",
-        "outputs/dedup_stats_summary.md",
-        "outputs/epistemic_consistency_report.md",
-        "outputs/prisma_flow_diagram.svg",
-        "outputs/prisma_flow_diagram.tex",
-    ),
-    "manuscript": (
-        "04_manuscript/tables/prisma_counts_table.tex",
-        "04_manuscript/tables/fulltext_exclusion_table.tex",
-        "04_manuscript/tables/study_characteristics_table.tex",
-        "04_manuscript/tables/grade_evidence_profile_table.tex",
-        "04_manuscript/tables/results_summary_table.tex",
-        "04_manuscript/tables/decision_trace_table.tex",
-        "04_manuscript/tables/analysis_trace_table.tex",
-        "04_manuscript/sections/03c_interpretation_auto.tex",
-    ),
-}
-
-PROVENANCE_TRACKED_ARTIFACTS = {
-    "outputs/daily_run_manifest.json",
-    "outputs/status_summary.json",
-    "outputs/status_report.md",
-    "outputs/todo_action_plan.md",
-    "outputs/review_descriptives.json",
-    "outputs/review_descriptives.md",
-    "outputs/reviewer_workload_plan.csv",
-    "outputs/reviewer_workload_balancer_summary.md",
-    "outputs/results_summary_table.csv",
-    "outputs/results_summary_table_summary.md",
-    "outputs/progress_history.csv",
-    "outputs/progress_history_summary.md",
-    "04_manuscript/tables/results_summary_table.tex",
-    "04_manuscript/tables/prisma_counts_table.tex",
-    "04_manuscript/tables/fulltext_exclusion_table.tex",
-    "outputs/prisma_tables_summary.md",
-}
+ARTIFACT_GROUPS = artifact_groups()
+PROVENANCE_TRACKED_ARTIFACTS = provenance_tracked_artifacts()
 
 DOCTOR_REQUIRED_PATHS = (
     ("project root", PROJECT_ROOT),
@@ -179,7 +140,7 @@ def parser() -> argparse.ArgumentParser:
     )
     artifacts_parser.add_argument(
         "--kind",
-        choices=["all", "operational", "manuscript"],
+        choices=["all", "input", "operational", "manuscript"],
         default="all",
         help="Which artifact group to show.",
     )
@@ -197,6 +158,16 @@ def parser() -> argparse.ArgumentParser:
         "--provenance-invalid-only",
         action="store_true",
         help="Show only tracked generated artifacts whose provenance sidecar exists but fails minimal validation.",
+    )
+    artifacts_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Render artifact rows as machine-readable JSON.",
+    )
+    artifacts_parser.add_argument(
+        "--sync-catalog",
+        action="store_true",
+        help="Sync docs/artifact-catalog.md and artifacts/catalog.json from the canonical Python registry before listing.",
     )
 
     validate_parser = subparsers.add_parser(
@@ -334,8 +305,27 @@ def _has_passthrough_option(args: list[str], option: str) -> bool:
 def _artifact_groups_for_kind(kind: str) -> list[tuple[str, tuple[str, ...]]]:
     if kind == "all":
         return [
+            (
+                "input",
+                tuple(
+                    entry.path
+                    for entry in artifact_catalog_entries(include_inputs=True)
+                    if entry.kind == "input"
+                ),
+            ),
             ("operational", ARTIFACT_GROUPS["operational"]),
             ("manuscript", ARTIFACT_GROUPS["manuscript"]),
+        ]
+    if kind == "input":
+        return [
+            (
+                "input",
+                tuple(
+                    entry.path
+                    for entry in artifact_catalog_entries(include_inputs=True)
+                    if entry.kind == "input"
+                ),
+            )
         ]
     return [(kind, ARTIFACT_GROUPS[kind])]
 
@@ -391,16 +381,32 @@ def _validate_provenance_payload(payload: dict[str, object], *, artifact_path: P
 
 def _artifact_line(relative_path: str, *, exists: bool) -> str:
     status = "present" if exists else "missing"
-    if relative_path not in PROVENANCE_TRACKED_ARTIFACTS:
+    entry = next(
+        (
+            item
+            for item in artifact_catalog_entries(include_inputs=True)
+            if item.path == relative_path
+        ),
+        None,
+    )
+    if entry is None:
         return f"- [{status}] {relative_path}"
+    consumed_by = ", ".join(entry.consumed_by)
+    schema_ref = entry.schema_ref or "none"
+    details = (
+        f"canonical={str(entry.canonical).lower()} | reproducible={str(entry.reproducible).lower()} "
+        f"| required={entry.required} | consumed_by={consumed_by} | schema_ref={schema_ref}"
+    )
+    if relative_path not in PROVENANCE_TRACKED_ARTIFACTS:
+        return f"- [{status}] {relative_path} | {details}"
 
     path = PROJECT_ROOT / relative_path
     if not exists:
-        return f"- [{status}] {relative_path} | provenance=n/a"
+        return f"- [{status}] {relative_path} | provenance=n/a | {details}"
 
     provenance_exists = _provenance_sidecar_path(path).exists()
     provenance_status = "present" if provenance_exists else "missing"
-    return f"- [{status}] {relative_path} | provenance={provenance_status}"
+    return f"- [{status}] {relative_path} | provenance={provenance_status} | {details}"
 
 
 def _artifact_provenance_problem(relative_path: str) -> str | None:
@@ -429,6 +435,8 @@ def _list_artifacts(
     missing_only: bool,
     provenance_missing_only: bool,
     provenance_invalid_only: bool,
+    as_json: bool,
+    sync_catalog: bool,
 ) -> int:
     if provenance_missing_only and provenance_invalid_only:
         print(
@@ -437,10 +445,25 @@ def _list_artifacts(
         )
         return 2
 
-    printed_any = False
+    if sync_catalog:
+        sync_artifact_catalog_surfaces(
+            doc_path=ARTIFACT_CATALOG_DOC_PATH,
+            json_path=ARTIFACT_CATALOG_JSON_PATH,
+        )
+
+    rows: list[dict[str, object]] = []
     for group_name, relative_paths in _artifact_groups_for_kind(kind):
-        group_lines: list[str] = []
         for relative_path in relative_paths:
+            entry = next(
+                (
+                    item
+                    for item in artifact_catalog_entries(include_inputs=True)
+                    if item.path == relative_path
+                ),
+                None,
+            )
+            if entry is None:
+                continue
             path = PROJECT_ROOT / relative_path
             exists = path.exists()
             if missing_only and exists:
@@ -452,23 +475,62 @@ def _list_artifacts(
                 if _artifact_provenance_problem(relative_path) != "invalid":
                     continue
 
-            group_lines.append(_artifact_line(relative_path, exists=exists))
+            provenance_status = None
+            if relative_path in PROVENANCE_TRACKED_ARTIFACTS:
+                provenance_status = (
+                    "missing"
+                    if not exists
+                    else (
+                        "present"
+                        if _artifact_provenance_problem(relative_path) is None
+                        else _artifact_provenance_problem(relative_path)
+                    )
+                )
 
-        if not group_lines:
-            continue
+            rows.append(
+                {
+                    "kind": group_name,
+                    "path": relative_path,
+                    "present": exists,
+                    "producer": entry.producer,
+                    "consumed_by": list(entry.consumed_by),
+                    "required": entry.required,
+                    "canonical": entry.canonical,
+                    "schema_ref": entry.schema_ref,
+                    "reproducible": entry.reproducible,
+                    "human_readable": entry.human_readable,
+                    "machine_readable": entry.machine_readable,
+                    "regenerable": entry.regenerable,
+                    "provenance": provenance_status,
+                }
+            )
 
-        printed_any = True
-        print(f"{group_name}:")
-        for line in group_lines:
-            print(line)
-
-    if not printed_any:
+    if not rows:
         if missing_only:
             print("No missing artifacts in the selected group.")
         elif provenance_missing_only:
             print("No tracked artifacts with missing provenance in the selected group.")
         elif provenance_invalid_only:
             print("No tracked artifacts with invalid provenance in the selected group.")
+        elif as_json:
+            print("[]")
+        return 0
+
+    if as_json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2))
+        return 0
+
+    grouped_rows: dict[str, list[dict[str, object]]] = {}
+    for row in rows:
+        grouped_rows.setdefault(str(row["kind"]), []).append(row)
+
+    for group_name in ("input", "operational", "manuscript"):
+        group_rows = grouped_rows.get(group_name, [])
+        if not group_rows:
+            continue
+        print(f"{group_name}:")
+        for row in group_rows:
+            print(_artifact_line(str(row["path"]), exists=bool(row["present"])))
 
     return 0
 
@@ -842,52 +904,26 @@ def _path_mtime(path: Path) -> float | None:
 def _doctor_provenance_candidates(
     review_config: ReviewConfig | None,
 ) -> tuple[tuple[str, Path], ...]:
-    if review_config is None:
-        return (
-            ("daily run manifest", PROJECT_ROOT / "outputs/daily_run_manifest.json"),
-            ("status summary", PROJECT_ROOT / "outputs/status_summary.json"),
-            ("status report", PROJECT_ROOT / "outputs/status_report.md"),
-            ("todo action plan", PROJECT_ROOT / "outputs/todo_action_plan.md"),
-            ("review descriptives json", PROJECT_ROOT / "outputs/review_descriptives.json"),
-            ("review descriptives markdown", PROJECT_ROOT / "outputs/review_descriptives.md"),
-            ("results summary csv", PROJECT_ROOT / "outputs/results_summary_table.csv"),
-            ("progress history csv", PROJECT_ROOT / "outputs/progress_history.csv"),
-            ("progress history summary", PROJECT_ROOT / "outputs/progress_history_summary.md"),
-            (
-                "results summary latex",
-                PROJECT_ROOT / "04_manuscript/tables/results_summary_table.tex",
-            ),
-            ("prisma counts latex", PROJECT_ROOT / "04_manuscript/tables/prisma_counts_table.tex"),
-            (
-                "fulltext exclusion latex",
-                PROJECT_ROOT / "04_manuscript/tables/fulltext_exclusion_table.tex",
-            ),
-            ("prisma tables summary", PROJECT_ROOT / "outputs/prisma_tables_summary.md"),
-        )
-
-    outputs_root = review_config.outputs_root
-    manuscript_root = review_config.manuscript_root
-    return (
-        ("daily run manifest", outputs_root / "daily_run_manifest.json"),
-        ("status summary", outputs_root / "status_summary.json"),
-        ("status report", outputs_root / "status_report.md"),
-        ("todo action plan", outputs_root / "todo_action_plan.md"),
-        ("review descriptives json", outputs_root / "review_descriptives.json"),
-        ("review descriptives markdown", outputs_root / "review_descriptives.md"),
-        ("results summary csv", outputs_root / "results_summary_table.csv"),
-        ("progress history csv", outputs_root / "progress_history.csv"),
-        ("progress history summary", outputs_root / "progress_history_summary.md"),
-        ("results summary summary", outputs_root / "results_summary_table_summary.md"),
-        ("prisma tables summary", outputs_root / "prisma_tables_summary.md"),
-        ("results summary latex", manuscript_root / "tables/results_summary_table.tex"),
-        ("prisma counts latex", manuscript_root / "tables/prisma_counts_table.tex"),
-        ("fulltext exclusion latex", manuscript_root / "tables/fulltext_exclusion_table.tex"),
-    )
+    project_root = PROJECT_ROOT if review_config is None else review_config.review_root
+    candidates: list[tuple[str, Path]] = []
+    for relative_path in sorted(PROVENANCE_TRACKED_ARTIFACTS):
+        path_obj = Path(relative_path)
+        label = path_obj.name.replace("_", " ").replace(".", " ")
+        candidates.append((label, project_root / relative_path))
+    return tuple(candidates)
 
 
 def _doctor_required_paths(review_config: ReviewConfig | None) -> tuple[tuple[str, Path], ...]:
     if review_config is None:
-        return DOCTOR_REQUIRED_PATHS
+        existing_paths = {path.resolve() for _, path in DOCTOR_REQUIRED_PATHS}
+        artifact_paths = [
+            (entry.path, PROJECT_ROOT / entry.path)
+            for entry in required_artifact_entries(include_expected=False)
+            if entry.kind == "input" and (PROJECT_ROOT / entry.path).resolve() not in existing_paths
+        ]
+        return DOCTOR_REQUIRED_PATHS + tuple(
+            (f"artifact `{label}`", path) for label, path in artifact_paths
+        )
 
     return (
         ("project root", PROJECT_ROOT),
@@ -913,6 +949,18 @@ def _doctor_optional_paths(review_config: ReviewConfig | None) -> tuple[tuple[st
         ("run events", review_config.outputs_root / "run_events.jsonl"),
         ("manuscript root", review_config.manuscript_root),
     )
+
+
+def _doctor_artifact_contract_entries(
+    review_config: ReviewConfig | None,
+) -> tuple[tuple[object, Path], ...]:
+    project_root = PROJECT_ROOT if review_config is None else review_config.review_root
+    selected = []
+    for entry in artifact_catalog_entries(include_inputs=True):
+        if entry.kind == "input" or entry.required != "yes":
+            continue
+        selected.append((entry, project_root / entry.path))
+    return tuple(selected)
 
 
 def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
@@ -1117,6 +1165,52 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
                     failure_class="missing artifact",
                 )
             )
+
+    lines.append("")
+    lines.append("Artifact contract")
+    contract_entries = _doctor_artifact_contract_entries(review_config)
+    canonical_count = 0
+    reproducible_count = 0
+    present_count = 0
+    for entry, path in contract_entries:
+        if entry.canonical:
+            canonical_count += 1
+        if entry.reproducible:
+            reproducible_count += 1
+        if path.exists():
+            present_count += 1
+            lines.append(
+                _doctor_line(
+                    "ok",
+                    f"artifact `{entry.path}`",
+                    "present; "
+                    f"canonical={str(entry.canonical).lower()}; "
+                    f"reproducible={str(entry.reproducible).lower()}; "
+                    f"schema_ref={entry.schema_ref or 'none'}",
+                )
+            )
+        else:
+            warnings += 1
+            record_failure("missing artifact")
+            lines.append(
+                _doctor_classified_line(
+                    "warn",
+                    f"artifact `{entry.path}`",
+                    "missing trust-bearing generated artifact; "
+                    f"canonical={str(entry.canonical).lower()}; "
+                    f"reproducible={str(entry.reproducible).lower()}; "
+                    f"schema_ref={entry.schema_ref or 'none'}",
+                    failure_class="missing artifact",
+                )
+            )
+    lines.append(
+        _doctor_line(
+            "ok",
+            "artifact contract summary",
+            f"tracked={len(contract_entries)}, present={present_count}, "
+            f"canonical={canonical_count}, reproducible={reproducible_count}",
+        )
+    )
 
     lines.append("")
     lines.append("Provenance coverage")
@@ -1408,6 +1502,8 @@ def main(argv: list[str] | None = None) -> int:
             missing_only=bool(args.missing_only),
             provenance_missing_only=bool(getattr(args, "provenance_missing_only", False)),
             provenance_invalid_only=bool(getattr(args, "provenance_invalid_only", False)),
+            as_json=bool(getattr(args, "json", False)),
+            sync_catalog=bool(getattr(args, "sync_catalog", False)),
         )
     if command == "validate":
         return _run_validate(args.target, args.validate_args)

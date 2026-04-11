@@ -329,6 +329,8 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertIn("Version: 0.2.0", rendered)
         self.assertIn("Environment", rendered)
         self.assertIn("Preflight question", rendered)
+        self.assertIn("Artifact contract", rendered)
+        self.assertIn("artifact contract summary", rendered)
         self.assertIn("Preflight verdict:", rendered)
         self.assertIn("Summary:", rendered)
 

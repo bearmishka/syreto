@@ -104,6 +104,42 @@ class WeeklyRiskDigestTests(unittest.TestCase):
         self.assertIn("## Project Posture", digest)
         self.assertIn("not available in current status summary", digest)
 
+    def test_digest_prefers_failure_model_findings_when_available(self) -> None:
+        digest = weekly_risk_digest.build_digest(
+            {
+                "data_snapshot": {
+                    "search_results_total": 10,
+                    "unique_records_after_dedup": 8,
+                    "records_screened": 3,
+                    "includes": 1,
+                },
+                "stage_assessment": {"id": "screening_active", "label": "Screening Active"},
+                "registration": {"registered": False},
+                "reviewer_agreement": {"cohen_kappa": {"available": False}},
+                "health_checks": [
+                    {"level": "error", "message": "legacy error that should be secondary"},
+                ],
+                "failure_model": {
+                    "findings": [
+                        {
+                            "severity": "critical",
+                            "failure_class": "schema violation",
+                            "message": "CSV input validation reports errors=2, warnings=0, parsed=true.",
+                        }
+                    ]
+                },
+                "warnings": [],
+                "suggested_next_step": [],
+                "input_checklist": [],
+            },
+            today_value=weekly_risk_digest.parse_today("2026-03-14"),
+            max_risks=5,
+            max_actions=5,
+        )
+
+        self.assertIn("[schema violation]", digest)
+        self.assertIn("CSV input validation reports errors=2", digest)
+
     def test_missing_status_summary_writes_fallback_digest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)

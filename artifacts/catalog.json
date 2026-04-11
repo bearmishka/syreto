@@ -1,0 +1,410 @@
+{
+  "schema_version": "0.1",
+  "entries": [
+    {
+      "path": "02_data/processed/search_log.csv",
+      "producer": "review team / canonical inputs",
+      "consumed_by": [
+        "validation",
+        "pipeline",
+        "status",
+        "doctor"
+      ],
+      "required": "yes",
+      "canonical": true,
+      "schema_ref": "syreto/csv_schema.py",
+      "reproducible": false,
+      "human_readable": "yes",
+      "machine_readable": "yes",
+      "regenerable": false,
+      "kind": "input",
+      "provenance_tracked": false
+    },
+    {
+      "path": "02_data/processed/master_records.csv",
+      "producer": "review team / dedup workflow",
+      "consumed_by": [
+        "status",
+        "RIS export",
+        "screening logic",
+        "doctor"
+      ],
+      "required": "yes",
+      "canonical": true,
+      "schema_ref": "syreto/csv_schema.py",
+      "reproducible": false,
+      "human_readable": "yes",
+      "machine_readable": "yes",
+      "regenerable": false,
+      "kind": "input",
+      "provenance_tracked": false
+    },
+    {
+      "path": "02_data/codebook/extraction_template.csv",
+      "producer": "review team / extraction workflow",
+      "consumed_by": [
+        "appraisal",
+        "synthesis",
+        "analytics",
+        "export",
+        "doctor"
+      ],
+      "required": "yes",
+      "canonical": true,
+      "schema_ref": "syreto/csv_schema.py",
+      "reproducible": false,
+      "human_readable": "yes",
+      "machine_readable": "yes",
+      "regenerable": false,
+      "kind": "input",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/status_summary.json",
+      "producer": "status_report.py",
+      "consumed_by": [
+        "status_cli.py",
+        "doctor",
+        "todo_action_plan_builder.py",
+        "users"
+      ],
+      "required": "yes",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "limited",
+      "machine_readable": "yes",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": true
+    },
+    {
+      "path": "outputs/status_report.md",
+      "producer": "status_report.py",
+      "consumed_by": [
+        "users",
+        "postmortem",
+        "review workflow"
+      ],
+      "required": "yes",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": true
+    },
+    {
+      "path": "outputs/todo_action_plan.md",
+      "producer": "todo_action_plan_builder.py",
+      "consumed_by": [
+        "users",
+        "remediation workflow"
+      ],
+      "required": "yes",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": true
+    },
+    {
+      "path": "outputs/run_events.jsonl",
+      "producer": "daily_run.sh observability layer",
+      "consumed_by": [
+        "syreto observability",
+        "postmortem",
+        "future UI/metrics"
+      ],
+      "required": "expected for full run",
+      "canonical": false,
+      "schema_ref": "docs/observability-model.md",
+      "reproducible": true,
+      "human_readable": "partial",
+      "machine_readable": "yes",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/daily_run_manifest.json",
+      "producer": "daily_run.sh",
+      "consumed_by": [
+        "run integrity checks",
+        "postmortem",
+        "doctor"
+      ],
+      "required": "expected for full run",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "limited",
+      "machine_readable": "yes",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": true
+    },
+    {
+      "path": "outputs/review_descriptives.json",
+      "producer": "review_descriptives_builder.py",
+      "consumed_by": [
+        "analytics inspection",
+        "future programmatic analytics consumers"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "limited",
+      "machine_readable": "yes",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": true
+    },
+    {
+      "path": "outputs/review_descriptives.md",
+      "producer": "review_descriptives_builder.py",
+      "consumed_by": [
+        "users",
+        "review inspection"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": true
+    },
+    {
+      "path": "outputs/figures/year_distribution.png",
+      "producer": "analytics builders",
+      "consumed_by": [
+        "users",
+        "reporting",
+        "sanity checks"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/figures/study_design_distribution.png",
+      "producer": "analytics builders",
+      "consumed_by": [
+        "users",
+        "reporting",
+        "sanity checks"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/figures/country_distribution.png",
+      "producer": "analytics builders",
+      "consumed_by": [
+        "users",
+        "reporting",
+        "sanity checks"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/figures/quality_band_distribution.png",
+      "producer": "analytics builders",
+      "consumed_by": [
+        "users",
+        "reporting",
+        "sanity checks"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/figures/predictor_outcome_heatmap.png",
+      "producer": "analytics builders",
+      "consumed_by": [
+        "users",
+        "reporting",
+        "sanity checks"
+      ],
+      "required": "no",
+      "canonical": false,
+      "schema_ref": "docs/review-analytics-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/prisma_flow_diagram.svg",
+      "producer": "dedup_stats.py",
+      "consumed_by": [
+        "users",
+        "manuscript prep"
+      ],
+      "required": "expected in normal run",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/prisma_flow_diagram.tex",
+      "producer": "dedup_stats.py",
+      "consumed_by": [
+        "manuscript workflows"
+      ],
+      "required": "expected in normal run",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/forest_plot_data.csv",
+      "producer": "forest_plot_generator.py",
+      "consumed_by": [
+        "forest plot output layer",
+        "downstream inspection"
+      ],
+      "required": "optional/depends on stage",
+      "canonical": false,
+      "schema_ref": "docs/study-table-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "yes",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/forest_plot.png",
+      "producer": "forest_plot_generator.py",
+      "consumed_by": [
+        "users",
+        "manuscript/reporting"
+      ],
+      "required": "optional/depends on stage",
+      "canonical": false,
+      "schema_ref": null,
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "outputs/included_studies_export.ris",
+      "producer": "export_to_ris.py",
+      "consumed_by": [
+        "Zotero",
+        "EndNote",
+        "external reference workflows"
+      ],
+      "required": "optional",
+      "canonical": false,
+      "schema_ref": "docs/study-table-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "semi-structured",
+      "regenerable": true,
+      "kind": "operational",
+      "provenance_tracked": false
+    },
+    {
+      "path": "04_manuscript/tables/grade_evidence_profile_table.tex",
+      "producer": "grade_evidence_profiler.py",
+      "consumed_by": [
+        "manuscript layer"
+      ],
+      "required": "expected when manuscript layer is active",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "manuscript",
+      "provenance_tracked": false
+    },
+    {
+      "path": "04_manuscript/tables/results_summary_table.tex",
+      "producer": "results_summary_table_builder.py",
+      "consumed_by": [
+        "manuscript layer"
+      ],
+      "required": "expected when manuscript layer is active",
+      "canonical": false,
+      "schema_ref": "docs/study-table-model.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "manuscript",
+      "provenance_tracked": true
+    },
+    {
+      "path": "04_manuscript/sections/03c_interpretation_auto.tex",
+      "producer": "results_interpretation_layer.py",
+      "consumed_by": [
+        "manuscript layer"
+      ],
+      "required": "expected when manuscript layer is active",
+      "canonical": false,
+      "schema_ref": "docs/execution-contract.md",
+      "reproducible": true,
+      "human_readable": "yes",
+      "machine_readable": "no",
+      "regenerable": true,
+      "kind": "manuscript",
+      "provenance_tracked": false
+    }
+  ]
+}

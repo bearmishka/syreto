@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 from csv_schema import schema_contract_paths, validate_csv_schema_contract
 from provenance import write_provenance_sidecar
+from status_cli import normalize_priority_policy, summarize_failure_model
 
 EMPTY_VALUES = {"", "nan", "none"}
 YES_VALUES = {"yes", "y", "1", "true"}
@@ -1737,6 +1738,21 @@ def build_status_report(
         lines.append(f"- {step}")
     lines.append("")
 
+    failure_model_source = {
+        "health_checks": health_checks,
+        "input_checklist": input_checklist,
+        "direct_csv_schema": direct_schema,
+        "csv_input_validation": csv_input_validation,
+        "extraction_validation": extraction_validation,
+        "daily_run_integrity": daily_run_integrity,
+    }
+    failure_model_fail_on = str(os.getenv("STATUS_FAIL_ON", "major")).strip().lower() or "major"
+    failure_model_summary = summarize_failure_model(
+        failure_model_source,
+        normalize_priority_policy({}),
+        failure_model_fail_on,
+    )
+
     status_summary = {
         "generated_at": generated_at,
         "review_mode": active_review_mode,
@@ -1790,6 +1806,13 @@ def build_status_report(
         "warnings": warnings,
         "artifacts": artifacts,
         "daily_run_integrity": daily_run_integrity,
+        "failure_model": {
+            "fail_on": failure_model_fail_on,
+            "counts": failure_model_summary["counts"],
+            "blocker_count": len(failure_model_summary["blockers"]),
+            "blocker_classes": failure_model_summary["blocker_classes"],
+            "findings": failure_model_summary["findings"],
+        },
         "suggested_next_step": suggested_next_step,
     }
 

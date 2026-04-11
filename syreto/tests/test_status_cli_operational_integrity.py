@@ -119,6 +119,74 @@ class StatusCliOperationalIntegrityTests(unittest.TestCase):
         self.assertEqual(blockers[0]["source"], "checklist")
         self.assertEqual(blockers[0]["id"], "semantic_placeholders")
         self.assertEqual(blockers[0]["severity"], "major")
+        self.assertEqual(blockers[0]["failure_class"], "integrity guard failure")
+
+    def test_failure_model_collects_schema_violation_from_status_components(self) -> None:
+        summary = {
+            "health_checks": [],
+            "input_checklist": [],
+            "direct_csv_schema": {
+                "ok": False,
+                "error_count": 2,
+                "warning_count": 1,
+            },
+            "csv_input_validation": {
+                "present": True,
+                "parsed": True,
+                "errors": 1,
+                "warnings": 0,
+            },
+            "extraction_validation": {
+                "present": True,
+                "parsed": True,
+                "errors": 0,
+                "warnings": 0,
+            },
+        }
+        priority_policy = {
+            "health_level_severity": {"warning": "major", "error": "critical"},
+            "fail_thresholds": {"default": "major"},
+            "checklist_priority": {"default": "major"},
+        }
+
+        failure_model = status_cli.summarize_failure_model(summary, priority_policy, "major")
+
+        self.assertGreaterEqual(failure_model["counts"].get("schema violation", 0), 2)
+
+    def test_build_cli_output_renders_failure_model_section(self) -> None:
+        summary = {
+            "generated_at": "2026-04-12 02:00",
+            "data_snapshot": {},
+            "stage_assessment": {"id": "screening_active", "label": "Screening Active"},
+            "registration": {"registered": False},
+            "reviewer_agreement": {
+                "title_abstract_reviewers": [],
+                "cohen_kappa": {"available": False},
+            },
+            "csv_input_validation": {"present": False, "parsed": False, "errors": 0, "warnings": 0},
+            "extraction_validation": {"present": True, "parsed": True, "errors": 0, "warnings": 0},
+            "effect_size_conversion": {},
+            "warnings": [],
+            "suggested_next_step": [],
+            "health_checks": [
+                {
+                    "level": "error",
+                    "message": "Daily-run manifest indicates failure; outputs may be partially updated.",
+                }
+            ],
+            "input_checklist": [],
+            "daily_run_integrity": {
+                "ok": False,
+                "details": "manifest state=failed",
+                "manifest": {},
+            },
+        }
+
+        rendered = status_cli.build_cli_output(summary, priority_policy={}, fail_on="major")
+
+        self.assertIn("Failure model", rendered)
+        self.assertIn("partial run or stale outputs", rendered)
+        self.assertIn("blocking threshold: major", rendered)
 
     def test_repo_priority_policy_matches_canonical_severity_taxonomy(self) -> None:
         policy_path = Path(__file__).resolve().parents[1] / "priority_policy.json"

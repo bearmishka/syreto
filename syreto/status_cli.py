@@ -9,6 +9,33 @@ SEVERITY_ORDER = {"minor": 1, "major": 2, "critical": 3}
 DEFAULT_CHECKLIST_SEVERITY = "major"
 DEFAULT_FAIL_THRESHOLD = "major"
 DEFAULT_HEALTH_LEVEL_SEVERITY = {"warning": "major", "error": "critical"}
+FAILURE_SEMANTICS = {
+    "config error": {"severity": "hard-fail", "recovery": "manual intervention"},
+    "missing artifact": {"severity": "warning", "recovery": "manual intervention"},
+    "schema violation": {"severity": "hard-fail", "recovery": "manual intervention"},
+    "environment problem": {"severity": "warning", "recovery": "manual intervention"},
+    "integrity guard failure": {"severity": "hard-fail", "recovery": "manual intervention"},
+    "partial run or stale outputs": {
+        "severity": "hard-fail",
+        "recovery": "clean rerun or manual investigation",
+    },
+    "rollback state": {"severity": "hard-fail", "recovery": "manual investigation"},
+}
+CHECKLIST_FAILURE_CLASSES = {
+    "search_totals": "schema violation",
+    "master_records": "schema violation",
+    "master_columns": "schema violation",
+    "csv_input_validation": "schema violation",
+    "extraction_validation": "schema violation",
+    "direct_csv_schema": "schema violation",
+    "prisma_sync": "integrity guard failure",
+    "semantic_placeholders": "integrity guard failure",
+    "screening_log": "missing artifact",
+    "dual_reviewer": "missing artifact",
+    "cohen_kappa": "missing artifact",
+    "quality_appraisal": "missing artifact",
+    "effect_size_conversion": "missing artifact",
+}
 QUICK_FIX_COMMANDS = {
     "search_totals": "python validate_csv_inputs.py",
     "master_records": "python dedup_merge.py --if-new-exports",
@@ -23,6 +50,191 @@ QUICK_FIX_COMMANDS = {
     "semantic_placeholders": "python template_term_guard.py --check-placeholders --no-check-banned-terms --scan-path ../04_manuscript --fail-on-match",
     "prisma_sync": "python dedup_stats.py --flow-backend both --flow-style journal --flow-output outputs/prisma_flow_diagram.svg --apply --backup",
 }
+
+
+def infer_failure_class_for_health_check(health_check: dict) -> str:
+    message = str(health_check.get("message") or "").strip().lower()
+    level = str(health_check.get("level") or "").strip().lower()
+    if "rollback" in message:
+        return "rollback state"
+    if "partially updated" in message or "unfinished run" in message or "manifest" in message:
+        return "partial run or stale outputs"
+    if "placeholder" in message or "epistemic" in message or "integrity" in message:
+        return "integrity guard failure"
+    if "schema" in message:
+        return "schema violation"
+    if "missing" in message and "artifact" in message:
+        return "missing artifact"
+    if level == "error":
+        return "partial run or stale outputs"
+    return "missing artifact"
+
+
+def infer_failure_class_for_checklist_item(item_id: str) -> str:
+    return CHECKLIST_FAILURE_CLASSES.get(item_id, "missing artifact")
+
+
+def collect_failure_model_findings(summary: dict, priority_policy: dict) -> list[dict]:
+    priority_policy = normalize_priority_policy(priority_policy)
+    findings: list[dict] = []
+
+    for finding in collect_findings(summary, priority_policy):
+        enriched = dict(finding)
+        if enriched["source"] == "health":
+            health_check = {
+                "message": enriched.get("message"),
+                "level": enriched.get("id"),
+            }
+            enriched["failure_class"] = infer_failure_class_for_health_check(health_check)
+        else:
+            enriched["failure_class"] = infer_failure_class_for_checklist_item(
+                str(enriched.get("id") or "")
+            )
+        findings.append(enriched)
+
+    health_level_severity = priority_policy.get(
+        "health_level_severity", DEFAULT_HEALTH_LEVEL_SEVERITY
+    )
+    if not isinstance(health_level_severity, dict):
+        health_level_severity = DEFAULT_HEALTH_LEVEL_SEVERITY
+
+    direct_csv_schema = summary.get("direct_csv_schema", {})
+    if isinstance(direct_csv_schema, dict):
+        schema_errors = as_int(direct_csv_schema.get("error_count"))
+        schema_warnings = as_int(direct_csv_schema.get("warning_count"))
+        if schema_errors > 0 or schema_warnings > 0:
+            level = "error" if schema_errors > 0 else "warning"
+            findings.append(
+                {
+                    "severity": health_level_severity.get(
+                        level, DEFAULT_HEALTH_LEVEL_SEVERITY[level]
+                    ),
+                    "source": "status_component",
+                    "id": "direct_csv_schema",
+                    "message": (
+                        f"Direct CSV schema posture reports errors={schema_errors}, "
+                        f"warnings={schema_warnings}."
+                    ),
+                    "failure_class": "schema violation",
+                }
+            )
+
+    csv_input_validation = summary.get("csv_input_validation", {})
+    if isinstance(csv_input_validation, dict):
+        csv_present = bool(csv_input_validation.get("present"))
+        csv_parsed = bool(csv_input_validation.get("parsed"))
+        csv_errors = as_int(csv_input_validation.get("errors"))
+        csv_warnings = as_int(csv_input_validation.get("warnings"))
+        if not csv_present:
+            findings.append(
+                {
+                    "severity": health_level_severity.get("error", "critical"),
+                    "source": "status_component",
+                    "id": "csv_input_validation",
+                    "message": "CSV input validation summary is missing.",
+                    "failure_class": "missing artifact",
+                }
+            )
+        elif not csv_parsed or csv_errors > 0 or csv_warnings > 0:
+            level = "error" if csv_errors > 0 or not csv_parsed else "warning"
+            findings.append(
+                {
+                    "severity": health_level_severity.get(
+                        level, DEFAULT_HEALTH_LEVEL_SEVERITY[level]
+                    ),
+                    "source": "status_component",
+                    "id": "csv_input_validation",
+                    "message": (
+                        f"CSV input validation reports errors={csv_errors}, "
+                        f"warnings={csv_warnings}, parsed={str(csv_parsed).lower()}."
+                    ),
+                    "failure_class": "schema violation",
+                }
+            )
+
+    extraction_validation = summary.get("extraction_validation", {})
+    if isinstance(extraction_validation, dict):
+        extraction_present = bool(extraction_validation.get("present"))
+        extraction_parsed = bool(extraction_validation.get("parsed"))
+        extraction_errors = as_int(extraction_validation.get("errors"))
+        extraction_warnings = as_int(extraction_validation.get("warnings"))
+        if not extraction_present:
+            findings.append(
+                {
+                    "severity": health_level_severity.get("warning", "major"),
+                    "source": "status_component",
+                    "id": "extraction_validation",
+                    "message": "Extraction validation summary is missing.",
+                    "failure_class": "missing artifact",
+                }
+            )
+        elif not extraction_parsed or extraction_errors > 0 or extraction_warnings > 0:
+            level = "error" if extraction_errors > 0 or not extraction_parsed else "warning"
+            findings.append(
+                {
+                    "severity": health_level_severity.get(
+                        level, DEFAULT_HEALTH_LEVEL_SEVERITY[level]
+                    ),
+                    "source": "status_component",
+                    "id": "extraction_validation",
+                    "message": (
+                        f"Extraction validation reports errors={extraction_errors}, "
+                        f"warnings={extraction_warnings}, parsed={str(extraction_parsed).lower()}."
+                    ),
+                    "failure_class": "schema violation",
+                }
+            )
+
+    daily_run_integrity = summary.get("daily_run_integrity", {})
+    if (
+        isinstance(daily_run_integrity, dict)
+        and daily_run_integrity
+        and not daily_run_integrity.get("ok", True)
+    ):
+        manifest = daily_run_integrity.get("manifest")
+        failure_class = "partial run or stale outputs"
+        if isinstance(manifest, dict) and manifest.get("rollback_applied") is True:
+            failure_class = "rollback state"
+        findings.append(
+            {
+                "severity": health_level_severity.get("error", "critical"),
+                "source": "status_component",
+                "id": "daily_run_integrity",
+                "message": str(
+                    daily_run_integrity.get("details")
+                    or "Daily-run integrity is not acceptable for downstream trust."
+                ),
+                "failure_class": failure_class,
+            }
+        )
+
+    return findings
+
+
+def summarize_failure_model(summary: dict, priority_policy: dict, fail_on: str) -> dict:
+    findings = collect_failure_model_findings(summary, priority_policy)
+    counts: dict[str, int] = {}
+    for finding in findings:
+        failure_class = str(finding.get("failure_class") or "missing artifact")
+        counts[failure_class] = counts.get(failure_class, 0) + 1
+
+    blockers = find_blockers(summary, fail_on, priority_policy)
+    blocker_classes = sorted(
+        {
+            str(
+                blocker.get("failure_class")
+                or infer_failure_class_for_checklist_item(str(blocker.get("id") or ""))
+            )
+            for blocker in blockers
+        }
+    )
+
+    return {
+        "findings": findings,
+        "counts": counts,
+        "blockers": blockers,
+        "blocker_classes": blocker_classes,
+    }
 
 
 def load_summary(path: Path) -> dict:
@@ -200,6 +412,7 @@ def collect_findings(summary: dict, priority_policy: dict) -> list[dict]:
                 "source": "health",
                 "id": level,
                 "message": message,
+                "failure_class": infer_failure_class_for_health_check(health_check),
             }
         )
 
@@ -219,6 +432,7 @@ def collect_findings(summary: dict, priority_policy: dict) -> list[dict]:
                 "source": "checklist",
                 "id": item_id,
                 "message": message,
+                "failure_class": infer_failure_class_for_checklist_item(item_id),
             }
         )
 
@@ -300,7 +514,13 @@ def grouped_todo_items(
     return dict(sorted(grouped.items(), key=lambda pair: pair[0]))
 
 
-def build_cli_output(summary: dict, todo_only: bool = False) -> str:
+def build_cli_output(
+    summary: dict,
+    todo_only: bool = False,
+    *,
+    priority_policy: dict | None = None,
+    fail_on: str = "none",
+) -> str:
     snapshot = summary.get("data_snapshot", {})
     registration = summary.get("registration", {})
     reviewer_agreement = summary.get("reviewer_agreement", {})
@@ -314,6 +534,8 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
     health = summary.get("health_checks", [])
     checklist = summary.get("input_checklist", [])
     counts = health_counts(health)
+    normalized_priority_policy = normalize_priority_policy(priority_policy or {})
+    failure_model = summarize_failure_model(summary, normalized_priority_policy, fail_on)
 
     if registration.get("registered"):
         registration_label = str(registration.get("registration_id") or "registered")
@@ -395,6 +617,23 @@ def build_cli_output(summary: dict, todo_only: bool = False) -> str:
     lines.append(
         f"- ok: {counts['ok']}, warning: {counts['warning']}, error: {counts['error']}, info: {counts['info']}"
     )
+
+    lines.append("")
+    lines.append("Failure model")
+    if failure_model["counts"]:
+        for failure_class in sorted(failure_model["counts"]):
+            semantics = FAILURE_SEMANTICS[failure_class]
+            lines.append(
+                f"- {failure_class}: count={failure_model['counts'][failure_class]}, "
+                f"severity={semantics['severity']}, recovery={semantics['recovery']}"
+            )
+    else:
+        lines.append("- no classified failure signals")
+    lines.append(
+        f"- blocking threshold: {fail_on}; blockers at/above threshold: {len(failure_model['blockers'])}"
+    )
+    if failure_model["blocker_classes"]:
+        lines.append(f"- blocking classes: {', '.join(failure_model['blocker_classes'])}")
 
     lines.append("")
     lines.append("Checklist")
@@ -502,10 +741,17 @@ def main() -> None:
         status_report_script=status_report_script,
     )
     summary = load_summary(summary_path)
-    print(build_cli_output(summary, todo_only=args.todo_only), end="")
-
     priority_policy_path = resolve_input_path(Path(args.priority_policy))
     priority_policy = load_priority_policy(priority_policy_path)
+    print(
+        build_cli_output(
+            summary,
+            todo_only=args.todo_only,
+            priority_policy=priority_policy,
+            fail_on=args.fail_on,
+        ),
+        end="",
+    )
     blockers = find_blockers(summary, args.fail_on, priority_policy)
     if blockers:
         print(
@@ -515,7 +761,7 @@ def main() -> None:
         for blocker in blockers[:10]:
             print(
                 f"- [{blocker['severity']}] {blocker['message']} "
-                f"({blocker['source']}:{blocker['id']})",
+                f"({blocker['source']}:{blocker['id']}; class={blocker['failure_class']})",
                 file=sys.stderr,
             )
         raise SystemExit(1)
