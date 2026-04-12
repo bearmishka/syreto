@@ -17,7 +17,13 @@ spec.loader.exec_module(python_source_guard)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TESTS_ROOT = PROJECT_ROOT / "tests"
-BROKEN_FIXTURES_ROOT = TESTS_ROOT / "fixtures" / "python_source_guard_broken"
+BROKEN_FIXTURES_ROOT = (
+    Path(__file__).resolve().parents[2]
+    / "syreto"
+    / "tests"
+    / "fixtures"
+    / "python_source_guard_broken"
+)
 
 
 class PythonSourceIntegrityTests(unittest.TestCase):

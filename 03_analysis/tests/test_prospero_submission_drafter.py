@@ -10,6 +10,10 @@ ANALYSIS_ROOT = Path(__file__).resolve().parents[1]
 if str(ANALYSIS_ROOT) not in sys.path:
     sys.path.insert(0, str(ANALYSIS_ROOT))
 
+# This legacy-side test intentionally keeps compatibility assertions that do not
+# belong in the canonical package test module, such as the deprecated
+# Python-level shim contract around build_prefill_fields().
+
 from prospero_submission_drafter_layers.builder import (
     build_prefill_fields as build_prefill_fields_layer,
 )

@@ -14,6 +14,9 @@ validate_csv_inputs = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(validate_csv_inputs)
 
+# This legacy-side test module intentionally retains script-path execution
+# coverage that is specific to the 03_analysis compatibility wrapper.
+
 
 class ValidateCsvInputsNoneHandlingTests(unittest.TestCase):
     def _collect_export_filename_issues(
