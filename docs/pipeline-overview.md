@@ -168,11 +168,18 @@ This invokes [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh) and is th
 SyReTo depends on keeping source-of-truth boundaries clear.
 
 - `02_data/` contains canonical review data inputs and processed review-state CSVs
-- `03_analysis/` contains orchestration and analysis scripts
+- `syreto/` contains the canonical Python implementation for reusable module logic
+- `03_analysis/` contains the orchestration spine, legacy entrypoints, and compatibility wrappers
 - `outputs/` contains operational summaries and generated intermediate artifacts
 - `04_manuscript/` is the canonical target location for manuscript-facing generated outputs when present in the working repository
 
 Downstream outputs should be regenerated from source inputs rather than treated as primary editable state.
+
+At the repository boundary, the intended steady state is:
+
+- reusable Python logic lives in `syreto/`
+- `03_analysis/` preserves shell-first orchestration and backward-compatible script entrypoints
+- matching top-level modules in both trees should resolve to package-owned logic, not two independent implementations
 
 ## Operational Success Condition
 

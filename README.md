@@ -113,7 +113,7 @@ Sanity-check the environment:
 uv run pytest -q
 ```
 
-Current release status: the full repository test suite passes at `485 passed`.
+Current release status: the full repository test suite passes at `578 passed`.
 
 ## Start Here
 

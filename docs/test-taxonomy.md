@@ -97,6 +97,8 @@ Representative files:
 - [test_syreto_package_import.py](../03_analysis/tests/test_syreto_package_import.py)
 - [test_status_cli_stage_output.py](../syreto/tests/test_status_cli_stage_output.py)
 
+The `03_analysis` side of this surface now primarily checks compatibility behavior around the package and legacy entrypoint boundary, not a second independent CLI implementation.
+
 ### 5. Pipeline Smoke Tests
 
 These test the orchestration spine and mandatory checkpoints at a run level.
@@ -197,10 +199,12 @@ This is intentional in the current repository posture.
 
 The mirror helps test both:
 
-- the installable package surface
-- the legacy/original analysis-script surface
+- the canonical package surface
+- the shell/legacy compatibility surface
 
 That is slightly unusual, but it fits SyReTo’s transition from script collection to packaged operational system.
+
+Where mirrored tests are no longer needed, the preferred direction is to keep canonical test logic under `syreto/tests/` and leave only compatibility-specific assertions in `03_analysis/tests/`.
 
 ## What This Taxonomy Says About The Product
 

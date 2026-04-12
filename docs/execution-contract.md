@@ -44,7 +44,8 @@ The canonical inputs of SyReTo are versioned files that define review state and 
 In the current repository shape, canonical inputs primarily live under:
 
 - `02_data/`
-- `03_analysis/` for execution scripts and rule-based orchestration
+- `syreto/` for canonical reusable Python implementation
+- `03_analysis/` for shell orchestration and compatibility entrypoints
 - review-facing configuration in environment variables and, in the planned model, `review.toml`
 
 In practice, the most important canonical input classes are:
@@ -56,6 +57,8 @@ In practice, the most important canonical input classes are:
 - protocol- and review-state supporting tables used by downstream generators
 
 Generated outputs are not canonical inputs and should not be hand-edited as a substitute for upstream state changes.
+
+Execution scripts are part of the contract surface, but they are not a second source of truth for reusable implementation logic. Where the same operational surface exists in both `syreto/` and `03_analysis/`, the package layer is intended to own the implementation and the legacy tree is intended to preserve compatibility and orchestration.
 
 ## Canonical Outputs
 
