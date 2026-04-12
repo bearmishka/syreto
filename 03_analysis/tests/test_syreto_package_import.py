@@ -16,6 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import syreto  # noqa: E402
+from syreto.analysis import registry as analysis_registry  # noqa: E402
 
 
 class SyretoPackageImportTests(unittest.TestCase):
@@ -24,6 +25,11 @@ class SyretoPackageImportTests(unittest.TestCase):
         script = syreto.script_path("status_report")
         self.assertEqual(script.name, "status_report.py")
         self.assertEqual(script.parent, syreto.analysis_dir())
+
+    def test_helper_modules_are_not_exposed_as_runnable_scripts(self) -> None:
+        self.assertNotIn("csv_schema", syreto.AVAILABLE_SCRIPTS)
+        self.assertNotIn("latex_utils", syreto.AVAILABLE_SCRIPTS)
+        self.assertNotIn("provenance", syreto.AVAILABLE_SCRIPTS)
 
     def test_direct_submodule_import_path_works(self) -> None:
         module = importlib.import_module("syreto.analysis.status_report")
@@ -44,6 +50,19 @@ class SyretoPackageImportTests(unittest.TestCase):
         self.assertEqual(spec.path.name, "status_report.py")
         loaded = spec.load()
         self.assertTrue(hasattr(loaded, "main"))
+
+    def test_iter_modules_matches_available_scripts(self) -> None:
+        from syreto.analysis import iter_modules
+
+        self.assertEqual(tuple(iter_modules()), syreto.AVAILABLE_SCRIPTS)
+
+    def test_every_advertised_script_has_a_runnable_entrypoint(self) -> None:
+        for script_name in syreto.AVAILABLE_SCRIPTS:
+            spec = analysis_registry.get_script_spec(script_name)
+            self.assertTrue(
+                analysis_registry._has_runnable_entrypoint(spec.path),  # noqa: SLF001
+                msg=script_name,
+            )
 
     def test_cli_list_command_outputs_known_script(self) -> None:
         from syreto import cli

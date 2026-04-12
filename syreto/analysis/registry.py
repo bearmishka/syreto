@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import importlib
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +38,37 @@ class ScriptSpec:
         return importlib.import_module(self.module_name)
 
 
+def _has_runnable_entrypoint(path: Path) -> bool:
+    try:
+        source = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    try:
+        module = ast.parse(source, filename=str(path))
+    except SyntaxError:
+        return False
+
+    for statement in module.body:
+        if (
+            isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and statement.name == "main"
+        ):
+            return True
+        if isinstance(statement, ast.Assign):
+            for target in statement.targets:
+                if isinstance(target, ast.Name) and target.id == "main":
+                    return True
+        if isinstance(statement, ast.AnnAssign):
+            if isinstance(statement.target, ast.Name) and statement.target.id == "main":
+                return True
+        if isinstance(statement, ast.ImportFrom):
+            if any(alias.asname == "main" or alias.name == "main" for alias in statement.names):
+                return True
+
+    return False
+
+
 def _canonical_script_names() -> list[str]:
     if not CANONICAL_SCRIPT_DIR.exists():
         return []
@@ -46,6 +78,8 @@ def _canonical_script_names() -> list[str]:
         if not path.is_file():
             continue
         if path.stem in EXCLUDED_CANONICAL_MODULES:
+            continue
+        if not _has_runnable_entrypoint(path):
             continue
         names.append(path.stem)
     return names
@@ -61,6 +95,8 @@ def _legacy_only_script_names() -> list[str]:
         if not path.is_file():
             continue
         if path.stem in canonical:
+            continue
+        if not _has_runnable_entrypoint(path):
             continue
         names.append(path.stem)
     return names

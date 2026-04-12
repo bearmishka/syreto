@@ -31,9 +31,7 @@ def _extend_submodule_search_path() -> None:
 
 
 def iter_modules() -> list[str]:
-    if not ANALYSIS_DIR.exists():
-        return []
-    return sorted(path.stem for path in ANALYSIS_DIR.glob("*.py") if path.is_file())
+    return list(available_scripts())
 
 
 _ensure_analysis_on_sys_path()
