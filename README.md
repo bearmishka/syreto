@@ -4,6 +4,8 @@ SyReTo is a deterministic, git-native toolkit for running PRISMA-aligned systema
 
 That CLI is intentionally thin: it selects and invokes review operations, but it does not define the epistemic structure of a review. Configuration, execution logic, and artifact contracts remain outside the CLI itself.
 
+At the repository level, `syreto/` is the canonical Python package and source of truth for reusable module logic. `03_analysis/` remains the shell spine and legacy entrypoint surface: it preserves orchestration scripts and compatibility wrappers, but it should not grow a second independent copy of package-owned logic.
+
 ## What This Is
 
 SyReTo packages a full review workflow around explicit CSV inputs, rule-based analysis scripts, integrity guards, operational status checks, and manuscript-ready outputs.
@@ -249,8 +251,8 @@ Core operational triage:
 ## Project Shape
 
 ```text
-syreto/                  installable Python package and packaged entrypoints
-03_analysis/             analysis and orchestration scripts
+syreto/                  canonical Python package and packaged entrypoints
+03_analysis/             orchestration spine, legacy entrypoints, compatibility wrappers
 02_data/                 canonical review inputs and processed CSVs
 04_manuscript/           manuscript-facing generated artifacts
 pyproject.toml           packaging, dependencies, tooling, test config

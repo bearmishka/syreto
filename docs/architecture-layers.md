@@ -37,11 +37,30 @@ Representative surfaces:
 - [`03_analysis/daily_run.sh`](../03_analysis/daily_run.sh)
 - [`syreto/review_config.py`](../syreto/review_config.py)
 - validation and builder scripts under [`syreto/`](../syreto)
-- mirrored operational scripts under [`03_analysis/`](../03_analysis)
+- compatibility wrappers and shell-facing entrypoints under [`03_analysis/`](../03_analysis)
 
 The core decides what happens during a run.
 
 It is where methodological and execution logic belong.
+
+### Repository Rule
+
+At the repository boundary, SyReTo follows a strict source-of-truth split:
+
+- [`syreto/`](../syreto) is the canonical Python package
+- [`03_analysis/`](../03_analysis) is the shell spine and compatibility-entrypoint layer
+
+This means:
+
+- reusable Python logic **SHOULD** live in `syreto/`
+- `03_analysis/` **MAY** keep orchestration scripts such as [`daily_run.sh`](../03_analysis/daily_run.sh)
+- `03_analysis/` **MAY** keep thin wrappers needed for legacy imports or script-path execution
+- `03_analysis/` **MUST NOT** grow a second independent implementation of package-owned module logic
+
+When a top-level module exists in both places, the intended steady state is:
+
+- `syreto/<module>.py` contains the implementation
+- `03_analysis/<module>.py` is either absent or a thin compatibility shim
 
 ## 2. Interfaces
 
@@ -80,10 +99,10 @@ Examples include:
 Representative scripts include:
 
 - [`03_analysis/consolidate_title_abstract_consensus.py`](../03_analysis/consolidate_title_abstract_consensus.py)
-- [`03_analysis/validate_csv_inputs.py`](../03_analysis/validate_csv_inputs.py)
-- [`03_analysis/grade_evidence_profiler.py`](../03_analysis/grade_evidence_profiler.py)
-- [`03_analysis/results_summary_table_builder.py`](../03_analysis/results_summary_table_builder.py)
-- [`03_analysis/review_descriptives_builder.py`](../03_analysis/review_descriptives_builder.py)
+- [`syreto/validate_csv_inputs.py`](../syreto/validate_csv_inputs.py)
+- [`syreto/grade_evidence_profiler.py`](../syreto/grade_evidence_profiler.py)
+- [`syreto/results_summary_table_builder.py`](../syreto/results_summary_table_builder.py)
+- [`syreto/review_descriptives_builder.py`](../syreto/review_descriptives_builder.py)
 
 Task scripts are where local transformations happen.
 

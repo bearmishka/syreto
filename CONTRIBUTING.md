@@ -42,6 +42,9 @@ SyReTo is not maintained as a loose script collection. When contributing, preser
 
 - keep pipeline logic in Python or shell, not in documentation or ad hoc manual steps
 - keep canonical truth in versioned files and generated artifacts, not hidden runtime objects
+- keep `syreto/` as the canonical Python implementation layer
+- keep `03_analysis/` for shell orchestration, legacy entrypoints, and thin compatibility wrappers
+- do not introduce new duplicate top-level module logic across both trees
 - keep CLI thin: it may select or invoke, but should not become the hidden decision layer
 - keep LaTeX as a presentation layer, not a logic layer
 - keep observability explanatory, not controlling
@@ -136,7 +139,7 @@ Please call out these categories clearly in the PR:
 - manuscript-generation changes
 - status/failure/observability changes
 
-For the formal policy, see [docs/versioning-policy.md](/Users/pigra/Documents/New%20project/syreto_clean/docs/versioning-policy.md).
+For the formal policy, see [docs/versioning-policy.md](docs/versioning-policy.md).
 
 These areas have downstream effects and should not be presented as “small refactors” if behavior changed.
 
