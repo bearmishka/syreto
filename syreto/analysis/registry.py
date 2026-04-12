@@ -7,7 +7,15 @@ from types import ModuleType
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = PACKAGE_ROOT.parent
-ANALYSIS_DIR = PROJECT_ROOT / "03_analysis"
+CANONICAL_SCRIPT_DIR = PACKAGE_ROOT
+LEGACY_ENTRYPOINT_DIR = PROJECT_ROOT / "03_analysis"
+EXCLUDED_CANONICAL_MODULES = {
+    "__init__",
+    "artifact_catalog",
+    "cli",
+    "review_config",
+    "scripts",
+}
 
 
 def _normalize_script_name(name: str) -> str:
@@ -29,22 +37,59 @@ class ScriptSpec:
         return importlib.import_module(self.module_name)
 
 
-def iter_script_specs() -> list[ScriptSpec]:
-    if not ANALYSIS_DIR.exists():
+def _canonical_script_names() -> list[str]:
+    if not CANONICAL_SCRIPT_DIR.exists():
         return []
 
-    specs: list[ScriptSpec] = []
-    for path in sorted(ANALYSIS_DIR.glob("*.py")):
+    names: list[str] = []
+    for path in sorted(CANONICAL_SCRIPT_DIR.glob("*.py")):
         if not path.is_file():
             continue
-        name = path.stem
+        if path.stem in EXCLUDED_CANONICAL_MODULES:
+            continue
+        names.append(path.stem)
+    return names
+
+
+def _legacy_only_script_names() -> list[str]:
+    if not LEGACY_ENTRYPOINT_DIR.exists():
+        return []
+
+    canonical = set(_canonical_script_names())
+    names: list[str] = []
+    for path in sorted(LEGACY_ENTRYPOINT_DIR.glob("*.py")):
+        if not path.is_file():
+            continue
+        if path.stem in canonical:
+            continue
+        names.append(path.stem)
+    return names
+
+
+def iter_script_specs() -> list[ScriptSpec]:
+    specs: list[ScriptSpec] = []
+    for name in _canonical_script_names():
+        legacy_entrypoint = LEGACY_ENTRYPOINT_DIR / f"{name}.py"
+        execution_path = (
+            legacy_entrypoint if legacy_entrypoint.exists() else CANONICAL_SCRIPT_DIR / f"{name}.py"
+        )
+        specs.append(
+            ScriptSpec(
+                name=name,
+                module_name=f"syreto.{name}",
+                path=execution_path,
+            )
+        )
+
+    for name in _legacy_only_script_names():
         specs.append(
             ScriptSpec(
                 name=name,
                 module_name=f"syreto.analysis.{name}",
-                path=path,
+                path=LEGACY_ENTRYPOINT_DIR / f"{name}.py",
             )
         )
+
     return specs
 
 
@@ -65,5 +110,5 @@ def get_script_spec(name: str) -> ScriptSpec:
 
     available = ", ".join(available_scripts())
     raise FileNotFoundError(
-        f"Script `{target}` not found in `{ANALYSIS_DIR}`. Available scripts: {available}"
+        f"Script `{target}` not found in `{CANONICAL_SCRIPT_DIR}` or `{LEGACY_ENTRYPOINT_DIR}`. Available scripts: {available}"
     )

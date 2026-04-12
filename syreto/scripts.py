@@ -1,24 +1,22 @@
 from __future__ import annotations
 
-import importlib
 import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
 
 from .analysis import analysis_dir as _analysis_dir
+from .analysis.registry import available_scripts, get_script_spec
 
-ANALYSIS_DIR = _analysis_dir()
+ENTRYPOINT_DIR = _analysis_dir()
 
 
 def analysis_dir() -> Path:
-    return ANALYSIS_DIR
+    return ENTRYPOINT_DIR
 
 
 def iter_scripts() -> list[str]:
-    if not ANALYSIS_DIR.exists():
-        return []
-    return sorted(path.stem for path in ANALYSIS_DIR.glob("*.py") if path.is_file())
+    return list(available_scripts())
 
 
 AVAILABLE_SCRIPTS = tuple(iter_scripts())
@@ -34,22 +32,11 @@ def _normalize_script_name(script: str) -> str:
 
 
 def script_path(script: str) -> Path:
-    normalized = _normalize_script_name(script)
-    path = ANALYSIS_DIR / f"{normalized}.py"
-    if path.exists():
-        return path
-
-    available = ", ".join(iter_scripts())
-    raise FileNotFoundError(
-        f"Script `{normalized}` not found in `{ANALYSIS_DIR}`. Available scripts: {available}"
-    )
+    return get_script_spec(script).path
 
 
 def load_script_module(script: str) -> ModuleType:
-    normalized = _normalize_script_name(script)
-    script_path(normalized)
-    module_name = f"syreto.analysis.{normalized}"
-    return importlib.import_module(module_name)
+    return get_script_spec(script).load()
 
 
 def run_script(
@@ -64,7 +51,7 @@ def run_script(
     cmd = [sys.executable, str(path), *[str(argument) for argument in args]]
     return subprocess.run(
         cmd,
-        cwd=str(cwd) if cwd is not None else str(ANALYSIS_DIR),
+        cwd=str(cwd) if cwd is not None else str(ENTRYPOINT_DIR),
         check=check,
         capture_output=capture_output,
         text=text,
