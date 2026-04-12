@@ -100,6 +100,111 @@ class TemplateTermGuardTests(unittest.TestCase):
             self.assertIn("Checks enabled: placeholders", summary_text)
             self.assertIn("placeholders matches: 1", summary_text)
 
+    def test_main_placeholder_check_catches_single_token_placeholder(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            sample_file = tmp_path / "protocol.md"
+            sample_file.write_text("Population: [POPULATION]\n", encoding="utf-8")
+            summary_file = tmp_path / "summary.md"
+
+            exit_code = template_term_guard.main(
+                [
+                    "--scan-path",
+                    str(sample_file),
+                    "--check-placeholders",
+                    "--no-check-banned-terms",
+                    "--summary-output",
+                    str(summary_file),
+                    "--fail-on-match",
+                ]
+            )
+
+            self.assertEqual(exit_code, 1)
+            summary_text = summary_file.read_text(encoding="utf-8")
+            self.assertIn("placeholders matches: 1", summary_text)
+
+    def test_main_placeholder_check_ignores_short_latex_option_tokens(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            sample_file = tmp_path / "main.tex"
+            sample_file.write_text("\\usepackage[T1]{fontenc}\n", encoding="utf-8")
+            summary_file = tmp_path / "summary.md"
+
+            exit_code = template_term_guard.main(
+                [
+                    "--scan-path",
+                    str(sample_file),
+                    "--check-placeholders",
+                    "--no-check-banned-terms",
+                    "--summary-output",
+                    str(summary_file),
+                    "--fail-on-match",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            summary_text = summary_file.read_text(encoding="utf-8")
+            self.assertIn("placeholders matches: 0", summary_text)
+
+    def test_allowlist_suppresses_protocol_attachment_matches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            protocol_file = Path(tmp_dir) / "01_protocol" / "protocol.md"
+            protocol_file.parent.mkdir(parents=True, exist_ok=True)
+            protocol_file.write_text("Concept: insecure attachment\n", encoding="utf-8")
+
+            patterns = [re.compile(r"\battachment\b", flags=re.IGNORECASE)]
+            matches = template_term_guard.scan_file(
+                protocol_file, patterns, match_group="banned_terms"
+            )
+            actionable, suppressed = template_term_guard.filter_allowlisted_matches(
+                matches,
+                template_term_guard.DEFAULT_ALLOWLIST_RULES,
+            )
+
+            self.assertEqual(actionable, [])
+            self.assertEqual(len(suppressed), 1)
+
+    def test_allowlist_does_not_suppress_same_term_outside_allowed_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            sample_file = Path(tmp_dir) / "notes.md"
+            sample_file.write_text("Concept: insecure attachment\n", encoding="utf-8")
+
+            patterns = [re.compile(r"\battachment\b", flags=re.IGNORECASE)]
+            matches = template_term_guard.scan_file(
+                sample_file, patterns, match_group="banned_terms"
+            )
+            actionable, suppressed = template_term_guard.filter_allowlisted_matches(
+                matches,
+                template_term_guard.DEFAULT_ALLOWLIST_RULES,
+            )
+
+            self.assertEqual(len(actionable), 1)
+            self.assertEqual(suppressed, [])
+
+    def test_main_returns_zero_for_allowlisted_only_matches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            protocol_file = tmp_path / "01_protocol" / "protocol.md"
+            protocol_file.parent.mkdir(parents=True, exist_ok=True)
+            protocol_file.write_text("Concept: insecure attachment\n", encoding="utf-8")
+            summary_file = tmp_path / "summary.md"
+
+            exit_code = template_term_guard.main(
+                [
+                    "--scan-path",
+                    str(protocol_file),
+                    "--summary-output",
+                    str(summary_file),
+                    "--fail-on-match",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            summary_text = summary_file.read_text(encoding="utf-8")
+            self.assertIn("Raw matches found: 1", summary_text)
+            self.assertIn("Suppressed by allowlist: 1", summary_text)
+            self.assertIn("Matches found: 0", summary_text)
+
 
 if __name__ == "__main__":
     unittest.main()

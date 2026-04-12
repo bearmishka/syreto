@@ -25,7 +25,7 @@ DEFAULT_BANNED_PATTERNS = [
 ]
 
 DEFAULT_PLACEHOLDER_PATTERNS = [
-    r"\[(?:[A-Z0-9_]+(?: [A-Z0-9_]+)*)\]",
+    r"\[(?=[A-Z0-9_ ]{4,}\])(?=[A-Z0-9_ ]*[A-Z])(?:[A-Z0-9_]+(?: [A-Z0-9_]+)*)\]",
 ]
 
 
@@ -36,6 +36,38 @@ class MatchResult:
     pattern: str
     line_text: str
     match_group: str
+
+
+@dataclass(frozen=True)
+class AllowlistRule:
+    banned_pattern: str
+    path_glob: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class SuppressedMatch:
+    match: MatchResult
+    reason: str
+
+
+DEFAULT_ALLOWLIST_RULES = [
+    AllowlistRule(
+        banned_pattern=r"\battachment\b",
+        path_glob="*/01_protocol/*",
+        reason="Domain-specific construct is expected in protocol/search/screening source files.",
+    ),
+    AllowlistRule(
+        banned_pattern=r"\bidentity disturbance\b",
+        path_glob="*/01_protocol/*",
+        reason="Domain-specific outcome term is expected in protocol/search/screening source files.",
+    ),
+    AllowlistRule(
+        banned_pattern=r"\battachment\b",
+        path_glob="*/02_data/codebook/extraction_filled*.csv",
+        reason="Curated extraction examples intentionally retain topic-specific variable labels.",
+    ),
+]
 
 
 def normalize_extensions(extensions: list[str]) -> set[str]:
@@ -106,12 +138,38 @@ def scan_file(
     return matches
 
 
+def filter_allowlisted_matches(
+    matches: list[MatchResult],
+    allowlist_rules: list[AllowlistRule],
+) -> tuple[list[MatchResult], list[SuppressedMatch]]:
+    actionable: list[MatchResult] = []
+    suppressed: list[SuppressedMatch] = []
+
+    for match in matches:
+        matched_rule = next(
+            (
+                rule
+                for rule in allowlist_rules
+                if rule.banned_pattern == match.pattern
+                and fnmatch(match.path.as_posix(), rule.path_glob)
+            ),
+            None,
+        )
+        if matched_rule is None:
+            actionable.append(match)
+        else:
+            suppressed.append(SuppressedMatch(match=match, reason=matched_rule.reason))
+
+    return actionable, suppressed
+
+
 def build_summary(
     *,
     scan_paths: list[Path],
     scanned_files: list[Path],
     missing_paths: list[Path],
     matches: list[MatchResult],
+    suppressed_matches: list[SuppressedMatch],
     enabled_checks: list[str],
     output_path: Path,
 ) -> str:
@@ -133,6 +191,8 @@ def build_summary(
     else:
         lines.append("- Checks enabled: none")
     lines.append(f"- Files scanned: {len(scanned_files)}")
+    lines.append(f"- Raw matches found: {len(matches) + len(suppressed_matches)}")
+    lines.append(f"- Suppressed by allowlist: {len(suppressed_matches)}")
     lines.append(f"- Matches found: {len(matches)}")
     if enabled_checks:
         counts_by_group: dict[str, int] = {}
@@ -161,6 +221,18 @@ def build_summary(
             )
     else:
         lines.append("- No matches found in scanned files.")
+
+    lines.append("")
+    lines.append("## Suppressed Matches (Allowlist)")
+    lines.append("")
+    if suppressed_matches:
+        for suppressed_match in suppressed_matches:
+            match = suppressed_match.match
+            lines.append(
+                f"- `[{match.match_group}] {match.path.as_posix()}:{match.line_number}` | `{match.pattern}` | `{match.line_text}` | reason: {suppressed_match.reason}"
+            )
+    else:
+        lines.append("- No allowlisted suppressions.")
 
     lines.append("")
     return "\n".join(lines)
@@ -226,10 +298,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, script_dir: Path | None = None) -> int:
     args = parse_args(argv)
 
-    script_dir = Path(__file__).resolve().parent
+    if script_dir is None:
+        script_dir = Path(__file__).resolve().parent
 
     if args.scan_path:
         scan_paths = [Path(path_str) for path_str in args.scan_path]
@@ -270,6 +343,10 @@ def main(argv: list[str] | None = None) -> int:
                 scan_file(file_path, placeholder_patterns, match_group="placeholders")
             )
 
+    actionable_matches, suppressed_matches = filter_allowlisted_matches(
+        all_matches, DEFAULT_ALLOWLIST_RULES
+    )
+
     summary_output = (
         Path(args.summary_output)
         if args.summary_output
@@ -280,7 +357,8 @@ def main(argv: list[str] | None = None) -> int:
         scan_paths=scan_paths,
         scanned_files=scanned_files,
         missing_paths=missing_paths,
-        matches=all_matches,
+        matches=actionable_matches,
+        suppressed_matches=suppressed_matches,
         enabled_checks=enabled_checks,
         output_path=summary_output,
     )
@@ -288,16 +366,24 @@ def main(argv: list[str] | None = None) -> int:
 
     if not enabled_checks:
         print(f"No checks enabled. Summary: {summary_output}")
-    elif all_matches:
-        print(f"Found {len(all_matches)} guard matches. See: {summary_output}")
-        for match in all_matches:
+    elif actionable_matches:
+        print(
+            f"Found {len(actionable_matches)} guard matches "
+            f"({len(suppressed_matches)} allowlisted suppressions). See: {summary_output}"
+        )
+        for match in actionable_matches:
             print(
                 f"- [{match.match_group}] {match.path}:{match.line_number} | {match.pattern} | {match.line_text}"
             )
+    elif suppressed_matches:
+        print(
+            f"No actionable matches across {len(scanned_files)} files "
+            f"({len(suppressed_matches)} allowlisted suppressions). Summary: {summary_output}"
+        )
     else:
         print(f"No matches found across {len(scanned_files)} files. Summary: {summary_output}")
 
-    if all_matches and args.fail_on_match:
+    if actionable_matches and args.fail_on_match:
         return 1
     return 0
 
