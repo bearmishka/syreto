@@ -23,6 +23,16 @@ class CsvSchemaFinding:
     detail: str
 
 
+@dataclass(frozen=True)
+class CsvSchemaPosture:
+    checked_files: int
+    missing_files: int
+    error_count: int
+    warning_count: int
+    ok: bool
+    details: tuple[dict[str, str], ...]
+
+
 CSV_SCHEMA_CONTRACTS: tuple[CsvSchemaContract, ...] = (
     CsvSchemaContract(
         label="search log",
@@ -211,3 +221,49 @@ def validate_csv_schema_contract(path: Path, contract: CsvSchemaContract) -> lis
         return [CsvSchemaFinding("error", f"invalid UTF-8 CSV content: {exc}")]
 
     return findings
+
+
+def summarize_csv_schema_posture(data_root: Path) -> CsvSchemaPosture:
+    checked_files = 0
+    missing_files = 0
+    error_count = 0
+    warning_count = 0
+    details: list[dict[str, str]] = []
+
+    for contract, path in schema_contract_paths(data_root):
+        if not path.exists():
+            missing_files += 1
+            details.append(
+                {
+                    "file": contract.label,
+                    "path": path.as_posix(),
+                    "level": "missing",
+                    "detail": "contract file not present",
+                }
+            )
+            continue
+
+        checked_files += 1
+        findings = validate_csv_schema_contract(path, contract)
+        for finding in findings:
+            if finding.level == "error":
+                error_count += 1
+            else:
+                warning_count += 1
+            details.append(
+                {
+                    "file": contract.label,
+                    "path": path.as_posix(),
+                    "level": finding.level,
+                    "detail": finding.detail,
+                }
+            )
+
+    return CsvSchemaPosture(
+        checked_files=checked_files,
+        missing_files=missing_files,
+        error_count=error_count,
+        warning_count=warning_count,
+        ok=error_count == 0 and warning_count == 0,
+        details=tuple(details),
+    )

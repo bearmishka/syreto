@@ -894,6 +894,64 @@ def _doctor_schema_contract_paths(
     return schema_contract_paths(data_root)
 
 
+def _doctor_schema_posture(review_config: ReviewConfig | None) -> dict[str, object]:
+    checked_files = 0
+    missing_files = 0
+    error_count = 0
+    warning_count = 0
+    details: list[dict[str, str]] = []
+
+    for contract, path in _doctor_schema_contract_paths(review_config):
+        if not path.exists():
+            missing_files += 1
+            details.append(
+                {
+                    "file": contract.label,
+                    "path": path.as_posix(),
+                    "level": "missing",
+                    "detail": "contract file not present",
+                }
+            )
+            continue
+
+        checked_files += 1
+        findings = validate_csv_schema_contract(path, contract)
+        if not findings:
+            details.append(
+                {
+                    "file": contract.label,
+                    "path": path.as_posix(),
+                    "level": "ok",
+                    "detail": "contract checks passed",
+                }
+            )
+            continue
+
+        for finding in findings:
+            if finding.level == "error":
+                error_count += 1
+            else:
+                warning_count += 1
+            details.append(
+                {
+                    "file": contract.label,
+                    "path": path.as_posix(),
+                    "level": finding.level,
+                    "detail": finding.detail,
+                }
+            )
+
+    posture = {
+        "checked_files": checked_files,
+        "missing_files": missing_files,
+        "error_count": error_count,
+        "warning_count": warning_count,
+        "ok": error_count == 0 and warning_count == 0,
+        "details": details,
+    }
+    return posture
+
+
 def _path_mtime(path: Path) -> float | None:
     try:
         return path.stat().st_mtime
@@ -1119,34 +1177,57 @@ def _run_doctor(*, strict: bool, config_path: str | None = None) -> int:
 
     lines.append("")
     lines.append("Schema contract")
-    for contract, path in _doctor_schema_contract_paths(review_config):
-        if not path.exists():
+    schema_posture = _doctor_schema_posture(review_config)
+    for detail in schema_posture["details"]:
+        if not isinstance(detail, dict):
             continue
-        findings = validate_csv_schema_contract(path, contract)
-        if not findings:
+        level = str(detail.get("level") or "").strip().lower()
+        file_label = str(detail.get("file") or "CSV schema")
+        path_str = str(detail.get("path") or "unknown path")
+        detail_text = str(detail.get("detail") or "no detail")
+
+        if level == "missing":
             lines.append(
                 _doctor_line(
                     "ok",
-                    f"{contract.label} schema",
-                    f"contract checks passed in {path.as_posix()}",
+                    f"{file_label} schema",
+                    f"not present; contract check deferred for {path_str}",
                 )
             )
             continue
 
-        for finding in findings:
-            if finding.level == "error":
-                errors += 1
-            else:
-                warnings += 1
-            record_failure("schema violation")
+        if level == "ok":
             lines.append(
-                _doctor_classified_line(
-                    "error" if finding.level == "error" else "warn",
-                    f"{contract.label} schema",
-                    f"{finding.detail} ({path.as_posix()})",
-                    failure_class="schema violation",
+                _doctor_line(
+                    "ok",
+                    f"{file_label} schema",
+                    f"{detail_text} in {path_str}",
                 )
             )
+            continue
+
+        if level == "error":
+            errors += 1
+        else:
+            warnings += 1
+        record_failure("schema violation")
+        lines.append(
+            _doctor_classified_line(
+                "error" if level == "error" else "warn",
+                f"{file_label} schema",
+                f"{detail_text} ({path_str})",
+                failure_class="schema violation",
+            )
+        )
+    lines.append(
+        _doctor_line(
+            "ok",
+            "schema contract summary",
+            "checked="
+            f"{schema_posture['checked_files']}, missing={schema_posture['missing_files']}, "
+            f"errors={schema_posture['error_count']}, warnings={schema_posture['warning_count']}",
+        )
+    )
 
     lines.append("")
     lines.append("Optional checks")

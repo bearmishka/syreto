@@ -8,11 +8,11 @@ from pathlib import Path
 import pandas as pd
 
 try:
-    from .csv_schema import schema_contract_paths, validate_csv_schema_contract
+    from .csv_schema import summarize_csv_schema_posture
     from .provenance import write_provenance_sidecar
     from .status_cli import normalize_priority_policy, summarize_failure_model
 except ImportError:
-    from csv_schema import schema_contract_paths, validate_csv_schema_contract
+    from csv_schema import summarize_csv_schema_posture
     from provenance import write_provenance_sidecar
     from status_cli import normalize_priority_policy, summarize_failure_model
 
@@ -395,35 +395,15 @@ def parse_csv_input_validation_summary(path: Path) -> dict:
 
 
 def direct_csv_schema_posture(base_data_root: Path) -> dict:
-    summary = {
-        "checked_files": 0,
-        "error_count": 0,
-        "warning_count": 0,
-        "ok": False,
-        "details": [],
+    posture = summarize_csv_schema_posture(base_data_root)
+    return {
+        "checked_files": posture.checked_files,
+        "missing_files": posture.missing_files,
+        "error_count": posture.error_count,
+        "warning_count": posture.warning_count,
+        "ok": posture.ok,
+        "details": list(posture.details),
     }
-
-    for contract, path in schema_contract_paths(base_data_root):
-        if not path.exists():
-            continue
-        summary["checked_files"] += 1
-        findings = validate_csv_schema_contract(path, contract)
-        for finding in findings:
-            if finding.level == "error":
-                summary["error_count"] += 1
-            else:
-                summary["warning_count"] += 1
-            summary["details"].append(
-                {
-                    "file": contract.label,
-                    "path": path.as_posix(),
-                    "level": finding.level,
-                    "detail": finding.detail,
-                }
-            )
-
-    summary["ok"] = summary["error_count"] == 0 and summary["warning_count"] == 0
-    return summary
 
 
 def parse_reviewer_workload_balancer_summary(path: Path) -> dict:

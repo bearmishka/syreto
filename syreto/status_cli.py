@@ -528,6 +528,7 @@ def build_cli_output(
     csv_input_validation = summary.get("csv_input_validation", {})
     extraction_validation = summary.get("extraction_validation", {})
     effect_size_conversion = summary.get("effect_size_conversion", {})
+    direct_csv_schema = summary.get("direct_csv_schema", {})
     kappa = reviewer_agreement.get("cohen_kappa", {})
     warnings = summary.get("warnings", [])
     next_steps = summary.get("suggested_next_step", [])
@@ -596,6 +597,28 @@ def build_cli_output(
         else:
             effect_size_label = "ERROR (missing)"
 
+    if not isinstance(direct_csv_schema, dict) or not direct_csv_schema:
+        direct_schema_label = "missing"
+    else:
+        checked_files = as_int(direct_csv_schema.get("checked_files"))
+        missing_files = as_int(direct_csv_schema.get("missing_files"))
+        schema_errors = as_int(direct_csv_schema.get("error_count"))
+        schema_warnings = as_int(direct_csv_schema.get("warning_count"))
+        if schema_errors > 0:
+            direct_schema_label = (
+                f"ERROR (checked={checked_files}, missing={missing_files}, "
+                f"errors={schema_errors}, warnings={schema_warnings})"
+            )
+        elif schema_warnings > 0:
+            direct_schema_label = (
+                f"WARN (checked={checked_files}, missing={missing_files}, "
+                f"errors=0, warnings={schema_warnings})"
+            )
+        else:
+            direct_schema_label = (
+                f"OK (checked={checked_files}, missing={missing_files}, errors=0, warnings=0)"
+            )
+
     lines = []
     lines.append("Status summary")
     lines.append(f"Generated: {summary.get('generated_at', '—')}")
@@ -610,8 +633,36 @@ def build_cli_output(
     lines.append(f"- Title/abstract reviewers: {reviewer_count}")
     lines.append(f"- Cohen's kappa: {kappa_label}")
     lines.append(f"- CSV validation: {csv_validation_label}")
+    lines.append(f"- Direct CSV schema: {direct_schema_label}")
     lines.append(f"- Extraction validation: {extraction_label}")
     lines.append(f"- Effect-size conversion: {effect_size_label}")
+    lines.append("")
+    lines.append("Schema contract")
+    if isinstance(direct_csv_schema, dict) and direct_csv_schema:
+        schema_details = direct_csv_schema.get("details")
+        if isinstance(schema_details, list) and schema_details:
+            interesting_details = [
+                detail
+                for detail in schema_details
+                if isinstance(detail, dict)
+                and str(detail.get("level") or "").strip().lower() in {"error", "warn", "missing"}
+            ]
+            for detail in interesting_details[:5]:
+                lines.append(
+                    "- "
+                    f"{detail.get('file', 'unknown')} "
+                    f"[{detail.get('level', 'unknown')}]: "
+                    f"{detail.get('detail', 'no detail')} "
+                    f"({detail.get('path', 'unknown path')})"
+                )
+            remaining = len(interesting_details) - min(len(interesting_details), 5)
+            if remaining > 0:
+                lines.append(f"- ... plus {remaining} more schema findings")
+        else:
+            lines.append("- no schema contract findings recorded")
+    else:
+        lines.append("- direct CSV schema posture not available")
+
     lines.append("")
     lines.append("Health")
     lines.append(

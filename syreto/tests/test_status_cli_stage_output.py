@@ -31,6 +31,13 @@ class StatusCliStageOutputTests(unittest.TestCase):
                 "title_abstract_reviewers": [],
                 "cohen_kappa": {"available": False},
             },
+            "direct_csv_schema": {
+                "checked_files": 3,
+                "missing_files": 5,
+                "error_count": 0,
+                "warning_count": 0,
+                "details": [],
+            },
             "csv_input_validation": {"present": True, "parsed": True, "errors": 0, "warnings": 0},
             "extraction_validation": {"present": True, "parsed": True, "errors": 0, "warnings": 0},
             "effect_size_conversion": {
@@ -46,6 +53,10 @@ class StatusCliStageOutputTests(unittest.TestCase):
 
         rendered = status_cli.build_cli_output(summary)
         self.assertIn("- Stage: Bootstrap / Demo Calibration (bootstrap_demo)", rendered)
+        self.assertIn(
+            "- Direct CSV schema: OK (checked=3, missing=5, errors=0, warnings=0)", rendered
+        )
+        self.assertIn("Schema contract", rendered)
 
     def test_cli_output_groups_todos_by_file_with_quick_fix_hint(self) -> None:
         summary = {
@@ -56,6 +67,20 @@ class StatusCliStageOutputTests(unittest.TestCase):
             "reviewer_agreement": {
                 "title_abstract_reviewers": [],
                 "cohen_kappa": {"available": False},
+            },
+            "direct_csv_schema": {
+                "checked_files": 1,
+                "missing_files": 0,
+                "error_count": 1,
+                "warning_count": 0,
+                "details": [
+                    {
+                        "file": "master records",
+                        "path": "02_data/processed/master_records.csv",
+                        "level": "error",
+                        "detail": "duplicate key for record_id",
+                    }
+                ],
             },
             "csv_input_validation": {},
             "extraction_validation": {},
@@ -88,6 +113,7 @@ class StatusCliStageOutputTests(unittest.TestCase):
         self.assertIn("03_analysis/outputs/csv_input_validation_summary.md", rendered)
         self.assertIn("02_data/processed/search_log.csv", rendered)
         self.assertIn("quick-fix: python validate_csv_inputs.py", rendered)
+        self.assertIn("master records [error]: duplicate key for record_id", rendered)
 
 
 if __name__ == "__main__":
