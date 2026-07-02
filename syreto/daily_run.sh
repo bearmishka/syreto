@@ -767,30 +767,6 @@ update_progress_history() {
   fi
 }
 
-update_progress_history() {
-  echo "[daily_run] Updating progress history with run deltas..."
-  if ! python progress_history_builder.py \
-    --manifest "$DAILY_RUN_MANIFEST" \
-    --status-summary outputs/status_summary.json \
-    --history-output outputs/progress_history.csv \
-    --summary-output outputs/progress_history_summary.md \
-    --review-mode "$REVIEW_MODE"; then
-    echo "[daily_run] WARNING: progress_history_builder.py failed; continuing with current exit code."
-  fi
-}
-
-update_progress_history() {
-  echo "[daily_run] Updating progress history with run deltas..."
-  if ! python progress_history_builder.py \
-    --manifest "$DAILY_RUN_MANIFEST" \
-    --status-summary outputs/status_summary.json \
-    --history-output outputs/progress_history.csv \
-    --summary-output outputs/progress_history_summary.md \
-    --review-mode "$REVIEW_MODE"; then
-    echo "[daily_run] WARNING: progress_history_builder.py failed; continuing with current exit code."
-  fi
-}
-
 run_status_checkpoint() {
   if [[ "$STATUS_CHECKPOINT_RAN" -eq 1 ]]; then
     return 0
@@ -1284,4 +1260,3 @@ print_output_group \
   "../04_manuscript/tables/fulltext_exclusion_table.tex" \
   "../04_manuscript/tables/study_characteristics_table.tex" \
   "../02_data/processed/prisma_counts_template.csv"
-echo "[daily_run] Tip: for manual re-merge from papers/2026-next-review/, use: make merge or make merge-force"

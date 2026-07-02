@@ -15,6 +15,7 @@ newer SyReTo architecture without creating a split between:
 - the new config-aware review-instance surface
 - the new `StudyTable` internal contract
 - the new observability layer
+- the canonical `syreto/` package and the legacy `03_analysis/` entrypoint tree
 
 Without an explicit migration story, the new model would compete with the old
 one instead of gradually replacing it.
@@ -42,14 +43,15 @@ In other words:
 
 ---
 
-## 3. The Four Migration Axes
+## 3. The Five Migration Axes
 
-Existing review projects may transition along four partially independent axes:
+Existing review projects may transition along five partially independent axes:
 
 1. legacy repository without explicit review config
 2. config-aware review instance (`review.toml`)
 3. `StudyTable` as downstream internal contract
 4. observability event stream and run postmortem surface
+5. package-owned module logic (`syreto/`) replacing duplicated `03_analysis/` implementations
 
 These axes should not be treated as all-or-nothing.
 
@@ -231,7 +233,80 @@ Observability migration is successful when:
 
 ---
 
-## 8. Recommended Migration Sequence
+## 8. Migration To Package-Owned Modules
+
+### 8.1 Scope
+
+This axis is distinct from the config, `StudyTable`, and observability axes above.
+It is about *where implementation logic lives*, not about review-state files.
+
+Per [architecture-layers.md](architecture-layers.md), the intended steady state is:
+
+- `syreto/<module>.py` contains the implementation
+- `03_analysis/<module>.py` is either absent or a thin compatibility shim that
+  imports from `syreto` and preserves script-path execution
+
+### 8.2 Current Status (as of this document's last update)
+
+This migration is **in progress, not complete**. Counting top-level Python
+modules that exist under both `syreto/` and `03_analysis/`:
+
+- **13 of 53** paired modules have been converted to the shim pattern (source
+  of truth lives in `syreto/`, `03_analysis/` re-exports it):
+  `csv_schema.py`, `export_to_ris.py`, `forest_plot_generator.py`,
+  `progress_history_builder.py`, `prospero_manual_fields_check.py`,
+  `prospero_submission_drafter.py` (and its `prospero_submission_drafter_layers/`
+  package), `provenance.py`, `results_summary_table_builder.py`,
+  `status_cli.py`, `status_report.py`, `template_term_guard.py`,
+  `todo_action_plan_builder.py`, `validate_csv_inputs.py`.
+- **40 of 53** paired modules are still byte-identical duplicates between the
+  two trees (not yet migrated), including `quality_appraisal.py`,
+  `grade_evidence_profiler.py`, `study_table.py`,
+  `consolidate_title_abstract_consensus.py`, `dedup_merge.py`,
+  `screening_metrics.py`, and most other task scripts.
+
+This split is enforced, not accidental: [`syreto/tests/test_repository_boundary_integrity.py`](../syreto/tests/test_repository_boundary_integrity.py)
+diffs both trees and fails if a module outside the known `EXPECTED_CODE_DIFFS`
+set diverges. That test is the source of truth for which modules have actually
+migrated — update this section whenever that set changes.
+
+### 8.3 What Existing Projects Do Not Need To Do
+
+Existing review repositories do **NOT** need to:
+
+- migrate all 40 remaining modules at once
+- treat the still-duplicated modules as broken or unsafe to use
+- change how `syreto` CLI subcommands or `daily_run.sh` invoke these scripts
+
+### 8.4 Recommended Migration Order
+
+Following the same consumer-by-consumer logic as the `StudyTable` migration
+(Section 6.4), prioritize modules with the most duplicated logic and the
+highest risk of drift if the two copies are edited independently:
+
+1. synthesis and appraisal/profile modules (`quality_appraisal.py`,
+   `grade_evidence_profiler.py`, `effect_size_converter.py`)
+2. reporting/summary modules not already migrated
+   (`review_descriptives_builder.py`, `synthesis_tables.py`, `prisma_tables.py`)
+3. guards and validators (`audit_log_integrity_guard.py`,
+   `epistemic_consistency_guard.py`, `validate_extraction.py`)
+4. remaining operational-extension scripts (citation tracking, retraction
+   checking, living-review scheduling, keyword/network analysis)
+
+### 8.5 What Counts As Success
+
+Package-ownership migration for a given module is successful when:
+
+- `03_analysis/<module>.py` imports from `syreto.<module>` instead of
+  duplicating its logic
+- the module name is added to `EXPECTED_CODE_DIFFS` in
+  `test_repository_boundary_integrity.py`
+- this section is updated to move the module from "not yet migrated" to
+  "migrated"
+
+---
+
+## 9. Recommended Migration Sequence
 
 For a real existing review project, the recommended order is:
 
@@ -252,7 +327,7 @@ It ensures that:
 
 ---
 
-## 9. Anti-Pattern To Avoid
+## 10. Anti-Pattern To Avoid
 
 The main migration anti-pattern is:
 
@@ -265,6 +340,8 @@ Examples of this anti-pattern:
 - running both implicit and config-aware review entrypoints without declaring the config path authoritative
 - keeping ad hoc study-level harmonization while also claiming `StudyTable` is the contract
 - writing observability data but still depending on anecdotal postmortem
+- letting a module sit as a byte-identical duplicate indefinitely without a
+  tracked plan to shim it, while documentation describes the shim as already done
 
 This creates architectural competition instead of migration.
 
@@ -272,32 +349,42 @@ SyReTo should migrate by making the new layer explicit and authoritative step by
 
 ---
 
-## 10. Operational Checklist
+## 11. Operational Checklist
 
-### 10.1 Legacy To Config-Aware
+### 11.1 Legacy To Config-Aware
 
 - add `review.toml`
 - validate with `syreto doctor --config`
 - use `syreto status --config`
 - use `syreto review run --config`
 
-### 10.2 Legacy Consumers To StudyTable
+### 11.2 Legacy Consumers To StudyTable
 
 - identify repeated alias handling
 - centralize harmonization
 - switch one downstream consumer at a time
 - keep file truth unchanged
 
-### 10.3 Legacy Runs To Observability-Aware Runs
+### 11.3 Legacy Runs To Observability-Aware Runs
 
 - confirm `outputs/run_events.jsonl` exists
 - use `syreto observability`
 - verify failure/postmortem semantics stay aligned with status artifacts
 
+### 11.4 Legacy Duplicated Modules To Package-Owned Shims
+
+- pick one module from the "not yet migrated" list in Section 8.2
+- move its implementation into `syreto/<module>.py` if not already there
+- replace `03_analysis/<module>.py` with a thin shim importing from `syreto`
+- add the module name to `EXPECTED_CODE_DIFFS` in
+  `test_repository_boundary_integrity.py`
+- update Section 8.2 of this document
+
 ---
 
-## 11. Relationship To Other Contracts
+## 12. Relationship To Other Contracts
 
+- [architecture-layers.md](architecture-layers.md)
 - [review-instance-model.md](review-instance-model.md)
 - [review-config-schema.md](review-config-schema.md)
 - [study-table-model.md](study-table-model.md)
