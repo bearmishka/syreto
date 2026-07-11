@@ -251,19 +251,10 @@ Per [architecture-layers.md](architecture-layers.md), the intended steady state 
 This migration is **in progress, not complete**. Counting top-level Python
 modules that exist under both `syreto/` and `03_analysis/`:
 
-- **13 of 53** paired modules have been converted to the shim pattern (source
-  of truth lives in `syreto/`, `03_analysis/` re-exports it):
-  `csv_schema.py`, `export_to_ris.py`, `forest_plot_generator.py`,
-  `progress_history_builder.py`, `prospero_manual_fields_check.py`,
-  `prospero_submission_drafter.py` (and its `prospero_submission_drafter_layers/`
-  package), `provenance.py`, `results_summary_table_builder.py`,
-  `status_cli.py`, `status_report.py`, `template_term_guard.py`,
-  `todo_action_plan_builder.py`, `validate_csv_inputs.py`.
-- **40 of 53** paired modules are still byte-identical duplicates between the
-  two trees (not yet migrated), including `quality_appraisal.py`,
-  `grade_evidence_profiler.py`, `study_table.py`,
-  `consolidate_title_abstract_consensus.py`, `dedup_merge.py`,
-  `screening_metrics.py`, and most other task scripts.
+- **53 of 53** paired modules have been converted to the shim pattern (source
+  of truth lives in `syreto/`, `03_analysis/` re-exports it).
+- **0 of 53** paired modules remain as byte-identical duplicates between the
+  two trees.
 
 This split is enforced, not accidental: [`syreto/tests/test_repository_boundary_integrity.py`](../syreto/tests/test_repository_boundary_integrity.py)
 diffs both trees and fails if a module outside the known `EXPECTED_CODE_DIFFS`
@@ -274,7 +265,7 @@ migrated — update this section whenever that set changes.
 
 Existing review repositories do **NOT** need to:
 
-- migrate all 40 remaining modules at once
+- re-open already migrated shims unless the compatibility pattern changes
 - treat the still-duplicated modules as broken or unsafe to use
 - change how `syreto` CLI subcommands or `daily_run.sh` invoke these scripts
 
@@ -330,37 +321,23 @@ It ensures that:
 Top-level mirrored Python modules currently tracked across `syreto/` and
 `03_analysis/`: **53**
 
-- migrated to canonical-package shim posture: **16 of 53**
-- not yet migrated: **37 of 53**
+- migrated to canonical-package shim posture: **53 of 53**
+- not yet migrated: **0 of 53**
 
 Migrated compatibility shims:
 
 - `csv_schema.py`
-- `effect_size_converter.py`
-- `export_to_ris.py`
-- `forest_plot_generator.py`
-- `grade_evidence_profiler.py`
-- `progress_history_builder.py`
-- `prospero_manual_fields_check.py`
-- `prospero_submission_drafter.py`
-- `provenance.py`
-- `quality_appraisal.py`
-- `results_summary_table_builder.py`
-- `status_cli.py`
-- `status_report.py`
-- `template_term_guard.py`
-- `todo_action_plan_builder.py`
-- `validate_csv_inputs.py`
-
-Not yet migrated:
-
 - `analysis_lineage.py`
 - `audit_log_integrity_guard.py`
 - `citation_tracker.py`
 - `consolidate_title_abstract_consensus.py`
 - `dedup_merge.py`
 - `dedup_stats.py`
+- `effect_size_converter.py`
 - `epistemic_consistency_guard.py`
+- `export_to_ris.py`
+- `forest_plot_generator.py`
+- `grade_evidence_profiler.py`
 - `jbi_to_nos_converter.py`
 - `keyword_network.py`
 - `latex_utils.py`
@@ -369,28 +346,43 @@ Not yet migrated:
 - `multilang_abstract_screener.py`
 - `nos_to_jbi_converter.py`
 - `polyglot_search.py`
+- `progress_history_builder.py`
 - `prisma_adherence_checker.py`
 - `prisma_tables.py`
+- `prospero_manual_fields_check.py`
+- `prospero_submission_drafter.py`
+- `provenance.py`
 - `publication_bias_assessment.py`
 - `pubmed_fetch.py`
 - `python_source_guard.py`
+- `quality_appraisal.py`
 - `quality_appraisal_roundtrip.py`
 - `record_id_map_integrity_guard.py`
 - `results_interpretation_layer.py`
+- `results_summary_table_builder.py`
 - `retraction_checker.py`
 - `review_descriptives_builder.py`
 - `reviewer_workload_balancer.py`
 - `screening_disagreement_analyzer.py`
 - `screening_metrics.py`
 - `sensitivity_analysis_builder.py`
+- `status_cli.py`
+- `status_report.py`
 - `study_flow_map_builder.py`
 - `study_table.py`
 - `subgroup_analysis_builder.py`
 - `synthesis_tables.py`
+- `template_term_guard.py`
+- `todo_action_plan_builder.py`
 - `topic_model_viz.py`
 - `transparency_appendix_decision_trace.py`
+- `validate_csv_inputs.py`
 - `validate_extraction.py`
 - `weekly_risk_digest.py`
+
+Not yet migrated:
+
+- none
 
 ---
 

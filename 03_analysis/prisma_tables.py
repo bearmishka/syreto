@@ -1,250 +1,30 @@
-import argparse
+"""Legacy entrypoint shim for the canonical packaged prisma_tables module.
+
+The source of truth now lives in ``syreto.prisma_tables``. This wrapper
+preserves direct imports from ``03_analysis/`` and script-path execution while
+the repository spine is migrated toward package-owned Python logic.
+"""
+
+from __future__ import annotations
+
+import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
-import pandas as pd
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from latex_utils import render_table_block
-    from provenance import write_provenance_sidecar
-else:
-    from .latex_utils import render_table_block
-    from .provenance import write_provenance_sidecar
+from syreto import prisma_tables as _canonical_prisma_tables
+from syreto.prisma_tables import *  # noqa: F401,F403
 
-MISSING_VALUES = {
-    "",
-    "nan",
-    "na",
-    "n/a",
-    "nr",
-    "none",
-    "unclear",
-    "missing",
-    "not reported",
-    "not_reported",
-    "not applicable",
-    "not_applicable",
-}
-
-PRISMA_ROWS = [
-    ("records_identified_databases", "Records identified from databases"),
-    ("records_identified_other_sources", "Records identified from other sources"),
-    ("duplicates_removed", "Duplicates removed"),
-    ("records_screened_title_abstract", "Records screened (title/abstract)"),
-    ("records_excluded_title_abstract", "Records excluded (title/abstract)"),
-    ("reports_sought_for_retrieval", "Reports sought for retrieval"),
-    ("reports_not_retrieved", "Reports not retrieved"),
-    ("reports_assessed_full_text", "Reports assessed for eligibility (full text)"),
-    ("reports_excluded_full_text", "Reports excluded (full text)"),
-    ("studies_included_qualitative_synthesis", "Studies included in qualitative synthesis"),
-    (
-        "studies_included_quantitative_synthesis",
-        "Studies included in quantitative synthesis (if applicable)",
-    ),
-]
-
-
-def normalize(value: object) -> str:
-    text = str(value if value is not None else "").strip()
-    return "" if text.lower() == "nan" else text
-
-
-def is_missing(value: object) -> bool:
-    return normalize(value).lower() in MISSING_VALUES
-
-
-def read_csv_or_empty(path: Path, columns: list[str]) -> pd.DataFrame:
-    if not path.exists():
-        return pd.DataFrame(columns=columns)
-    try:
-        df = pd.read_csv(path, dtype=str)
-    except pd.errors.EmptyDataError:
-        return pd.DataFrame(columns=columns)
-
-    for column in columns:
-        if column not in df.columns:
-            df[column] = ""
-    return df
-
-
-def count_display(value: object) -> str:
-    text = normalize(value)
-    if is_missing(text):
-        return "---"
-
-    numeric = pd.to_numeric(pd.Series([text]), errors="coerce").iloc[0]
-    if pd.notna(numeric):
-        numeric_float = float(numeric)
-        if numeric_float.is_integer():
-            return str(int(numeric_float))
-        return f"{numeric_float:g}"
-
-    return text
-
-
-def render_prisma_table(prisma_df: pd.DataFrame, input_path: Path) -> str:
-    stage_to_count: dict[str, object] = {}
-    for _, row in prisma_df.iterrows():
-        stage = normalize(row.get("stage", ""))
-        if stage:
-            stage_to_count[stage] = row.get("count", "")
-
-    rows: list[list[str]] = []
-    for stage, label in PRISMA_ROWS:
-        count_text = count_display(stage_to_count.get(stage, ""))
-        rows.append([label, count_text])
-
-    return render_table_block(
-        generator_name="03_analysis/prisma_tables.py",
-        source_path=input_path,
-        caption="PRISMA 2020 flow counts (auto-generated)",
-        label="tab:prisma_counts",
-        column_spec=r"p{0.72\textwidth}r",
-        headers=["Flow item", "n"],
-        rows=rows,
-        empty_row_latex=r"\multicolumn{2}{p{0.95\textwidth}}{No PRISMA flow counts are available yet.} \\",
-    )
-
-
-def render_fulltext_table(fulltext_df: pd.DataFrame, input_path: Path) -> str:
-    rows: list[tuple[str, str]] = []
-    for _, row in fulltext_df.iterrows():
-        reason = normalize(row.get("reason", ""))
-        if is_missing(reason):
-            continue
-        count = count_display(row.get("count", ""))
-        rows.append((reason, count))
-
-    return render_table_block(
-        generator_name="03_analysis/prisma_tables.py",
-        source_path=input_path,
-        caption="Full-text exclusion reasons (auto-generated)",
-        label="tab:fulltext_exclusion",
-        column_spec=r"p{0.72\textwidth}r",
-        headers=["Reason", "n"],
-        rows=[[reason, count] for reason, count in rows],
-        empty_row_latex=r"No full-text exclusion reasons logged yet. & --- \\",
-    )
-
-
-def render_summary(
-    *,
-    prisma_input: Path,
-    fulltext_input: Path,
-    prisma_output: Path,
-    fulltext_output: Path,
-    prisma_rows: int,
-    fulltext_rows: int,
-) -> str:
-    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-    lines: list[str] = []
-    lines.append("# PRISMA Tables Summary")
-    lines.append("")
-    lines.append(f"Generated: {generated_at}")
-    lines.append("")
-    lines.append("## Inputs/Outputs")
-    lines.append("")
-    lines.append(f"- PRISMA counts input: `{prisma_input.as_posix()}`")
-    lines.append(f"- Full-text reasons input: `{fulltext_input.as_posix()}`")
-    lines.append(f"- PRISMA LaTeX output: `{prisma_output.as_posix()}`")
-    lines.append(f"- Full-text LaTeX output: `{fulltext_output.as_posix()}`")
-    lines.append("")
-    lines.append("## Row Counts")
-    lines.append("")
-    lines.append(f"- PRISMA rows read: {prisma_rows}")
-    lines.append(f"- Full-text reason rows read: {fulltext_rows}")
-    lines.append("")
-    lines.append("## Notes")
-    lines.append("")
-    lines.append("- Missing counts are rendered as `---`.")
-    lines.append("- Table row order follows manuscript/PRISMA conventions.")
-    lines.append("")
-    return "\n".join(lines)
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate manuscript PRISMA LaTeX tables from processed CSV files."
-    )
-    parser.add_argument(
-        "--prisma-input",
-        default="../02_data/processed/prisma_counts_template.csv",
-        help="Path to PRISMA counts CSV",
-    )
-    parser.add_argument(
-        "--fulltext-input",
-        default="../02_data/processed/full_text_exclusion_reasons.csv",
-        help="Path to full-text exclusion reasons CSV",
-    )
-    parser.add_argument(
-        "--prisma-output",
-        default="../04_manuscript/tables/prisma_counts_table.tex",
-        help="Path to generated PRISMA counts LaTeX table",
-    )
-    parser.add_argument(
-        "--fulltext-output",
-        default="../04_manuscript/tables/fulltext_exclusion_table.tex",
-        help="Path to generated full-text exclusion LaTeX table",
-    )
-    parser.add_argument(
-        "--summary-output",
-        default="outputs/prisma_tables_summary.md",
-        help="Path to markdown summary",
-    )
-    args = parser.parse_args()
-
-    prisma_input_path = Path(args.prisma_input)
-    fulltext_input_path = Path(args.fulltext_input)
-    prisma_output_path = Path(args.prisma_output)
-    fulltext_output_path = Path(args.fulltext_output)
-    summary_output_path = Path(args.summary_output)
-
-    prisma_df = read_csv_or_empty(prisma_input_path, columns=["stage", "count", "notes"])
-    fulltext_df = read_csv_or_empty(fulltext_input_path, columns=["reason", "count", "notes"])
-
-    prisma_tex = render_prisma_table(prisma_df, input_path=prisma_input_path)
-    fulltext_tex = render_fulltext_table(fulltext_df, input_path=fulltext_input_path)
-
-    prisma_output_path.parent.mkdir(parents=True, exist_ok=True)
-    prisma_output_path.write_text(prisma_tex, encoding="utf-8")
-
-    fulltext_output_path.parent.mkdir(parents=True, exist_ok=True)
-    fulltext_output_path.write_text(fulltext_tex, encoding="utf-8")
-
-    summary_text = render_summary(
-        prisma_input=prisma_input_path,
-        fulltext_input=fulltext_input_path,
-        prisma_output=prisma_output_path,
-        fulltext_output=fulltext_output_path,
-        prisma_rows=int(prisma_df.shape[0]),
-        fulltext_rows=int(fulltext_df.shape[0]),
-    )
-    summary_output_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_output_path.write_text(summary_text, encoding="utf-8")
-    upstream_inputs = [prisma_input_path, fulltext_input_path]
-    write_provenance_sidecar(
-        prisma_output_path,
-        generated_by="prisma_tables.py",
-        upstream_inputs=upstream_inputs,
-    )
-    write_provenance_sidecar(
-        fulltext_output_path,
-        generated_by="prisma_tables.py",
-        upstream_inputs=upstream_inputs,
-    )
-    write_provenance_sidecar(
-        summary_output_path,
-        generated_by="prisma_tables.py",
-        upstream_inputs=upstream_inputs,
-    )
-
-    print(f"Wrote: {prisma_output_path}")
-    print(f"Wrote: {fulltext_output_path}")
-    print(f"Wrote: {summary_output_path}")
-
+main = _canonical_prisma_tables.main
 
 if __name__ == "__main__":
-    main()
+    original_cwd = Path.cwd()
+    try:
+        os.chdir(SCRIPT_DIR)
+        main()
+    finally:
+        os.chdir(original_cwd)
