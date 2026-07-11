@@ -9,13 +9,18 @@ PACKAGE_ROOT = PROJECT_ROOT / "syreto"
 LEGACY_ROOT = PROJECT_ROOT / "03_analysis"
 
 EXPECTED_CODE_DIFFS = {
+    "csv_schema.py",
+    "effect_size_converter.py",
     "export_to_ris.py",
     "forest_plot_generator.py",
+    "grade_evidence_profiler.py",
     "progress_history_builder.py",
     "prospero_manual_fields_check.py",
     "prospero_submission_drafter.py",
     "provenance.py",
+    "quality_appraisal.py",
     "results_summary_table_builder.py",
+    "status_cli.py",
     "status_report.py",
     "template_term_guard.py",
     "todo_action_plan_builder.py",

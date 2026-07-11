@@ -325,6 +325,73 @@ It ensures that:
 - explicit config appears before layout migration
 - internal contracts improve before broad architectural replacement
 
+### 8.2 Python Tree Migration Status
+
+Top-level mirrored Python modules currently tracked across `syreto/` and
+`03_analysis/`: **53**
+
+- migrated to canonical-package shim posture: **16 of 53**
+- not yet migrated: **37 of 53**
+
+Migrated compatibility shims:
+
+- `csv_schema.py`
+- `effect_size_converter.py`
+- `export_to_ris.py`
+- `forest_plot_generator.py`
+- `grade_evidence_profiler.py`
+- `progress_history_builder.py`
+- `prospero_manual_fields_check.py`
+- `prospero_submission_drafter.py`
+- `provenance.py`
+- `quality_appraisal.py`
+- `results_summary_table_builder.py`
+- `status_cli.py`
+- `status_report.py`
+- `template_term_guard.py`
+- `todo_action_plan_builder.py`
+- `validate_csv_inputs.py`
+
+Not yet migrated:
+
+- `analysis_lineage.py`
+- `audit_log_integrity_guard.py`
+- `citation_tracker.py`
+- `consolidate_title_abstract_consensus.py`
+- `dedup_merge.py`
+- `dedup_stats.py`
+- `epistemic_consistency_guard.py`
+- `jbi_to_nos_converter.py`
+- `keyword_network.py`
+- `latex_utils.py`
+- `living_review_scheduler.py`
+- `meta_analysis_results_builder.py`
+- `multilang_abstract_screener.py`
+- `nos_to_jbi_converter.py`
+- `polyglot_search.py`
+- `prisma_adherence_checker.py`
+- `prisma_tables.py`
+- `publication_bias_assessment.py`
+- `pubmed_fetch.py`
+- `python_source_guard.py`
+- `quality_appraisal_roundtrip.py`
+- `record_id_map_integrity_guard.py`
+- `results_interpretation_layer.py`
+- `retraction_checker.py`
+- `review_descriptives_builder.py`
+- `reviewer_workload_balancer.py`
+- `screening_disagreement_analyzer.py`
+- `screening_metrics.py`
+- `sensitivity_analysis_builder.py`
+- `study_flow_map_builder.py`
+- `study_table.py`
+- `subgroup_analysis_builder.py`
+- `synthesis_tables.py`
+- `topic_model_viz.py`
+- `transparency_appendix_decision_trace.py`
+- `validate_extraction.py`
+- `weekly_risk_digest.py`
+
 ---
 
 ## 10. Anti-Pattern To Avoid
