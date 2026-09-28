@@ -261,6 +261,19 @@ uv.lock                  locked dependency set
 
 ## Development
 
+For contributor branches, synchronize before substantive edits and verify publication after the
+reviewed commit:
+
+```bash
+python3 scripts/task_sync.py start
+# make changes, review them, then run the project checks and commit
+python3 scripts/task_sync.py finish
+```
+
+The handoff tool never stages or commits files and does not replace project validation. New
+branches need an explicit same-name upstream first. Recovery and failure semantics are documented
+in [docs/operations/git-handoff.md](docs/operations/git-handoff.md).
+
 Run checks locally with:
 
 ```bash
