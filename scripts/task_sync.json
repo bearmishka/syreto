@@ -1,0 +1,13 @@
+{
+  "remote": "origin",
+  "remote_urls": [
+    "https://github.com/bearmishka/syreto.git",
+    "https://github.com/bearmishka/syreto",
+    "git@github.com:bearmishka/syreto.git",
+    "ssh://git@github.com/bearmishka/syreto.git"
+  ],
+  "allowed_untracked": [
+    ".claude/settings.local.json",
+    ".claude/launch.json"
+  ]
+}
