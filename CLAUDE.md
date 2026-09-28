@@ -2,9 +2,14 @@
 
 Follow `AGENTS.md` as the repository agent entrypoint.
 
-Before substantive authorized coding or documentation edits, run
-`python3 scripts/task_sync.py start`. After required project checks and an
-explicit scoped commit, run `python3 scripts/task_sync.py finish`.
+Pinned execution standard:
+`docs/standards/AGENT_EXECUTION_DISCIPLINE_v1.1.md`.
+SyReTo applicability:
+`docs/operations/agent_execution_discipline_adoption.md`.
 
-Do not use Git handoff to bypass SyReTo validation or reproducibility rules.
-See `README.md` and `docs/operations/git-handoff.md`.
+The current execution-discipline posture is passive; do not retrofit runtime
+machinery into protected review execution merely because the standard exists.
+
+For authorized edits, use `python3 scripts/task_sync.py start` before work and
+`python3 scripts/task_sync.py finish` after required checks and an explicit
+scoped commit. See `README.md` and `docs/operations/git-handoff.md`.
