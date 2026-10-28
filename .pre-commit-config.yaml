@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.0
+    rev: v0.15.9
     hooks:
       - id: ruff
         args: [--fix]
@@ -13,6 +13,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^(03_analysis|syreto)/tests/fixtures/python_source_guard_broken/
       - id: trailing-whitespace
-        exclude: ^(03_analysis|syreto)/tests/fixtures/python_source_guard_broken/
+        # The vendor standard must retain its pinned byte identity.
+        exclude: ^((03_analysis|syreto)/tests/fixtures/python_source_guard_broken/|docs/standards/AGENT_EXECUTION_DISCIPLINE_v1\.1\.md$)
       - id: check-merge-conflict
       - id: check-added-large-files

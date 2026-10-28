@@ -14,11 +14,14 @@ Initial setup:
 ```bash
 git clone https://github.com/bearmishka/syreto.git
 cd syreto
-uv sync --all-groups
+uv sync --locked --all-groups
 uv run pre-commit install
 ```
 
 ## Core Commands
+
+Use the committed lockfile for installation. When intentionally changing dependencies,
+run `uv lock` and review the lockfile diff together with the dependency change.
 
 Run the main checks before opening a pull request:
 
