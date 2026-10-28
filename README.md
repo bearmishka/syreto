@@ -98,7 +98,7 @@ Requires Python `>=3.11`.
 ```bash
 git clone https://github.com/bearmishka/syreto.git
 cd syreto
-uv sync --all-groups
+uv sync --locked --all-groups
 ```
 
 Install git hooks:
@@ -113,7 +113,8 @@ Sanity-check the environment:
 uv run pytest -q
 ```
 
-Current release status: the full repository test suite passes at `578 passed`.
+CI runs the full repository test suite across `syreto/tests` and `03_analysis/tests`.
+Use `uv run --locked pytest -q` to check the current result locally.
 
 ## Start Here
 
@@ -274,6 +275,9 @@ The handoff tool never stages or commits files and does not replace project vali
 branches need an explicit same-name upstream first. Recovery and failure semantics are documented
 in [docs/operations/git-handoff.md](docs/operations/git-handoff.md).
 
+Maintenance priorities and the path to a first real research pilot are tracked in
+[the maintenance roadmap](docs/operations/maintenance-roadmap.md).
+
 Run checks locally with:
 
 ```bash
@@ -281,7 +285,9 @@ uv run pytest -q
 uv run pre-commit run --all-files
 ```
 
-The GitHub Actions workflow also checks two higher-level system surfaces on every push and pull request:
+The GitHub Actions workflow installs the locked dependencies and checks repository-wide lint,
+formatting, and the full test suite on every push to `main` and pull request targeting `main`.
+The suite includes two higher-level system surfaces:
 
 - the golden and smoke fixture trio
 - the config-aware CLI smoke surface for `doctor`, `status`, and `review run`

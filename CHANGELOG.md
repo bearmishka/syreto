@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Maintenance
+
+- run the full package and legacy test suites in CI, including the repository-data integration tests, golden fixtures, and config-aware CLI smoke tests
+- install CI dependencies from `uv.lock` and check repository-wide Ruff lint and formatting
+- synchronize the locked package version with `pyproject.toml` and align the Ruff pre-commit version with the lockfile
+- format the Git handoff script and its tests while preserving runtime handoff behavior
+- make intentional tracked-file fixtures independent of user Git ignore rules
+- correct the documented Git handoff integration-test path
+- preserve the pinned vendor standard's byte identity when running whitespace hooks
+- remove stale current test counts from documentation; use the full-suite command for current results
+
 ### Architecture
 
 - established `syreto/` as the canonical Python implementation layer for reusable module logic
@@ -27,7 +38,7 @@
 
 - reduced mirrored test drift by sharing broken `python_source_guard` fixtures across package and legacy test surfaces
 - kept only compatibility-specific assertions in the remaining intentionally divergent `03_analysis/tests` modules
-- reran and stabilized the full repository test suite after the architectural cleanup; current full-suite status is `578 passed`
+- reran and stabilized the full repository test suite after the architectural cleanup
 
 ## 0.2.0 - 2026-04-09
 

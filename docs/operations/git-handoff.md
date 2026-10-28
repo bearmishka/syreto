@@ -16,7 +16,7 @@ From the repository root (Python 3.9+ and Git required, no extra dependencies):
   same-name upstream branch and verify its SHA remotely.
 - `python3 scripts/task_sync.py finish --no-push` — honor an explicit user
   no-publication instruction; exit 2 and report LOCAL_ONLY, never COMPLETE.
-- `python3 tests/test_task_sync.py` — integration tests using disposable local
+- `python3 syreto/tests/test_task_sync.py` — integration tests using disposable local
   repositories and a bare remote; no GitHub/API/model calls.
 
 Read AGENTS.md/CLAUDE.md and run required project preflight checks too. Commit only

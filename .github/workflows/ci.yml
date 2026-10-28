@@ -18,33 +18,19 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install uv
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-          pip install -e .
+          python -m pip install uv==0.11.4
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
 
       - name: Lint with ruff
-        run: ruff check 03_analysis/ syreto/ --exclude "03_analysis/tests/fixtures/*" --ignore E402,F401 --target-version py312
+        run: uv run --locked ruff check .
 
-      - name: Run tests
-        working-directory: 03_analysis
-        # 4 integration tests require project data files (02_data/) not shipped in the public repo.
-        # They pass in a fully populated project directory. See README for details.
-        run: python -m pytest tests/ -v --tb=short -k "not (test_guard_passes_for_repository_audit_log or test_extraction_template_contains_required_metadata_columns or test_record_id_map_guard_passes_for_repository_file or test_cli_uses_script_relative_paths_when_called_outside_analysis_dir)"
+      - name: Check formatting
+        run: uv run --locked ruff format --check .
 
-      - name: Run golden and smoke fixture regressions
-        run: |
-          python -m pytest \
-            syreto/tests/test_golden_review_fixture.py \
-            03_analysis/tests/test_golden_review_fixture.py \
-            03_analysis/tests/test_repo_smoke_review_run.py \
-            -q
-
-      - name: Run config-aware CLI smoke
-        run: |
-          python -m pytest \
-            03_analysis/tests/test_syreto_package_import.py \
-            -q \
-            -k "test_cli_doctor_reads_repo_default_review_config or test_cli_doctor_reports_incompatible_review_config_as_preflight_failure or test_cli_status_with_config_routes_to_review_outputs or test_cli_review_run_with_config_sets_execution_env"
+      - name: Run full test suite
+        run: uv run --locked pytest -q --tb=short
